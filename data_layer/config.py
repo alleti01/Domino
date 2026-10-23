@@ -32,7 +32,7 @@ def load_env(path: Optional[Path] = None) -> None:
         key, value = key.strip(), value.strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
             value = value[1:-1]
-        if key in os.environ:
+        if key in os.environ and key not in _from_file:
             _from_shell.add(key)
         else:
             os.environ[key] = value

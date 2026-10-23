@@ -7,12 +7,16 @@
   python3 -m data_layer describe WORLD
   python3 -m data_layer run WORLD VARIANT [--params JSON]
   python3 -m data_layer admin-sql "SQL"        setup only: run one statement as the admin login
+  python3 -m data_layer set-credentials        write Zetaris logins into .env (passwords typed hidden)
 """
 
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
+import os
+import re
 import shutil
 import sys
 
@@ -52,6 +56,43 @@ def doctor() -> int:
     return 0 if ok else 1
 
 
+def set_credentials() -> int:
+    """Prompt for the admin and agent logins and write them into .env; passwords are never echoed."""
+    path = config.ENV_FILE
+    if not path.is_file():
+        shutil.copyfile(config.REPO_ROOT / ".env.example", path)
+    os.chmod(path, 0o600)
+    text = path.read_text(encoding="utf-8")
+    values = {}
+    for who, default in (("ADMIN", "admin@zetaris.com"), ("AGENT", "domino-agent@local.test")):
+        user = input(f"{who.lower()} username [{default}]: ").strip() or default
+        password = getpass.getpass(f"{who.lower()} password (hidden): ")
+        if not password:
+            print(f"No {who.lower()} password entered; nothing written.", file=sys.stderr)
+            return 1
+        values[f"ZETARIS_{who}_USERNAME"] = user
+        values[f"ZETARIS_{who}_PASSWORD"] = password
+    for key, value in values.items():
+        line = f"{key}={value}"
+        pattern = re.compile(rf"^{key}=.*(?:\n|$)", re.MULTILINE)
+        if pattern.search(text):
+            # Replace the first occurrence and drop any duplicates, which would otherwise override it.
+            first = [True]
+
+            def keep_first(_m, first=first):
+                if first[0]:
+                    first[0] = False
+                    return line + "\n"
+                return ""
+
+            text = pattern.sub(keep_first, text)
+        else:
+            text = text.rstrip("\n") + "\n" + line + "\n"
+    path.write_text(text, encoding="utf-8")
+    print(f"Saved logins to {path} (readable only by you). Next: python3 -m data_layer doctor")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="python3 -m data_layer", description="Domino data layer")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -63,10 +104,13 @@ def main(argv=None) -> int:
     p = sub.add_parser("run"); p.add_argument("world"); p.add_argument("variant")
     p.add_argument("--params", default="{}"); p.add_argument("--timeout", type=float, default=60)
     p = sub.add_parser("admin-sql"); p.add_argument("sql")
+    sub.add_parser("set-credentials")
     args = parser.parse_args(argv)
 
     if args.cmd == "doctor":
         return doctor()
+    if args.cmd == "set-credentials":
+        return set_credentials()
     if args.cmd == "lookup":
         result = lookup(args.sql, limit=args.limit)
     elif args.cmd == "path":

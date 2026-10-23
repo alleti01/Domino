@@ -204,9 +204,13 @@ class ZetarisClient:
                     if attempts > len(RETRY_BACKOFF_S):
                         raise
                     time.sleep(RETRY_BACKOFF_S[attempts - 1])
+            # Confirmed shape on 2.4.3.1: {"headers": [...], "data": [[...]], "total": n, "timeUsed": ms}
             columns, rows = normalize_payload(payload)
+            meta = {k: payload[k] for k in ("total", "timeUsed") if isinstance(payload, dict) and k in payload}
+            total = meta.get("total")
+            truncated = total > len(rows) if isinstance(total, int) else len(rows) >= limit
             result = QueryResult(query_id, text, columns, rows, int((time.monotonic() - started) * 1000),
-                                 truncated=len(rows) >= limit, attempts=attempts)
+                                 truncated=truncated, attempts=attempts, meta=meta)
             entry.update(status="ok", row_count=len(rows), row_ids=query_log.row_ids(rows)[:500],
                          truncated=result.truncated)
             return result
