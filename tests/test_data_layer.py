@@ -110,6 +110,24 @@ check("engine error -> status error", experiments.run_experiment("w-test", "base
 check("bad variant", experiments.run_experiment("w-test", "prod")["status"] == "error")
 os.environ["DOMINO_DATA_MODE"] = "sample"; check("path traversal rejected", experiments.run_experiment("../etc", "baseline")["status"] == "error" and experiments._case_path("../etc") is None)
 check("unknown world outside fake mode", (os.environ.__setitem__("DOMINO_DATA_MODE", "sample") or experiments.run_experiment("nope", "baseline"))["status"] == "error")
+
+# dependency_path walk (offline, over a fixed edge list)
+E = lambda f, t, rel, st="observed", ev="a:1;b:2": {"from_id": f, "from_type": f.split("/")[1], "to_id": t, "to_type": t.split("/")[1],
+                                                      "relation": rel, "edge_status": st, "evidence": ev, "detail": ""}
+edges = [E("s/change/1", "s/principal/p", "grants_to"), E("s/principal/p", "s/service/b", "identity_of"),
+         E("s/service/b", "s/artifact/x", "writes"), E("s/artifact/x", "s/service/r", "loaded_by"),
+         E("s/service/r", "s/service/b", "calls"),  # cycle back
+         E("s/change/1", "s/database/?", "grants_on", "unresolved", "a:9"), E("s/other/z", "s/other/y", "x")]
+w = lookups._walk("s/change/1", edges, "q-1", 6)
+ends = sorted(p["hops"][-1]["to"] for p in w["paths"])
+check("walk follows chain and stops at cycle", ends == ["s/database/?", "s/service/r"])
+check("walk reports unresolved edge", [u["to"] for u in w["unresolved"]] == ["s/database/?"])
+check("walk evidence parsed with query id", w["paths"][-1]["hops"][0]["evidence"][0] == {"source_system": "a", "source_row_id": "1", "query_id": "q-1"})
+check("two-source rule flagged per path", all(p["meets_two_source_rule"] for p in w["paths"] if len(p["source_systems"]) >= 2) and
+      not [p for p in w["paths"] if p["hops"][-1]["to"] == "s/database/?"][0]["meets_two_source_rule"])
+check("walk respects max_hops", max(len(p["hops"]) for p in lookups._walk("s/change/1", edges, "q", 2)["paths"]) == 2)
+os.environ["DOMINO_DATA_MODE"] = "live"
+check("dependency_path rejects unsafe entity id", lookups.dependency_path("x'; DROP TABLE t")["status"] == "error")
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)

@@ -39,13 +39,14 @@ Don't edit another owner's code. If you need a change across that boundary, prop
 - API tokens often fail with 400 "Not Allowed". Use `POST /api/auth/login` → `idToken` as the Bearer token, plus `X-Org-ID` and a fresh UUID `X-Request-ID` (already handled in `zetaris_client.py`).
 - Exported `ZETARIS_*` shell variables override `.env`. Check with `env | grep ZETARIS`.
 - File store:
-  - Copy files into `zetaris-driver-1:/home/zetaris/customer-data/shared/<folder>/`; they must be readable by uid 1001.
-  - Paths are `dffs://…`, relative to the file-store root, never `file://`.
+  - `dffs://…` paths resolve under `/home/zetaris/customer-data/<org-id>/file-store/` (not `shared/`); files must be readable by uid 1001. `zetaris/setup.py` handles this.
+  - Copy a file in before registering it. Never use `file://`.
   - Use straight quotes only, and `FROM <database>` is required.
   - JSON must be one array per file.
 - `lightning.metastore` must exist before `CREATE NAMESPACE lightning.metastore.<name>`.
 - Activate each USL table with explicit CASTs.
-- **Rebuilding a USL gives it a new ID: re-run the non-admin grants every time.**
+- **Rebuilding a USL gives it a new ID: re-run the non-admin grants every time** (`python3 zetaris/setup.py --rebuild-usl` does it).
+- Non-admin USL reads need the SQL grant **plus** two UI steps: Permissions → View on Unified Semantic Layer, and the namespace's Access Control → Assign Users.
 - A USL foreign key auto-generates a DQ rule, and DQ commands are admin-only.
 - REST-API tables re-fetch on every query, so `CACHE TABLE` them. The cache is lost on restart.
 - Set non-admin passwords in the UI. Changing them over REST reports success but doesn't work.

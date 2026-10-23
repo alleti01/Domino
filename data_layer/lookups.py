@@ -5,8 +5,9 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from . import config, query_log
 from .zetaris_client import ZetarisClient, ZetarisError
@@ -94,7 +95,66 @@ def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) ->
     request = {"entity_id": entity_id, "max_hops": max_hops}
     if mode == "sample":
         return _load_snapshot("dependency_path", request) or _not_in_sample("dependency_path", request)
-    # Live path traversal is built in Phase 2, once the USL relationship tables exist.
-    return {**_envelope("dependency_path", mode), "status": "error", "start": {"entity_id": entity_id},
-            "paths": [], "unresolved": [], "query_ids": [],
-            "error": "dependency_path is not available live until the USL is compiled (Phase 2)."}
+    base = {**_envelope("dependency_path", mode), "start": {"entity_id": entity_id}, "paths": [],
+            "unresolved": [], "query_ids": []}
+    if not _ENTITY_ID.match(entity_id):
+        return {**base, "status": "error", "error": "entity_id must look like <system>/<kind>/<name>."}
+    system_id = entity_id.split("/", 1)[0]
+    # The joins already happened in Zetaris (the dependency_edge activation); this only walks the result.
+    sql = (f"SELECT from_id, from_type, to_id, to_type, relation, edge_status, evidence, detail "
+           f"FROM {USL}.dependency_edge WHERE system_id = '{system_id}'")
+    try:
+        res = _client().run(sql, timeout_s=timeout_s, purpose="dependency_path")
+    except ZetarisError as error:
+        return {**base, "status": error.status, "error": str(error)}
+    result = {**base, "status": "ok", "query_ids": [res.query_id], "duration_ms": res.duration_ms, "error": None,
+              **_walk(entity_id, res.rows, res.query_id, max_hops)}
+    _save_snapshot("dependency_path", request, result)
+    return result
+
+
+_ENTITY_ID = re.compile(r"^[a-z0-9-]{1,40}/[a-z_]{1,20}/[A-Za-z0-9_.#?-]{1,200}$")
+USL = "lightning.metastore.domino.systems"
+
+
+def _evidence(text: str, query_id: str) -> List[Dict[str, str]]:
+    items = []
+    for part in (text or "").split(";"):
+        if ":" in part:
+            system, row = part.split(":", 1)
+            items.append({"source_system": system, "source_row_id": row, "query_id": query_id})
+    return items
+
+
+def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int) -> Dict[str, Any]:
+    """Every downstream path from `start`, up to max_hops, without revisiting a node on the same path."""
+    outgoing: Dict[str, List[Dict[str, Any]]] = {}
+    start_type = None
+    for e in sorted(edges, key=lambda e: (e["from_id"], e["relation"], e["to_id"])):
+        outgoing.setdefault(e["from_id"], []).append(e)
+        if e["from_id"] == start:
+            start_type = e["from_type"]
+
+    def hop(e: Dict[str, Any]) -> Dict[str, Any]:
+        return {"from": e["from_id"], "from_type": e["from_type"], "to": e["to_id"], "to_type": e["to_type"],
+                "relation": e["relation"], "edge_status": e["edge_status"], "detail": e["detail"],
+                "evidence": _evidence(e["evidence"], query_id)}
+
+    paths, unresolved, seen_unresolved = [], [], set()
+
+    def extend(node: str, trail: List[Dict[str, Any]], visited: set) -> None:
+        nexts = [e for e in outgoing.get(node, []) if e["to_id"] not in visited] if len(trail) < max_hops else []
+        if not nexts and trail:
+            sources = {ev["source_system"] for h in trail for ev in h["evidence"]}
+            paths.append({"hops": trail, "source_systems": sorted(sources), "meets_two_source_rule": len(sources) >= 2})
+        for e in nexts:
+            if e["edge_status"] == "unresolved" and e["to_id"] not in seen_unresolved:
+                seen_unresolved.add(e["to_id"])
+                unresolved.append({"from": e["from_id"], "to": e["to_id"], "relation": e["relation"],
+                                   "reason": "referenced entity not found in any other source",
+                                   "evidence": _evidence(e["evidence"], query_id)})
+            extend(e["to_id"], trail + [hop(e)], visited | {e["to_id"]})
+
+    extend(start, [], {start})
+    return {"start": {"entity_id": start, "entity_type": start_type}, "paths": paths, "unresolved": unresolved,
+            "edges_considered": len(edges)}

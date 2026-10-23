@@ -24,7 +24,7 @@ BANNED = [
     r"out[\s_-]?of[\s_-]?bounds", r"root[\s_-]?cause", r"verdict", r"ground[\s_-]?truth", r"expected[\s_-]?(?:result|outcome)",
     r"safe[\s_-]?twin", r"near[\s_-]?miss", r"surprise", r"held[\s_-]?out", r"holdout", r"\bbug\b", r"incident", r"outage",
 ]
-VISIBLE_FILE_DIRS = [ROOT / "zetaris" / "sources", ROOT / "zetaris" / "sql"]
+VISIBLE_FILE_DIRS = [ROOT / "zetaris" / "sources", ROOT / "zetaris" / "sql", ROOT / "zetaris" / "snapshots"]
 
 
 def _labels() -> dict:
@@ -32,7 +32,9 @@ def _labels() -> dict:
 
 
 def _patterns(labels: dict) -> list:
-    extra = {re.escape(v[k]) for v in labels.values() for k in ("family", "role") if v.get(k)}
+    # Family labels are distinctive; role labels include generic words like "primary", and the
+    # distinctive roles (safe twin, near miss) are already in BANNED.
+    extra = {re.escape(v["family"]) for v in labels.values() if v.get("family")}
     return [re.compile(p, re.IGNORECASE) for p in BANNED + sorted(extra)]
 
 
@@ -67,7 +69,7 @@ def main() -> int:
                 rel = path.relative_to(ROOT)
                 problems += _hits(str(rel), rel.as_posix() + "\n" + path.read_text(encoding="utf-8", errors="replace"), patterns)
 
-    checked = f"{len(worlds)} worlds x {len(VARIANTS)} variants, describe output, Zetaris sources/SQL"
+    checked = f"{len(worlds)} worlds x {len(VARIANTS)} variants, describe output, Zetaris sources/SQL/snapshots"
     if problems:
         print(f"LEAKAGE CHECK FAILED ({checked}):")
         for p in problems:

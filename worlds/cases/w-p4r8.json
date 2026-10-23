@@ -17,6 +17,7 @@
       }
     ],
     "change": {
+      "entity_id": "w-p4r8/change/0042",
       "title": "Explicit shard grants for svc_bundle_reader",
       "description": "Moves the reader's implicit access to shard databases onto explicit grants so that per-principal query limits and audit logging apply.",
       "files": [

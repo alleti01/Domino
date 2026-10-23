@@ -43,6 +43,7 @@ def build(case_id: str, spec: dict) -> dict:
                 {"name": "worker-runtime", "role": "loads the bundle file at startup"},
             ],
             "change": {
+                "entity_id": f"{case_id}/change/0042",
                 "title": f"Explicit shard grants for {PRINCIPAL}",
                 "description": "Moves the reader's implicit access to shard databases onto explicit grants "
                                "so that per-principal query limits and audit logging apply.",

@@ -157,7 +157,8 @@ class ZetarisClient:
                 raise ZetarisUnavailable(f"HTTP {error.code} from {path}: {detail}") from error
             if error.code in (401, 403):
                 raise ZetarisAuthError(f"HTTP {error.code} from {path}: {detail}") from error
-            hint = " (400 usually means a bad X-Org-ID or a non-UUID X-Request-ID)" if error.code == 400 else ""
+            # Query errors also come back as 400 with a {"msg": ...} body; only hint when there is no message.
+            hint = " (check X-Org-ID and that X-Request-ID is a UUID)" if error.code == 400 and '"msg"' not in detail else ""
             raise ZetarisError(f"HTTP {error.code} from {path}{hint}: {detail}") from error
         except (socket.timeout, TimeoutError) as error:
             raise ZetarisTimeout(f"No response from {path} within {timeout_s}s") from error

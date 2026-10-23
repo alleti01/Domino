@@ -1,0 +1,511 @@
+{
+  "contract_version": "0.1",
+  "call": "dependency_path",
+  "mode": "live",
+  "start": {
+    "entity_id": "w-k7m2/change/0042",
+    "entity_type": "change"
+  },
+  "paths": [
+    {
+      "hops": [
+        {
+          "from": "w-k7m2/change/0042",
+          "from_type": "change",
+          "to": "w-k7m2/database/r0",
+          "to_type": "database",
+          "relation": "grants_on",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT TO svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0004",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0011",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/database/r0",
+          "from_type": "database",
+          "to": "w-k7m2/table/r0.bundle_fields",
+          "to_type": "table",
+          "relation": "contains",
+          "edge_status": "inferred",
+          "detail": "column_count=140",
+          "evidence": [
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0011",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-k7m2/change/0042",
+          "from_type": "change",
+          "to": "w-k7m2/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0004",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-k7m2/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-k7m2/query/q-bundle-fields",
+          "to_type": "query",
+          "relation": "executes",
+          "edge_status": "observed",
+          "detail": "SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name | rows_returned_p50=140 over 288 runs in 7 days",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "telemetry",
+              "source_row_id": "qt-0005",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo",
+        "telemetry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-k7m2/change/0042",
+          "from_type": "change",
+          "to": "w-k7m2/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0004",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-k7m2/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-k7m2/table/default.bundle_fields",
+          "to_type": "table",
+          "relation": "reads",
+          "edge_status": "inferred",
+          "detail": "matched on table name bundle_fields",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-k7m2/change/0042",
+          "from_type": "change",
+          "to": "w-k7m2/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0004",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-k7m2/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-k7m2/table/r0.bundle_fields",
+          "to_type": "table",
+          "relation": "reads",
+          "edge_status": "inferred",
+          "detail": "matched on table name bundle_fields",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0011",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-k7m2/change/0042",
+          "from_type": "change",
+          "to": "w-k7m2/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0004",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-k7m2/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-k7m2/artifact/bundle.json",
+          "to_type": "artifact",
+          "relation": "writes",
+          "edge_status": "observed",
+          "detail": "output_mode=as_returned",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0007",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/artifact/bundle.json",
+          "from_type": "artifact",
+          "to": "w-k7m2/service/worker-runtime",
+          "to_type": "service",
+          "relation": "loaded_by",
+          "edge_status": "observed",
+          "detail": "read at startup",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0007",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/service/worker-runtime",
+          "from_type": "service",
+          "to": "w-k7m2/setting/worker-runtime.max_entries",
+          "to_type": "setting",
+          "relation": "configured_with",
+          "edge_status": "inferred",
+          "detail": "max_entries=200",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0007",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo",
+        "runtime_config"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-k7m2/change/0042",
+          "from_type": "change",
+          "to": "w-k7m2/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0004",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-k7m2/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0010",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-k7m2/artifact/bundle.json",
+          "to_type": "artifact",
+          "relation": "writes",
+          "edge_status": "observed",
+          "detail": "output_mode=as_returned",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0007",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/artifact/bundle.json",
+          "from_type": "artifact",
+          "to": "w-k7m2/service/worker-runtime",
+          "to_type": "service",
+          "relation": "loaded_by",
+          "edge_status": "observed",
+          "detail": "read at startup",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0007",
+              "query_id": "q-619030ee5297460f"
+            },
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0005",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        },
+        {
+          "from": "w-k7m2/service/worker-runtime",
+          "from_type": "service",
+          "to": "w-k7m2/setting/worker-runtime.startup_timeout_s",
+          "to_type": "setting",
+          "relation": "configured_with",
+          "edge_status": "inferred",
+          "detail": "startup_timeout_s=30",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0008",
+              "query_id": "q-619030ee5297460f"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo",
+        "runtime_config"
+      ],
+      "meets_two_source_rule": true
+    }
+  ],
+  "unresolved": [],
+  "query_ids": [
+    "q-619030ee5297460f"
+  ],
+  "status": "ok",
+  "duration_ms": 1687,
+  "error": null,
+  "edges_considered": 20,
+  "snapshot_request": {
+    "entity_id": "w-k7m2/change/0042",
+    "max_hops": 6
+  }
+}

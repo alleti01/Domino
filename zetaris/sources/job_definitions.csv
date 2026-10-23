@@ -1,0 +1,11 @@
+source_system,source_row_id,system_id,service_name,runs_as_principal,query_id,query_text,reads_table,output_artifact,output_mode
+pipeline_repo,jd-0001,w-d2v4,bundle-builder,svc_bundle_reader,q-bundle-fields,"SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name",bundle_fields,bundle.json,as_returned
+pipeline_repo,jd-0002,w-d2v4,metrics-exporter,svc_metrics,q-request-log,"SELECT status, count(*) FROM default.request_log GROUP BY status",request_log,request_metrics.csv,as_returned
+pipeline_repo,jd-0003,w-h9c5,bundle-builder,svc_bundle_reader,q-bundle-fields,"SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name",bundle_fields,bundle.json,as_returned
+pipeline_repo,jd-0004,w-h9c5,metrics-exporter,svc_metrics,q-request-log,"SELECT status, count(*) FROM default.request_log GROUP BY status",request_log,request_metrics.csv,as_returned
+pipeline_repo,jd-0005,w-k7m2,bundle-builder,svc_bundle_reader,q-bundle-fields,"SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name",bundle_fields,bundle.json,as_returned
+pipeline_repo,jd-0006,w-k7m2,metrics-exporter,svc_metrics,q-request-log,"SELECT status, count(*) FROM default.request_log GROUP BY status",request_log,request_metrics.csv,as_returned
+pipeline_repo,jd-0007,w-p4r8,bundle-builder,svc_bundle_reader,q-bundle-fields,"SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name",bundle_fields,bundle.json,collapse_same_name
+pipeline_repo,jd-0008,w-p4r8,metrics-exporter,svc_metrics,q-request-log,"SELECT status, count(*) FROM default.request_log GROUP BY status",request_log,request_metrics.csv,as_returned
+pipeline_repo,jd-0009,w-t3n6,bundle-builder,svc_bundle_reader,q-bundle-fields,"SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name",bundle_fields,bundle.json,as_returned
+pipeline_repo,jd-0010,w-t3n6,metrics-exporter,svc_metrics,q-request-log,"SELECT status, count(*) FROM default.request_log GROUP BY status",request_log,request_metrics.csv,as_returned
