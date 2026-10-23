@@ -1,9 +1,11 @@
-"""Uniform experiment interface: each world runs as a disposable subprocess with a hard timeout.
+"""Uniform experiment interface: each world case runs as a disposable subprocess with a hard timeout.
 
-A world lives in `worlds/<world_id>/` with:
-  describe.json  neutral description: components, the change under review, params, metrics (no hints)
-  world.py       `python3 world.py --variant V --params JSON` prints one JSON object:
-                 {passed, assertions, metrics, artifacts, logs, input_sha256}
+A case is `worlds/cases/<world_id>.json`:
+  engine    which engine in worlds/engines/<engine>/ runs it
+  describe  what the agent may see: components, the change under review, params, metrics (no hints)
+  setup     private structural parameters, passed only to the engine
+An engine's `run.py --case PATH --variant V --params JSON` prints one JSON object:
+  {passed, assertions, metrics, artifacts, logs, input_sha256} or {error}
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ import subprocess
 import sys
 import time
 import uuid
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from . import config
@@ -28,19 +31,22 @@ def _envelope(call: str, mode: str) -> Dict[str, Any]:
     return {"contract_version": CONTRACT_VERSION, "call": call, "mode": mode}
 
 
+def _case_path(world: str) -> Optional[Path]:
+    if not _WORLD_ID.match(world):
+        return None
+    path = WORLDS_DIR / "cases" / f"{world}.json"
+    return path if path.is_file() else None
+
+
 def list_worlds() -> List[str]:
-    if not WORLDS_DIR.is_dir():
-        return []
-    return sorted(p.name for p in WORLDS_DIR.iterdir() if (p / "world.py").is_file() and _WORLD_ID.match(p.name))
-
-
-def _real(world: str) -> bool:
-    return bool(_WORLD_ID.match(world)) and (WORLDS_DIR / world / "world.py").is_file()
+    cases = WORLDS_DIR / "cases"
+    return sorted(p.stem for p in cases.glob("*.json") if _WORLD_ID.match(p.stem)) if cases.is_dir() else []
 
 
 def describe_world(world: str) -> Dict[str, Any]:
-    if _real(world):
-        body = json.loads((WORLDS_DIR / world / "describe.json").read_text(encoding="utf-8"))
+    path = _case_path(world)
+    if path:
+        body = json.loads(path.read_text(encoding="utf-8"))["describe"]
         return {**_envelope("describe_world", "live"), "status": "ok", "world": world, **body, "error": None}
     if config.mode() == "fake":
         return _fake("describe_world.json")
@@ -55,16 +61,18 @@ def run_experiment(world: str, variant: str, params: Optional[Dict[str, Any]] = 
             "world": world, "variant": variant, "params": params}
     if variant not in VARIANTS:
         return {**base, "status": "error", "passed": None, "error": f"variant must be one of {VARIANTS}"}
-    if not _real(world):
+    path = _case_path(world)
+    if not path:
         if config.mode() == "fake":
             return _fake(f"run_experiment_{'candidate' if variant == 'candidate' else 'baseline'}.json")
         return {**base, "status": "error", "passed": None, "error": f"Unknown world {world!r}. Known: {list_worlds()}"}
 
-    command = [sys.executable, "-I", str(WORLDS_DIR / world / "world.py"),
-               "--variant", variant, "--params", json.dumps(params, sort_keys=True)]
+    engine = json.loads(path.read_text(encoding="utf-8"))["engine"]
+    command = [sys.executable, "-I", str(WORLDS_DIR / "engines" / engine / "run.py"),
+               "--case", str(path), "--variant", variant, "--params", json.dumps(params, sort_keys=True)]
     started = time.monotonic()
     try:
-        proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout_s, cwd=str(WORLDS_DIR / world))
+        proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout_s)
     except subprocess.TimeoutExpired:
         return {**base, "status": "timeout", "passed": None, "duration_ms": int(timeout_s * 1000),
                 "error": f"World did not finish within {timeout_s}s"}
@@ -74,6 +82,8 @@ def run_experiment(world: str, variant: str, params: Optional[Dict[str, Any]] = 
     except (IndexError, json.JSONDecodeError):
         return {**base, "status": "error", "passed": None, "duration_ms": duration_ms,
                 "error": "World printed no JSON result.", "logs": (proc.stderr or "").splitlines()[-20:]}
+    if body.get("error"):
+        return {**base, "status": "error", "passed": None, "duration_ms": duration_ms, "error": body["error"]}
     reproduce = {"command": f"python3 -m data_layer run {world} {variant}"
                             + (f" --params '{json.dumps(params, sort_keys=True)}'" if params else ""),
                  "input_sha256": body.pop("input_sha256", None)}

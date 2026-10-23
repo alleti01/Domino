@@ -1,0 +1,64 @@
+{
+  "engine": "e1",
+  "describe": {
+    "title": "Explicit shard grants for the bundle reader",
+    "components": [
+      {
+        "name": "meta-store",
+        "role": "catalog of table columns across databases, with per-principal grants"
+      },
+      {
+        "name": "bundle-builder",
+        "role": "runs as svc_bundle_reader; reads column metadata for bundle_fields and writes a bundle file"
+      },
+      {
+        "name": "worker-runtime",
+        "role": "loads the bundle file at startup"
+      }
+    ],
+    "change": {
+      "title": "Explicit shard grants for svc_bundle_reader",
+      "description": "Moves the reader's implicit access to shard databases onto explicit grants so that per-principal query limits and audit logging apply.",
+      "files": [
+        "db/migrations/0042_reader_shard_grants.sql"
+      ],
+      "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+    },
+    "variants": {
+      "baseline": "system without the change",
+      "candidate": "system with the change applied",
+      "control": "change applied, then reverted"
+    },
+    "params": {},
+    "metrics": [
+      "meta-store.rows_visible_to_builder",
+      "bundle-builder.entries",
+      "bundle-builder.bundle_bytes",
+      "worker-runtime.exit_code",
+      "worker-runtime.loaded_entries"
+    ]
+  },
+  "setup": {
+    "databases": [
+      "default",
+      "r0"
+    ],
+    "table": "bundle_fields",
+    "n_columns": 90,
+    "types": [
+      "float",
+      "text",
+      "int"
+    ],
+    "principal": "svc_bundle_reader",
+    "base_sql": "GRANT SELECT ON default.* TO svc_bundle_reader;",
+    "change_sql": "-- Make the reader's access to shard databases explicit so per-principal\n-- query limits and audit logging apply to it.\nGRANT SELECT ON r0.* TO svc_bundle_reader;",
+    "revert_sql": "REVOKE SELECT ON r0.* FROM svc_bundle_reader;",
+    "runtime": {
+      "max_entries": 150
+    },
+    "builder": {
+      "collapse_same_name": false
+    }
+  }
+}
