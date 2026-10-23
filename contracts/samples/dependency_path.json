@@ -1,0 +1,64 @@
+{
+  "contract_version": "0.1",
+  "call": "dependency_path",
+  "mode": "fake",
+  "status": "ok",
+  "_note": "FAKE SAMPLE for building against the contract. Not a real world; the scorecard rejects mode=fake.",
+  "start": {
+    "entity_id": "fake-thermostat",
+    "entity_type": "component"
+  },
+  "paths": [
+    {
+      "hops": [
+        {
+          "from": "fake-thermostat",
+          "to": "fake-display-panel",
+          "relation": "publishes_to",
+          "edge_status": "observed",
+          "evidence": [
+            {
+              "source_system": "fake_service_map",
+              "source_row_id": "sm-0003",
+              "query_id": "q-fake-0002"
+            },
+            {
+              "source_system": "fake_traces",
+              "source_row_id": "tr-1192",
+              "query_id": "q-fake-0003"
+            }
+          ]
+        },
+        {
+          "from": "fake-display-panel",
+          "to": "fake-limit-display-range",
+          "relation": "bounded_by",
+          "edge_status": "inferred",
+          "evidence": [
+            {
+              "source_system": "fake_runtime_limits",
+              "source_row_id": "lim-0011",
+              "query_id": "q-fake-0004"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "unresolved": [
+    {
+      "from": "fake-display-panel",
+      "relation": "reads_config",
+      "reason": "referenced id cfg-9999 not found in any source",
+      "query_id": "q-fake-0005"
+    }
+  ],
+  "query_ids": [
+    "q-fake-0002",
+    "q-fake-0003",
+    "q-fake-0004",
+    "q-fake-0005"
+  ],
+  "duration_ms": 2310,
+  "error": null
+}

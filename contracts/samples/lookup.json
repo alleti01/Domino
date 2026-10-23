@@ -1,0 +1,43 @@
+{
+  "contract_version": "0.1",
+  "call": "lookup",
+  "mode": "fake",
+  "status": "ok",
+  "_note": "FAKE SAMPLE for building against the contract. Not a real world; the scorecard rejects mode=fake.",
+  "query_id": "q-fake-0001",
+  "sql": "SELECT setting_id, component_id, key, value, source_system, source_row_id FROM fake_usl.setting WHERE component_id = 'fake-thermostat'",
+  "columns": [
+    "setting_id",
+    "component_id",
+    "key",
+    "value",
+    "source_system",
+    "source_row_id"
+  ],
+  "rows": [
+    {
+      "setting_id": "st-1",
+      "component_id": "fake-thermostat",
+      "key": "setpoint_unit",
+      "value": "C",
+      "source_system": "fake_config_repo",
+      "source_row_id": "cfg-0007"
+    },
+    {
+      "setting_id": "st-2",
+      "component_id": "fake-thermostat",
+      "key": "setpoint",
+      "value": "21",
+      "source_system": "fake_config_repo",
+      "source_row_id": "cfg-0008"
+    }
+  ],
+  "row_count": 2,
+  "row_ids": [
+    "fake_config_repo:cfg-0007",
+    "fake_config_repo:cfg-0008"
+  ],
+  "truncated": false,
+  "duration_ms": 640,
+  "error": null
+}

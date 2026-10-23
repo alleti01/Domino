@@ -1,0 +1,22 @@
+# Secrets: only ever in local env files
+.env
+.env.local
+.env.*.local
+
+# Run output (query logs, experiment scratch). Evidence we keep gets copied out deliberately.
+runs/
+
+# Zetaris backups and drivers stay off GitHub
+backups/
+*.jar
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

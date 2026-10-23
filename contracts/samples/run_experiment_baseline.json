@@ -1,0 +1,42 @@
+{
+  "contract_version": "0.1",
+  "call": "run_experiment",
+  "mode": "fake",
+  "status": "ok",
+  "_note": "FAKE SAMPLE for building against the contract. Not a real world; the scorecard rejects mode=fake.",
+  "experiment_id": "x-fake-0001",
+  "world": "fake-w0",
+  "variant": "baseline",
+  "params": {},
+  "passed": true,
+  "assertions": [
+    {
+      "name": "display_accepts_value",
+      "passed": true,
+      "observed": "21",
+      "expected": "within display range"
+    }
+  ],
+  "metrics": {
+    "fake-thermostat.published_value": 21,
+    "fake-display-panel.rendered_value": 21,
+    "fake-display-panel.exit_code": 0
+  },
+  "artifacts": [
+    {
+      "name": "published_message",
+      "sha256": "1f0e\u2026fake",
+      "bytes": 64
+    }
+  ],
+  "logs": [
+    "thermostat published 21",
+    "display rendered 21"
+  ],
+  "reproduce": {
+    "command": "python3 -m data_layer run fake-w0 baseline",
+    "input_sha256": "aa11\u2026fake"
+  },
+  "duration_ms": 180,
+  "error": null
+}
