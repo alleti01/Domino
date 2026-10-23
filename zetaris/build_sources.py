@@ -20,6 +20,7 @@ from __future__ import annotations
 import csv
 import json
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,22 +105,45 @@ def facts_for_case(case_id: str, case: dict) -> dict:
     return rows
 
 
-def main() -> int:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+def _collect(cases_dir: Path) -> dict:
     tables = {name: [] for name in TABLES}
-    for path in sorted(CASES_DIR.glob("*.json")):
+    for path in sorted(cases_dir.glob("*.json")) if cases_dir.is_dir() else []:
         case = json.loads(path.read_text(encoding="utf-8"))
         if case.get("engine") != "e1":
             continue
         for name, rows in facts_for_case(path.stem, case).items():
             tables[name].extend(rows)
+    return tables
+
+
+def _write(out_dir: Path, tables: dict) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
     for name, rows in tables.items():
-        with (OUT_DIR / f"{name}.csv").open("w", newline="", encoding="utf-8") as fh:
+        with (out_dir / f"{name}.csv").open("w", newline="", encoding="utf-8") as fh:
             writer = csv.DictWriter(fh, fieldnames=TABLES[name], lineterminator="\n")
             writer.writeheader()
             for i, row in enumerate(rows, start=1):
                 writer.writerow({"source_system": SOURCE_SYSTEM[name], "source_row_id": f"{PREFIX[name]}-{i:04d}", **row})
-        print(f"{name}.csv: {len(rows)} rows")
+
+
+def private_out_dir() -> Path:
+    sys.path.insert(0, str(ROOT))
+    from data_layer import config
+    return config.private_dir() / "zetaris" / "sources"
+
+
+def main() -> int:
+    """Repo CSVs hold public worlds only. When held-out worlds exist in the private folder, the full set
+    (public rows first, so their row IDs never change) is written there, and that is what Zetaris loads."""
+    public = _collect(CASES_DIR)
+    _write(OUT_DIR, public)
+    sys.path.insert(0, str(ROOT))
+    from data_layer import config
+    held_out = _collect(config.private_dir() / "worlds" / "cases")
+    if any(held_out.values()):
+        _write(private_out_dir(), {name: public[name] + held_out[name] for name in TABLES})
+    for name in TABLES:
+        print(f"{name}.csv: {len(public[name])} public rows" + (f" + {len(held_out[name])} private" if held_out[name] else ""))
     return 0
 
 

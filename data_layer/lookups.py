@@ -27,24 +27,32 @@ def _fake(name: str) -> Dict[str, Any]:
     return copy.deepcopy(json.loads((SAMPLES_DIR / name).read_text(encoding="utf-8")))
 
 
-def _snapshot_path(call: str, request: Dict[str, Any]) -> Path:
+def _snapshot_path(call: str, request: Dict[str, Any], root: Optional[Path] = None) -> Path:
     key = hashlib.sha256(json.dumps({"call": call, **request}, sort_keys=True).encode()).hexdigest()[:20]
-    return SNAPSHOT_DIR / call / f"{key}.json"
+    return (root or SNAPSHOT_DIR) / call / f"{key}.json"
+
+
+def _private_snapshot_dir() -> Path:
+    return config.private_dir() / "zetaris" / "snapshots"
 
 
 def _load_snapshot(call: str, request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    path = _snapshot_path(call, request)
-    if not path.is_file():
-        return None
-    snapshot = json.loads(path.read_text(encoding="utf-8"))
-    snapshot["mode"] = "sample"
-    return snapshot
+    for root in (_private_snapshot_dir(), SNAPSHOT_DIR):
+        path = _snapshot_path(call, request, root)
+        if path.is_file():
+            snapshot = json.loads(path.read_text(encoding="utf-8"))
+            snapshot["mode"] = "sample"
+            return snapshot
+    return None
 
 
 def _save_snapshot(call: str, request: Dict[str, Any], result: Dict[str, Any]) -> None:
     if config.get("DOMINO_SNAPSHOT_WRITE") != "1" or result.get("status") != "ok":
         return
-    path = _snapshot_path(call, request)
+    # Anything that mentions a held-out world is saved privately, never into the repo.
+    text = json.dumps(result, default=str) + json.dumps(request)
+    private = any(world in text for world in config.private_world_ids())
+    path = _snapshot_path(call, request, _private_snapshot_dir() if private else None)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({**result, "snapshot_request": request}, indent=2, default=str) + "\n", encoding="utf-8")
 

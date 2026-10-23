@@ -4,7 +4,7 @@ Domino is a GenAI.Works Open Agent Hackathon 2026 entry (Track 1). Read [README.
 
 ## 1. No answer leakage (most important)
 The agent is only allowed to see the proposed change and the data in Zetaris. If anything else reaches it, the evaluation is worthless.
-- **Never read, open, grep, summarize or import anything in `ground_truth/`** unless you are working on `scorecard/` for Anish. Do not copy its contents anywhere.
+- **Answers are not in this repo.** Ground-truth labels and held-out worlds live in `$DOMINO_PRIVATE_DIR` (default `~/domino-private`) on Anish's machine only. **Never read, open, grep, summarize or copy anything there** unless you are working on `scorecard/` for Anish, and never move anything from there into the repo.
 - **Never look for, ask about or describe the held-out "surprise" world.** If you come across it, stop and tell the user.
 - In anything the agent can read (world files, Zetaris tables, columns, paths, descriptions, logs, prompts), use **neutral names**. Never name a root cause, a failure family, an expected verdict or a real incident. No `cloudflare_bug`, no `duplicate_rows_case`.
 - Never hardcode incident-specific rules or hints in agent prompts or code. The same logic must handle every world.
@@ -13,6 +13,7 @@ The agent is only allowed to see the proposed change and the data in Zetaris. If
 - Each person has a branch: `anishalleti`, `abhijandyala`, `adhvikvala`. Work only on the current user's branch.
 - **Never merge into `main`. Never push.** Do either only when the user explicitly says to.
 - Never commit secrets, `.env`, large raw data dumps or real personal data.
+- Install the push guard once per clone: `cp scorecard/pre_push_hook.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push`. It blocks pushes containing answer files or held-out world IDs. `python3 scorecard/leakage_check.py` must pass before every commit.
 
 ## 3. Stay in your area
 | Owner | Area |

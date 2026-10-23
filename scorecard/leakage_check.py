@@ -1,8 +1,12 @@
-"""Leakage check: scans everything the agent can see for words that give away answers.
+"""Leakage check: scans everything the agent can see for words that give away answers, and guards the repo.
 
 Agent-visible surfaces: world IDs, describe_world output, run_experiment output (metric and assertion
-names, logs) for every case and variant, and the Zetaris source files and SQL. Also checks that every
-world has a ground-truth label and vice versa.
+names, logs) for every case and variant, and the Zetaris source files, SQL and snapshots.
+
+Repo guards (the repo is shared with teammates, so answers must never be in it):
+  - no ground-truth label file is tracked by git (labels live in DOMINO_PRIVATE_DIR/ground_truth/)
+  - no tracked file mentions a held-out world ID (held-out worlds live in DOMINO_PRIVATE_DIR/worlds/)
+And, when the private labels are available: every world has a label and every label has a world.
 
     python3 scorecard/leakage_check.py        exit 0 = clean, 1 = leak or label mismatch
 """
@@ -11,12 +15,14 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from data_layer import config  # noqa: E402
 from data_layer.experiments import VARIANTS, describe_world, list_worlds, run_experiment  # noqa: E402
 
 BANNED = [
@@ -27,8 +33,13 @@ BANNED = [
 VISIBLE_FILE_DIRS = [ROOT / "zetaris" / "sources", ROOT / "zetaris" / "sql", ROOT / "zetaris" / "snapshots"]
 
 
+def labels_path() -> Path:
+    return config.private_dir() / "ground_truth" / "cases.json"
+
+
 def _labels() -> dict:
-    return json.loads((ROOT / "ground_truth" / "cases.json").read_text(encoding="utf-8"))["cases"]
+    path = labels_path()
+    return json.loads(path.read_text(encoding="utf-8"))["cases"] if path.is_file() else {}
 
 
 def _patterns(labels: dict) -> list:
@@ -42,17 +53,40 @@ def _hits(where: str, text: str, patterns: list) -> list:
     return [f"{where}: '{m.group(0)}'" for p in patterns for m in p.finditer(text)]
 
 
+def repo_guard_problems() -> list:
+    """Checks the files git tracks (and those staged), since those are what a teammate gets."""
+    try:
+        tracked = subprocess.run(["git", "ls-files", "--cached"], cwd=ROOT, capture_output=True, text=True,
+                                 check=True, timeout=30).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return ["could not list git-tracked files"]
+    problems = [f"answer file tracked by git: {f}" for f in tracked
+                if f.startswith("ground_truth/") and f != "ground_truth/README.md"]
+    private_ids = config.private_world_ids()
+    if private_ids:
+        pattern = re.compile("|".join(re.escape(w) for w in private_ids))
+        for f in tracked:
+            path = ROOT / f
+            if path.is_file() and path.stat().st_size < 5_000_000:
+                for m in pattern.finditer(path.read_text(encoding="utf-8", errors="replace")):
+                    problems.append(f"held-out world id '{m.group(0)}' in tracked file {f}")
+    return problems
+
+
 def main() -> int:
     labels = _labels()
     patterns = _patterns(labels)
-    problems = []
+    problems = repo_guard_problems()
 
     worlds = list_worlds()
-    missing, orphan = sorted(set(worlds) - set(labels)), sorted(set(labels) - set(worlds))
-    if missing:
-        problems.append(f"worlds with no ground-truth label: {missing}")
-    if orphan:
-        problems.append(f"labels with no world: {orphan}")
+    if labels:
+        missing, orphan = sorted(set(worlds) - set(labels)), sorted(set(labels) - set(worlds))
+        if missing:
+            problems.append(f"worlds with no ground-truth label: {missing}")
+        if orphan:
+            problems.append(f"labels with no world: {orphan}")
+    else:
+        print(f"note: no private labels at {labels_path()}; label checks skipped (fine on a teammate's machine)")
 
     for world in worlds:
         problems += _hits(f"world id {world}", world, patterns)
@@ -69,7 +103,8 @@ def main() -> int:
                 rel = path.relative_to(ROOT)
                 problems += _hits(str(rel), rel.as_posix() + "\n" + path.read_text(encoding="utf-8", errors="replace"), patterns)
 
-    checked = f"{len(worlds)} worlds x {len(VARIANTS)} variants, describe output, Zetaris sources/SQL/snapshots"
+    checked = (f"{len(worlds)} worlds x {len(VARIANTS)} variants, describe output, Zetaris sources/SQL/snapshots, "
+               f"repo guards")
     if problems:
         print(f"LEAKAGE CHECK FAILED ({checked}):")
         for p in problems:

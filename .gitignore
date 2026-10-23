@@ -3,6 +3,10 @@
 .env.local
 .env.*.local
 
+# Answers never enter the repo: labels live in DOMINO_PRIVATE_DIR (default ~/domino-private)
+ground_truth/*
+!ground_truth/README.md
+
 # Run output (query logs, experiment scratch). Evidence we keep gets copied out deliberately.
 runs/
 

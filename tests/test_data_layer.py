@@ -8,7 +8,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 S = pathlib.Path(tempfile.mkdtemp(prefix="domino-test-"))
 for _k in [k for k in os.environ if k.startswith(("ZETARIS_", "DOMINO_"))]:
     del os.environ[_k]
-os.environ.update(DOMINO_DATA_MODE="fake", DOMINO_QUERY_LOG=str(S / "qlog.jsonl"), ZETARIS_ORG_ID="1",
+os.environ.update(DOMINO_DATA_MODE="fake", DOMINO_PRIVATE_DIR=str(S / "private"), DOMINO_QUERY_LOG=str(S / "qlog.jsonl"), ZETARIS_ORG_ID="1",
                   ZETARIS_AGENT_USERNAME="agent", ZETARIS_AGENT_PASSWORD="x",
                   ZETARIS_ADMIN_USERNAME="admin", ZETARIS_ADMIN_PASSWORD="x", ZETARIS_TIMEOUT_S="2")
 state = {"fail_next": 0, "expire_next": False, "slow": False, "logins": 0, "queries": []}
@@ -128,6 +128,20 @@ check("two-source rule flagged per path", all(p["meets_two_source_rule"] for p i
 check("walk respects max_hops", max(len(p["hops"]) for p in lookups._walk("s/change/1", edges, "q", 2)["paths"]) == 2)
 os.environ["DOMINO_DATA_MODE"] = "live"
 check("dependency_path rejects unsafe entity id", lookups.dependency_path("x'; DROP TABLE t")["status"] == "error")
+
+# Private folder: held-out worlds run but stay out of the repo; their snapshots are saved privately
+pw = S / "private" / "worlds"; (pw / "cases").mkdir(parents=True, exist_ok=True)
+(pw / "cases" / "w-priv.json").write_text(json.dumps({"engine": "t", "describe": {"components": ["c"]}, "setup": {"cap": 500}}))
+check("private world listed", "w-priv" in experiments.list_worlds())
+check("private world runs with the repo engine", experiments.run_experiment("w-priv", "candidate")["passed"] is True)
+os.environ.update(DOMINO_DATA_MODE="live", DOMINO_SNAPSHOT_WRITE="1"); lookups._agent = None
+lookups.SNAPSHOT_DIR = S / "snaps2"
+lookups._save_snapshot("lookup", {"sql": "x", "limit": None}, {"status": "ok", "rows": [{"system_id": "w-priv"}]})
+lookups._save_snapshot("lookup", {"sql": "y"}, {"status": "ok", "rows": [{"system_id": "w-public"}]})
+check("held-out snapshot saved privately", any((S / "private" / "zetaris" / "snapshots").rglob("*.json")) and
+      len(list((S / "snaps2").rglob("*.json"))) == 1)
+os.environ["DOMINO_DATA_MODE"] = "sample"
+check("sample mode reads private snapshots", lookups.lookup("x")["status"] == "ok")
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)

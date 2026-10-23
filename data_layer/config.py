@@ -69,3 +69,13 @@ def shell_overrides() -> list:
 def repo_path(value: str) -> Path:
     path = Path(value)
     return path if path.is_absolute() else REPO_ROOT / path
+
+
+def private_dir() -> Path:
+    """Answers and held-out worlds live here, outside the repo, so pulling the repo never exposes them."""
+    return Path(get("DOMINO_PRIVATE_DIR", "~/domino-private") or "~/domino-private").expanduser()
+
+
+def private_world_ids() -> list:
+    cases = private_dir() / "worlds" / "cases"
+    return sorted(p.stem for p in cases.glob("*.json")) if cases.is_dir() else []

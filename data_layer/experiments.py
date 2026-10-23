@@ -31,16 +31,30 @@ def _envelope(call: str, mode: str) -> Dict[str, Any]:
     return {"contract_version": CONTRACT_VERSION, "call": call, "mode": mode}
 
 
+def _roots() -> List[Path]:
+    """Repo worlds plus held-out worlds kept in the private folder (see config.private_dir)."""
+    return [WORLDS_DIR, config.private_dir() / "worlds"]
+
+
 def _case_path(world: str) -> Optional[Path]:
     if not _WORLD_ID.match(world):
         return None
-    path = WORLDS_DIR / "cases" / f"{world}.json"
-    return path if path.is_file() else None
+    for root in _roots():
+        path = root / "cases" / f"{world}.json"
+        if path.is_file():
+            return path
+    return None
+
+
+def _engine_path(case_path: Path, engine: str) -> Path:
+    """An engine next to the case wins; otherwise the repo engine of that name."""
+    local = case_path.parents[1] / "engines" / engine / "run.py"
+    return local if local.is_file() else WORLDS_DIR / "engines" / engine / "run.py"
 
 
 def list_worlds() -> List[str]:
-    cases = WORLDS_DIR / "cases"
-    return sorted(p.stem for p in cases.glob("*.json") if _WORLD_ID.match(p.stem)) if cases.is_dir() else []
+    ids = {p.stem for root in _roots() if (root / "cases").is_dir() for p in (root / "cases").glob("*.json")}
+    return sorted(i for i in ids if _WORLD_ID.match(i))
 
 
 def describe_world(world: str) -> Dict[str, Any]:
@@ -68,7 +82,7 @@ def run_experiment(world: str, variant: str, params: Optional[Dict[str, Any]] = 
         return {**base, "status": "error", "passed": None, "error": f"Unknown world {world!r}. Known: {list_worlds()}"}
 
     engine = json.loads(path.read_text(encoding="utf-8"))["engine"]
-    command = [sys.executable, "-I", str(WORLDS_DIR / "engines" / engine / "run.py"),
+    command = [sys.executable, "-I", str(_engine_path(path, engine)),
                "--case", str(path), "--variant", variant, "--params", json.dumps(params, sort_keys=True)]
     started = time.monotonic()
     try:

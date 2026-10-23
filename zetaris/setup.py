@@ -59,8 +59,11 @@ def copy_files(dry_run: bool) -> None:
     if len(roots) != 1:
         raise SystemExit(f"Expected one organisation file store, found: {roots}")
     target = roots[0] + "/domino"
-    files = sorted(build_sources.OUT_DIR.glob("*.csv"))
-    print(f"copy {len(files)} files -> {DRIVER}:{target}")
+    # The private set (public + held-out rows) wins when it exists; it never enters the repo.
+    private = build_sources.private_out_dir()
+    source_dir = private if any(private.glob("*.csv")) else build_sources.OUT_DIR
+    files = sorted(source_dir.glob("*.csv"))
+    print(f"copy {len(files)} files from {'private folder' if source_dir == private else 'repo'} -> {DRIVER}:{target}")
     if dry_run:
         return
     _docker("exec", "-u", "0", DRIVER, "mkdir", "-p", target)

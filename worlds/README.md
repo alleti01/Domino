@@ -26,5 +26,6 @@ Case files for engine `e1` are generated: edit `engines/e1/make_cases.py`, then 
 **Rules:**
 - Use neutral IDs and component names.
 - Never put a root cause, failure family or expected verdict in a `describe` block, a log line, a metric name or a file path.
-- Labels live in `ground_truth/` only. `scorecard/leakage_check.py` must pass before any commit.
+- Labels live in the private folder (`$DOMINO_PRIVATE_DIR/ground_truth/`, outside the repo). Held-out worlds go in `$DOMINO_PRIVATE_DIR/worlds/cases/`, and their engines in `.../worlds/engines/`. `run_experiment` finds them there; `zetaris/build_sources.py` keeps their rows out of the repo CSVs.
+- `scorecard/leakage_check.py` must pass before any commit.
 - Synthetic data only.
