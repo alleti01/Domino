@@ -2,6 +2,12 @@
 
 TypeScript. Investigates a proposed change: maps it through the semantic layer, forms falsifiable hypotheses, picks discriminating experiments, revises, and hands the verdict to a deterministic judge. Every model call goes to **NVIDIA Nemotron through Meterless Nightshift**, and every receipt is logged.
 
+## For judges: run it with no keys
+```bash
+cd agent && npm install && npm run demo
+```
+`demo/` holds recordings of real investigations (Nemotron via Nightshift on the practice data layer). `npm run demo` **re-runs the real agent code** against each recording: the tool gateway, Meterless World Model, harness confirmation and deterministic judge all execute again and must reach the recorded verdict. No Nightshift, no Zetaris, no Python, no keys. Every event in a replayed trace is marked `replay: true`, and the recorded Nemotron receipts are shown as recorded, never as live calls.
+
 ## Setup
 ```bash
 cd agent
@@ -20,7 +26,13 @@ npm run investigate -- --change p03 --mode no_experiments # scorecard modes: ful
 npm run investigate -- --change p03 --memory runs/memory  # persist the World Model across runs
 npm run eval -- --set dev                                  # score on the dev practice set
 ```
-Outputs go to `runs/<run_id>/`: `trace.jsonl` (for the dashboard), `summary.json`, plus `runs/receipts.jsonl`.
+Outputs go to `runs/<run_id>/`: `trace.jsonl` (for the dashboard), `summary.json`, `cassette.json` (the recording `npm run replay -- <cassette>` re-runs), plus `runs/receipts.jsonl`.
+
+**Reliability:**
+- A pre-run health check (Nightshift up, token valid, Nemotron offered) marks the run an **outage** instead of a wrong answer.
+- Model outages mid-run are flagged the same way.
+- One retry if Nightshift routes to a non-Nemotron model.
+- Every run's prompt carries its own id so Nightshift never serves a cached answer; `cache_hits` and `model_failures` are counted in `summary.json`.
 
 ## Layout
 | Path | What |
@@ -31,6 +43,8 @@ Outputs go to `runs/<run_id>/`: `trace.jsonl` (for the dashboard), `summary.json
 | `src/llm/` | Nightshift client (provider contract v4) and receipt parsing (`meterless.compute_receipt.v1`) |
 | `src/engines/worldModel.ts` | Meterless World Model as investigation state, `inspect_world_model`, causal-chain traversal |
 | `src/adapters/practice.ts` | adapter to Anish's data layer CLI (`practice` now, `data_layer` later) |
+| `src/replay.ts` | record / replay of model + data-layer results (judge sample mode) |
+| `demo/` | recorded real investigations for `npm run demo` |
 | `src/fakes/stubWorld.ts` | throwaway stub, tests only |
 | `vendor/meterless-world-model/` | **pre-existing open-source component**: Meterless World Model reference, copied unchanged (Apache-2.0) |
 | `../contracts/agent/` | trace + hand-off formats, sample traces for the dashboard |

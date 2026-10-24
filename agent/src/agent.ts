@@ -30,6 +30,10 @@ export interface InvestigateOptions {
   budgets?: Partial<Budgets>;
   /** Persist the World Model here to carry verified topology into later runs (off for scorecard runs). */
   memoryDir?: string;
+  /** Mark every trace event as replayed from a recording (sample mode). */
+  replay?: boolean;
+  /** Checked before any model call; a failing check makes the run an outage, not a wrong answer. */
+  healthCheck?: () => Promise<{ ok: boolean; detail: string }>;
 }
 
 const OUTAGE_KINDS = new Set(["offline", "upstream", "timeout", "bad_response"]);
@@ -39,7 +43,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
   const budgets: Budgets = { ...DEFAULT_BUDGETS, ...opts.budgets };
   const started = Date.now();
   const runId = `run-${new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14)}-${randomUUID().slice(0, 6)}`;
-  const trace = new TraceWriter(runId, opts.mode, join(opts.outDir, runId));
+  const trace = new TraceWriter(runId, opts.mode, join(opts.outDir, runId), opts.replay ?? false);
   await trace.init();
 
   const change = await opts.worlds.getChange(opts.changeId);
@@ -66,17 +70,29 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
   }
 
   let modelCalls = 0;
+  let modelFailures = 0;
+  let cacheHits = 0;
   let allNemotron = true;
   let outage = false;
   let prediction: RunSummary["model_prediction"] = null;
   let causeClaim: string | null = null;
   let headline: string | null = null;
 
-  const callModel = async (req: ChatRequest): Promise<ChatResult | null> => {
+  if (opts.healthCheck) {
+    const health = await opts.healthCheck();
+    if (!health.ok) {
+      outage = true;
+      await trace.emit({ type: "error", stage: "health_check", message: health.detail, recoverable: false });
+    }
+  }
+
+  const callModel = async (req: ChatRequest, misrouteRetries = 1): Promise<ChatResult | null> => {
+    if (outage && modelCalls === 0 && opts.healthCheck) return null; // never started: model service down
     if (modelCalls >= budgets.max_model_calls || Date.now() - started > budgets.max_ms) return null;
     modelCalls++;
     try {
       const result = await opts.model.chat(req);
+      if (result.receipt.cacheStatus === "hit") cacheHits++;
       allNemotron &&= isNemotron(result.receipt);
       await trace.emit({
         type: "model_call",
@@ -91,6 +107,11 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
       return result;
     } catch (err) {
       const e = err as NightshiftError;
+      modelFailures++;
+      if (e.kind === "non_nemotron" && misrouteRetries > 0) {
+        await trace.emit({ type: "error", stage: "model", message: `${e.message}; retrying once`, recoverable: true });
+        return callModel(req, misrouteRetries - 1);
+      }
       if (e.kind === "non_nemotron") allNemotron = false;
       if (OUTAGE_KINDS.has(e.kind)) outage = true;
       await trace.emit({ type: "model_call", purpose: req.purpose ?? "investigate", routed_model: null, provider_model: null, request_id: null, latency_ms: 0, attempts: 0, outcome: "failed" });
@@ -104,7 +125,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
       purpose: "single_shot",
       messages: [
         { role: "system", content: NO_TOOLS_PROMPT },
-        { role: "user", content: taskMessage(change, parsed, budgets, opts.mode) },
+        { role: "user", content: `Investigation ${runId}.\n${taskMessage(change, parsed, budgets, opts.mode)}` },
       ],
     });
     const answer = parseJsonObject(result?.message.content ?? "");
@@ -118,6 +139,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
       {
         role: "user",
         content:
+          `Investigation ${runId}.\n` +
           taskMessage(change, parsed, budgets, opts.mode) +
           (rememberedComponents > 0
             ? `\n\nThe shared world model already holds ${rememberedComponents} components verified by earlier investigations of this system. Use inspect_world_model before re-querying what is already known.`
@@ -191,7 +213,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     headline: headline ?? defaultHeadline(verdict, judgement.failingAssertions),
     causal_chain,
     tested: judgement.tested,
-    limitations: [...(gateway.finished?.limitations ?? []), ...judgement.reasons.filter((r) => verdict !== "reproduced_failure" || !r.startsWith("Baseline passed")), ...(outage ? ["Model service outage during the run."] : [])],
+    limitations: [...(gateway.finished?.limitations ?? []), ...judgement.reasons.filter((r) => verdict !== "reproduced_failure" || !r.startsWith("Baseline passed")), ...(outage ? ["Model service outage during the run: this result says nothing about the change."] : []), ...(cacheHits ? [`${cacheHits} model answer(s) came from Nightshift's cache.`] : [])],
     decided_by: "deterministic_judge",
   });
   await trace.emit({ type: "run_finished", duration_ms: Date.now() - started, model_calls: modelCalls, experiments: state.experiments.length });
@@ -209,6 +231,8 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     duration_ms: Date.now() - started,
     outage,
     all_calls_nemotron: allNemotron && modelCalls > 0,
+    model_failures: modelFailures,
+    cache_hits: cacheHits,
   };
   await trace.writeSummary(summary);
   return summary;

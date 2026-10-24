@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "investigate": "tsx src/cli.ts investigate",
     "conformance:world-model": "WORLD_MODEL_IMPL=\"$PWD/vendor/meterless-world-model/src/index.ts\" tsx vendor/meterless-world-model/conformance/runner.ts",
-    "eval": "tsx scripts/practice-eval.ts"
+    "eval": "tsx scripts/practice-eval.ts",
+    "replay": "tsx src/cli.ts replay",
+    "demo": "tsx src/cli.ts demo"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

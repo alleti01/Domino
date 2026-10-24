@@ -1,0 +1,67 @@
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { type ChatModel, investigate } from "../src/agent.js";
+import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { type ChatResult, NightshiftError } from "../src/llm/nightshift.js";
+
+const NEMOTRON = "nvidia/nemotron-3.5-lightning-30b-a3b";
+const finish = (cache = "miss"): ChatResult => ({
+  message: {
+    role: "assistant",
+    content: null,
+    tool_calls: [{ id: "c", type: "function", function: { name: "finish", arguments: JSON.stringify({ headline: "h", prediction: "unsure", cause_claim: "c", evidence: [], supported_hypothesis_ids: [], limitations: [] }) } }],
+  },
+  finishReason: "tool_calls",
+  receipt: { schema: null, receiptId: null, requestId: "r", routedModel: NEMOTRON, providerModel: NEMOTRON, reason: null, phaseModels: [NEMOTRON], cacheStatus: cache, requestedModel: "meterless/auto", latencyMs: 1, attempts: 1, at: "", raw: {} },
+  attempts: 1,
+  latencyMs: 1,
+});
+const run = async (model: ChatModel, healthy = true) =>
+  investigate({
+    changeId: "stub-chg-1",
+    mode: "full",
+    outDir: await mkdtemp(join(tmpdir(), "domino-rel-")),
+    model,
+    evidence: new StubEvidence(),
+    worlds: new StubWorlds(),
+    budgets: { max_steps: 3 },
+    healthCheck: async () => ({ ok: healthy, detail: healthy ? "ok" : "Nightshift offline" }),
+  });
+
+describe("reliability", () => {
+  it("treats a failed health check as an outage and never calls the model", async () => {
+    let calls = 0;
+    const summary = await run({ chat: async () => (calls++, finish()) }, false);
+    expect(calls).toBe(0);
+    expect(summary.outage).toBe(true);
+    expect(summary.verdict).toBe("inconclusive");
+  });
+
+  it("retries once when Nightshift routes to a non-Nemotron model", async () => {
+    let calls = 0;
+    const summary = await run({
+      chat: async () => {
+        if (calls++ === 0) throw new NightshiftError("Receipt shows a non-Nemotron model", "non_nemotron");
+        return finish();
+      },
+    });
+    expect(summary.model_failures).toBe(1);
+    expect(summary.all_calls_nemotron).toBe(true);
+    expect(summary.outage).toBe(false);
+  });
+
+  it("marks a mid-run model outage and counts cache hits", async () => {
+    let calls = 0;
+    const summary = await run({
+      chat: async () => {
+        if (calls++ === 0) return { ...finish("hit"), message: { role: "assistant", content: "thinking", tool_calls: [] } };
+        throw new NightshiftError("Nightshift 502", "upstream", 502);
+      },
+    });
+    expect(summary.cache_hits).toBe(1);
+    expect(summary.outage).toBe(true);
+    expect(summary.verdict).toBe("inconclusive");
+  });
+});

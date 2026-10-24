@@ -9,7 +9,7 @@ import { parseArgs } from "node:util";
 import type { RunMode, TraceEvent } from "../../contracts/agent/types.js";
 import { investigate } from "../src/agent.js";
 import { DataLayerEvidence, DataLayerWorlds } from "../src/adapters/practice.js";
-import { NightshiftClient } from "../src/llm/nightshift.js";
+import { NightshiftClient, nightshiftHealth } from "../src/llm/nightshift.js";
 import { ReceiptLog } from "../src/llm/receipts.js";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
@@ -40,11 +40,13 @@ mkdirSync(outDir, { recursive: true });
 const rows: any[] = [];
 for (const world of worlds) {
   process.stdout.write(`${world} … `);
+  const client = new NightshiftClient({ receiptLog: new ReceiptLog(join(outDir, "receipts.jsonl")) });
   const summary = await investigate({
     changeId: world,
     mode: values.mode as RunMode,
     outDir,
-    model: new NightshiftClient({ receiptLog: new ReceiptLog(join(outDir, "receipts.jsonl")) }),
+    healthCheck: () => nightshiftHealth(client),
+    model: client,
     evidence: new DataLayerEvidence(dataOpts),
     worlds: new DataLayerWorlds(dataOpts),
   });
@@ -76,6 +78,8 @@ for (const world of worlds) {
     secs: Math.round(summary.duration_ms / 1000),
     nemotron: summary.all_calls_nemotron,
     outage: summary.outage,
+    cache_hits: summary.cache_hits,
+    model_failures: summary.model_failures,
     claim: summary.cause_claim ?? verdictEvent?.headline ?? "",
     truth: truth.explanation,
   };

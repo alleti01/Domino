@@ -285,6 +285,14 @@ export class NightshiftClient {
   }
 }
 
+/** Pre-run health check: the runtime answers, our token works, and a Nemotron model is on offer. */
+export async function nightshiftHealth(client: NightshiftClient): Promise<{ ok: boolean; detail: string }> {
+  const { status, models } = await client.status();
+  if (status !== "online") return { ok: false, detail: `Nightshift ${status} at ${client.baseUrl}` };
+  if (!models.some((m) => m.toLowerCase().includes("nemotron"))) return { ok: false, detail: "Nightshift is online but offers no Nemotron model; connect NVIDIA in Providers" };
+  return { ok: true, detail: "Nightshift online with Nemotron" };
+}
+
 /** Try the documented ports/hosts and return the first runtime that answers online or unauthorized. */
 export async function autoDetect(fetchImpl: typeof fetch = fetch): Promise<{ baseUrl: string; status: RuntimeStatus } | null> {
   for (const host of DETECT_HOSTS) {

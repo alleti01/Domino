@@ -164,4 +164,6 @@ export interface RunSummary {
   duration_ms: number;
   outage: boolean; // Nightshift/Zetaris unavailable: excluded from accuracy, reported separately
   all_calls_nemotron: boolean;
+  model_failures: number; // calls that failed after the client's retries
+  cache_hits: number; // calls Nightshift answered from cache (should be 0 for independent runs)
 }
