@@ -31,6 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 CASES_DIR = ROOT / "worlds" / "cases"
+LOAD_ORDER = ROOT / "worlds" / "load_order.txt"
 OUT_DIR = Path(__file__).resolve().parent / "sources"
 
 TABLES = {
@@ -70,9 +71,18 @@ def _facts_module(case_path: Path, engine: str):
     raise SystemExit(f"No facts.py for engine {engine!r} (case {case_path.name})")
 
 
-def _collect(cases_dir: Path) -> dict:
+def later_worlds() -> list:
+    """Worlds published after the first release (see worlds/publish_world.py), in the order their rows were
+    first loaded: after the data-quality demo rows. Loading them last keeps every source_row_id unchanged."""
+    lines = LOAD_ORDER.read_text(encoding="utf-8").splitlines() if LOAD_ORDER.is_file() else []
+    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+
+
+def _collect(cases_dir: Path, only: list = None, skip: list = ()) -> dict:
     tables = {name: [] for name in TABLES}
-    for path in sorted(cases_dir.glob("*.json")) if cases_dir.is_dir() else []:
+    paths = sorted(cases_dir.glob("*.json")) if cases_dir.is_dir() else []
+    paths = [cases_dir / f"{w}.json" for w in only] if only is not None else [p for p in paths if p.stem not in skip]
+    for path in paths:
         case = json.loads(path.read_text(encoding="utf-8"))
         for name, rows in _facts_module(path, case["engine"]).facts_for_case(path.stem, case).items():
             if name not in TABLES:
@@ -101,11 +111,14 @@ def private_out_dir() -> Path:
 def main() -> int:
     """Repo CSVs hold public worlds only. When held-out worlds exist in the private folder, the full set
     (public rows first, so their row IDs never change) is written there, and that is what Zetaris loads."""
-    public = _collect(CASES_DIR)
+    later = later_worlds()
+    public = _collect(CASES_DIR, skip=later)
     # The data-quality demo system (a planted broken link) is public and goes after the worlds' rows.
     import dq_demo
     for name, rows in dq_demo.facts().items():
         public[name] += [{**row, "system_id": dq_demo.SYSTEM_ID} for row in rows]
+    for name, rows in _collect(CASES_DIR, only=later).items():
+        public[name] += rows
     _write(OUT_DIR, public)
     sys.path.insert(0, str(ROOT))
     from data_layer import config
