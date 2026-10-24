@@ -126,6 +126,7 @@ check("walk evidence parsed with query id", w["paths"][-1]["hops"][0]["evidence"
 check("two-source rule flagged per path", all(p["meets_two_source_rule"] for p in w["paths"] if len(p["source_systems"]) >= 2) and
       not [p for p in w["paths"] if p["hops"][-1]["to"] == "s/database/?"][0]["meets_two_source_rule"])
 check("walk respects max_hops", max(len(p["hops"]) for p in lookups._walk("s/change/1", edges, "q", 2)["paths"]) == 2)
+check("walk marks an unknown start", lookups._walk("s/change/404", edges, "q", 6)["start"]["entity_type"] is None)
 os.environ["DOMINO_DATA_MODE"] = "live"
 check("dependency_path rejects unsafe entity id", lookups.dependency_path("x'; DROP TABLE t")["status"] == "error")
 

@@ -65,7 +65,7 @@ def list_worlds() -> List[str]:
 
 
 def describe_world(world: str) -> Dict[str, Any]:
-    path = _case_path(world)
+    path = _case_path(world) if isinstance(world, str) else None
     if path:
         body = json.loads(path.read_text(encoding="utf-8"))["describe"]
         return {**_envelope("describe_world", "live"), "status": "ok", "world": world, **DESCRIBE_FIELDS, **body}
@@ -75,13 +75,31 @@ def describe_world(world: str) -> Dict[str, Any]:
             "error": f"Unknown world {world!r}. Known: {list_worlds()}"}
 
 
+def _params_problem(params: Any) -> Optional[str]:
+    if not isinstance(params, dict):
+        return f"params must be a JSON object (dict), got {type(params).__name__}"
+    try:
+        json.dumps(params)
+    except (TypeError, ValueError):
+        return "params must contain only JSON values (strings, numbers, booleans, lists, objects)"
+    return None
+
+
 def run_experiment(world: str, variant: str, params: Optional[Dict[str, Any]] = None,
                    timeout_s: float = 60) -> Dict[str, Any]:
-    params = params or {}
+    params = {} if params is None else params
+    problem = _params_problem(params)
     base = {**_envelope("run_experiment", "live"), "experiment_id": "x-" + uuid.uuid4().hex[:16],
-            "world": world, "variant": variant, "params": params, **RUN_FIELDS}
+            "world": world if isinstance(world, str) else None, "variant": variant,
+            "params": params if problem is None else None, **RUN_FIELDS}
+    if not isinstance(world, str) or not world:
+        problem = problem or f"world must be a world id from list_worlds(), got {world!r}"
     if variant not in VARIANTS:
-        return {**base, "status": "error", "error": f"variant must be one of {VARIANTS}"}
+        problem = problem or f"variant must be one of {VARIANTS}, got {variant!r}"
+    if isinstance(timeout_s, bool) or not isinstance(timeout_s, (int, float)) or not 0.001 <= timeout_s <= 300:
+        problem = problem or f"timeout_s must be a number between 0.001 and 300, got {timeout_s!r}"
+    if problem:
+        return {**base, "status": "error", "error": problem}
     path = _case_path(world)
     if not path:
         if config.mode() == "fake":

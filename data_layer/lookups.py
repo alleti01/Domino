@@ -83,9 +83,33 @@ def _not_in_sample(call: str, request: Dict[str, Any], **fields: Any) -> Dict[st
                    error=f"No saved snapshot for this {call} request; sample mode only replays recorded queries.")
 
 
+MAX_SQL_CHARS = 20000
+MAX_LIMIT = 10000
+MAX_TIMEOUT_S = 300
+
+
+def _number_problem(name: str, value: Any, low: float, high: float, integer: bool = False) -> Optional[str]:
+    """None when value is a number in [low, high]; otherwise a message the caller can act on."""
+    ok_type = isinstance(value, int) if integer else isinstance(value, (int, float))
+    if isinstance(value, bool) or not ok_type or not (low <= value <= high):
+        kind = "an integer" if integer else "a number"
+        return f"{name} must be {kind} between {low:g} and {high:g}, got {value!r}"
+    return None
+
+
 def lookup(sql: str, limit: Optional[int] = None, timeout_s: float = 30) -> Dict[str, Any]:
     """Run one read-only SQL statement against the USL; rows keep their source_system / source_row_id."""
     mode = config.mode()
+    problem = None
+    if not isinstance(sql, str) or not sql.strip():
+        problem = "sql must be a non-empty string"
+    elif len(sql) > MAX_SQL_CHARS:
+        problem = f"sql is {len(sql)} characters; the limit is {MAX_SQL_CHARS}"
+    else:
+        problem = ((_number_problem("limit", limit, 1, MAX_LIMIT, integer=True) if limit is not None else None)
+                   or _number_problem("timeout_s", timeout_s, 0.1, MAX_TIMEOUT_S))
+    if problem:
+        return _result("lookup", mode, "error", sql=sql if isinstance(sql, str) else None, error=problem)
     if mode == "fake":
         return _fake("lookup.json")
     request = {"sql": " ".join(sql.split()).rstrip(";").strip(), "limit": limit}
@@ -106,16 +130,22 @@ def lookup(sql: str, limit: Optional[int] = None, timeout_s: float = 30) -> Dict
 def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) -> Dict[str, Any]:
     """Downstream chain from a changed entity, joined in the Zetaris USL, with per-edge evidence."""
     mode = config.mode()
+    start = {"entity_id": entity_id if isinstance(entity_id, str) else None, "entity_type": None}
+    problem = None
+    if not isinstance(entity_id, str) or not _ENTITY_ID.match(entity_id):
+        problem = ("entity_id must look like <system>/<kind>/<name>, e.g. the change.entity_id from "
+                   f"describe_world; got {entity_id!r}")
+    else:
+        problem = (_number_problem("max_hops", max_hops, 1, 12, integer=True)
+                   or _number_problem("timeout_s", timeout_s, 0.1, MAX_TIMEOUT_S))
+    if problem:
+        return _result("dependency_path", mode, "error", start=start, error=problem)
     if mode == "fake":
         return _fake("dependency_path.json")
     request = {"entity_id": entity_id, "max_hops": max_hops}
     if mode == "sample":
         return (_load_snapshot("dependency_path", request)
                 or _not_in_sample("dependency_path", request, start={"entity_id": entity_id, "entity_type": None}))
-    start = {"entity_id": entity_id, "entity_type": None}
-    if not _ENTITY_ID.match(entity_id):
-        return _result("dependency_path", mode, "error", start=start,
-                       error="entity_id must look like <system>/<kind>/<name>.")
     system_id = entity_id.split("/", 1)[0]
     # The joins already happened in Zetaris (the dependency_edge activation); this only walks the result.
     sql = (f"SELECT from_id, from_type, to_id, to_type, relation, edge_status, evidence, detail "
@@ -126,8 +156,14 @@ def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) ->
         qid = getattr(error, "query_id", None)
         return _result("dependency_path", mode, error.status, start=start, query_ids=[qid] if qid else [],
                        duration_ms=getattr(error, "duration_ms", None), error=str(error))
-    result = _result("dependency_path", mode, "ok", query_ids=[res.query_id], duration_ms=res.duration_ms,
-                     **_walk(entity_id, res.rows, res.query_id, max_hops))
+    walked = _walk(entity_id, res.rows, res.query_id, max_hops)
+    if walked["start"]["entity_type"] is None:
+        # An unknown start must not look like "nothing downstream", which reads as "safe".
+        return _result("dependency_path", mode, "error", query_ids=[res.query_id], duration_ms=res.duration_ms,
+                       start=walked["start"], edges_considered=walked["edges_considered"],
+                       error=f"No edges start at {entity_id!r} in the USL ({walked['edges_considered']} edges "
+                             "for that system). Check the id: describe_world(world)['change']['entity_id'].")
+    result = _result("dependency_path", mode, "ok", query_ids=[res.query_id], duration_ms=res.duration_ms, **walked)
     _save_snapshot("dependency_path", request, result)
     return result
 
