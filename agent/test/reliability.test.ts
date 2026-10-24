@@ -96,4 +96,24 @@ describe("reliability", () => {
     expect(summary.cause_claim).toBe("ran out of steps");
     expect(summary.model_prediction).toBe("unsure");
   });
+
+  it("flags a prediction that contradicts the experiments", async () => {
+    const out = await mkdtemp(join(tmpdir(), "domino-rel-"));
+    const steps = [
+      [{ name: "get_dependency_path", args: { entity: "svc_reports" } }],
+      [{ name: "run_experiment", args: { variant: "candidate", observe: ["consumer_status"], hypothesis_ids: [], rationale: "t" } }],
+      [{ name: "finish", args: { headline: "breaks", prediction: "breaks", cause_claim: "c", mitigation: "m", evidence: ["g2"], supported_hypothesis_ids: [], limitations: [] } }],
+    ];
+    const summary = await investigate({
+      changeId: "stub-chg-2", // the safe stub change
+      mode: "full",
+      outDir: out,
+      evidence: new StubEvidence(),
+      worlds: new StubWorlds(),
+      model: { chat: async () => ({ ...finish(), message: { role: "assistant", content: null, tool_calls: (steps.shift() ?? []).map((c, i) => ({ id: `s${i}`, type: "function" as const, function: { name: c.name, arguments: JSON.stringify(c.args) } })) } }) },
+    });
+    expect(summary.verdict).toBe("no_failure_observed");
+    const trace = await (await import("node:fs/promises")).readFile(join(out, summary.run_id, "trace.jsonl"), "utf8");
+    expect(trace).toContain("predicted a failure, but the experiments showed none");
+  });
 });

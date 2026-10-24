@@ -304,6 +304,12 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
   if (gateway.dataOutages > 0) outage = true; // Zetaris/data layer down at some point: not an agent mistake
   const judgement = judge(state.experiments);
   const verdict: Verdict = outage && judgement.verdict !== "reproduced_failure" ? "inconclusive" : judgement.verdict;
+  // Deterministic consistency check: the model's prediction must agree with what the experiments showed.
+  if (prediction === "breaks" && verdict === "no_failure_observed") {
+    reviewNotes.unshift("The investigator predicted a failure, but the experiments showed none under the tested conditions; read its explanation with caution.");
+  } else if (prediction === "safe" && verdict === "reproduced_failure") {
+    reviewNotes.unshift("The investigator predicted the change was safe, but the experiments reproduced a failure; its explanation is not reliable.");
+  }
   const supported = [...state.hypotheses.values()].filter((h) => h.status === "supported" || gateway.finished?.supported_hypothesis_ids.includes(h.hypothesis_id));
   let graphChain = verdict === "reproduced_failure" ? chainToFailure(world, [change.change_id, ...parsed.entities.map((e) => e.id)], judgement.failingAssertions) : [];
   if (verdict === "reproduced_failure" && !graphChain.length) graphChain = world.longestChainFrom(change.change_id);
