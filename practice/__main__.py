@@ -1,4 +1,4 @@
-"""python3 -m practice list | tables | describe ID | path ENTITY_ID | lookup "SQL" | run ID VARIANT | check"""
+"""python3 -m practice list | tables | describe ID | path ENTITY_ID [--direction upstream] | lookup "SQL" | run ID VARIANT | check"""
 
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ def main(argv=None) -> int:
         out = api.list_tables()
     elif cmd == "describe" and len(rest) == 1:
         out = api.describe_world(rest[0])
-    elif cmd == "path" and len(rest) == 1:
-        out = api.dependency_path(rest[0])
+    elif cmd == "path" and len(rest) in (1, 3) and (len(rest) == 1 or rest[1] == "--direction"):
+        out = api.dependency_path(rest[0], direction=rest[2] if len(rest) == 3 else "downstream")
     elif cmd == "lookup" and len(rest) == 1:
         out = api.lookup(rest[0])
     elif cmd == "run" and len(rest) == 2:

@@ -34,7 +34,7 @@ _BY_ID = {s["id"]: s for s in SCENARIOS}
 FIELDS = {
     "lookup": {"query_id": None, "sql": None, "columns": [], "rows": [], "row_count": 0, "row_ids": [],
                "truncated": False, "duration_ms": None, "error": None},
-    "dependency_path": {"start": {"entity_id": None, "entity_type": None}, "paths": [], "unresolved": [],
+    "dependency_path": {"start": {"entity_id": None, "entity_type": None}, "direction": "downstream", "paths": [], "unresolved": [],
                         "dq_issues": [], "edges_considered": 0, "query_ids": [], "duration_ms": None, "error": None},
     "list_tables": {"system_column": None, "tables": [], "error": None},
     "run_experiment": {"passed": None, "assertions": [], "metrics": {}, "artifacts": [], "logs": [], "reproduce": None,
@@ -173,24 +173,31 @@ def _evidence(text: str, query_id: str) -> List[Dict[str, str]]:
             for p in (text or "").split(";") if ":" in p]
 
 
-def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) -> Dict[str, Any]:
+def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60,
+                    direction: str = "downstream") -> Dict[str, Any]:
     started, qid = time.monotonic(), "q-" + uuid.uuid4().hex[:16]
     start = {"entity_id": entity_id if isinstance(entity_id, str) else None, "entity_type": None}
     if not isinstance(entity_id, str) or not _ENTITY_ID.match(entity_id):
         return _result("dependency_path", "error", start=start,
                        error=f"entity_id must look like <system>/<kind>/<name>; got {entity_id!r}")
+    if direction not in ("downstream", "upstream"):
+        return _result("dependency_path", "error", start=start, direction=direction,
+                       error=f"direction must be one of ('downstream', 'upstream'), got {direction!r}")
     if isinstance(max_hops, bool) or not isinstance(max_hops, int) or not 1 <= max_hops <= 12:
         return _result("dependency_path", "error", start=start, error=f"max_hops must be 1-12, got {max_hops!r}")
     system = entity_id.split("/", 1)[0]
     edges = [e for e in EDGES if e["system_id"] == system]
+    near, far = ("from_id", "to_id") if direction == "downstream" else ("to_id", "from_id")
     outgoing: Dict[str, List[Dict[str, str]]] = {}
     for e in edges:
-        outgoing.setdefault(e["from_id"], []).append(e)
-        if e["from_id"] == entity_id:
-            start["entity_type"] = e["from_type"]
+        outgoing.setdefault(e[near], []).append(e)
+        if e[near] == entity_id:
+            start["entity_type"] = e[near.replace("_id", "_type")]
     if start["entity_type"] is None:
-        return _result("dependency_path", "error", start=start, query_ids=[qid], edges_considered=len(edges),
-                       error=f"No edges start at {entity_id!r} ({len(edges)} edges for that system). "
+        return _result("dependency_path", "error", start=start, direction=direction, query_ids=[qid],
+                       edges_considered=len(edges),
+                       error=f"No edges {'start' if direction == 'downstream' else 'end'} at {entity_id!r} "
+                             f"({len(edges)} edges for that system). "
                              "Check the id: describe_world(world)['change']['entity_id'].")
     paths, unresolved = [], []
 
@@ -200,7 +207,7 @@ def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) ->
                 "evidence": _evidence(e["evidence"], qid)}
 
     def extend(node, trail, visited):
-        nexts = [e for e in outgoing.get(node, []) if e["to_id"] not in visited] if len(trail) < max_hops else []
+        nexts = [e for e in outgoing.get(node, []) if e[far] not in visited] if len(trail) < max_hops else []
         if not nexts and trail:
             sources = sorted({ev["source_system"] for h in trail for ev in h["evidence"]})
             paths.append({"hops": trail, "source_systems": sources, "meets_two_source_rule": len(sources) >= 2})
@@ -209,10 +216,10 @@ def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) ->
                 unresolved.append({"from": e["from_id"], "to": e["to_id"], "relation": e["relation"],
                                    "reason": "referenced entity not found in any other source",
                                    "evidence": _evidence(e["evidence"], qid)})
-            extend(e["to_id"], trail + [hop(e)], visited | {e["to_id"]})
+            extend(e[far], trail + [hop(e)], visited | {e[far]})
 
     extend(entity_id, [], {entity_id})
-    return _result("dependency_path", "ok", start=start, paths=paths, unresolved=unresolved,
+    return _result("dependency_path", "ok", start=start, direction=direction, paths=paths, unresolved=unresolved,
                    edges_considered=len(edges), query_ids=[qid], duration_ms=int((time.monotonic() - started) * 1000))
 
 

@@ -67,6 +67,7 @@ Score both: was the verdict right, and **did the explanation name the real mecha
 - Results always have the same fields whatever their `status` (`ok`, `error`, `timeout`, `unavailable`, `not_in_sample`). Check `status`, not whether a key exists.
 - Values from `lookup` are strings, as in Zetaris.
 - `mode` is `"practice"`, so the real scorecard never mixes these up with real results.
+- `dependency_path` takes `direction="upstream"` to walk what reaches an entity (CLI: `path ID --direction upstream`).
 - `dependency_path` carries `dq_issues` (data-quality findings). It's always empty here; the real data layer fills it from Zetaris.
 
 **v0.3 changes:**
