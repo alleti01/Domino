@@ -17,6 +17,7 @@ import { investigate } from "./agent.js";
 import { StubEvidence, StubWorlds } from "./fakes/stubWorld.js";
 import { NightshiftClient, nightshiftHealth } from "./llm/nightshift.js";
 import { ReceiptLog } from "./llm/receipts.js";
+import { writeBundle } from "./bundle.js";
 import { renderTrace } from "./render.js";
 import { Player, Recorder } from "./replay.js";
 
@@ -39,7 +40,8 @@ const { values, positionals } = parseArgs({
 const USAGE = `usage:
   domino investigate --change <world-id> [--mode full|no_tools|no_experiments|no_usl] [--data practice|data_layer] [--repo ..] [--out runs] [--memory <dir>] [--stub]
   domino replay <cassette.json> [--out runs/replay]
-  domino demo [--out runs/replay]`;
+  domino demo [--out runs/replay]
+  domino report <run_dir>`;
 
 const readTrace = async (dir: string) =>
   (await readFile(join(dir, "trace.jsonl"), "utf8")).trim().split("\n").map((l) => JSON.parse(l) as TraceEvent);
@@ -65,12 +67,14 @@ async function runLive(): Promise<void> {
     worlds: recorder.worlds(source === "stub" ? new StubWorlds() : new DataLayerWorlds(dataOpts)),
     ...(values.memory ? { memoryDir: values.memory } : {}),
   });
-  await recorder.save(join(outDir, summary.run_id, "cassette.json"), summary);
-  if (!values.quiet) console.log(renderTrace(await readTrace(join(outDir, summary.run_id))));
-  console.log(`\n${JSON.stringify(summary, null, 2)}\nRecording: ${join(outDir, summary.run_id, "cassette.json")}`);
+  const runDir = join(outDir, summary.run_id);
+  await recorder.save(join(runDir, "cassette.json"), summary);
+  await writeBundle(runDir, summary.cause_claim);
+  if (!values.quiet) console.log(renderTrace(await readTrace(runDir)));
+  console.log(`\n${JSON.stringify(summary, null, 2)}\nReport: ${join(runDir, "report.md")}\nRecording: ${join(runDir, "cassette.json")}`);
 }
 
-async function replayOne(cassettePath: string, outDir: string): Promise<{ recorded: RunSummary | undefined; replayed: RunSummary }> {
+async function replayOne(cassettePath: string, outDir: string): Promise<{ recorded: RunSummary | undefined; replayed: RunSummary; matches: boolean }> {
   const player = await Player.load(cassettePath);
   const { cassette } = player;
   const replayed = await investigate({
@@ -82,15 +86,17 @@ async function replayOne(cassettePath: string, outDir: string): Promise<{ record
     worlds: player.worlds(),
     replay: true,
   });
+  await writeBundle(join(outDir, replayed.run_id), replayed.cause_claim);
   if (!values.quiet) console.log(renderTrace(await readTrace(join(outDir, replayed.run_id))));
   const recorded = cassette.summary;
-  const same = recorded?.verdict === replayed.verdict;
+  const same = recorded?.verdict === replayed.verdict && !player.exhausted && !replayed.outage && player.unusedModelResponses() === 0;
+  if (player.exhausted || player.unusedModelResponses() !== 0) console.log("\n✗ The agent no longer follows this recording step for step: re-record it with `npm run investigate`.");
   console.log(
     `\nRecorded ${cassette.recorded_at} on ${cassette.data_source}: verdict ${recorded?.verdict ?? "?"} · replayed: ${replayed.verdict} ${same ? "✓ identical" : "✗ DIFFERENT"}` +
       `\nReplay trace (replay: true on every event): ${join(outDir, replayed.run_id, "trace.jsonl")}`,
   );
   if (!same) process.exitCode = 1;
-  return { recorded, replayed };
+  return { recorded, replayed, matches: same };
 }
 
 async function main(): Promise<void> {
@@ -99,6 +105,14 @@ async function main(): Promise<void> {
   if (command === "replay") {
     if (!positionals[1]) throw new Error(USAGE);
     await replayOne(positionals[1], values.out ?? "runs/replay");
+    return;
+  }
+  if (command === "report") {
+    const runDir = positionals[1];
+    if (!runDir) throw new Error("usage: domino report <run_dir>");
+    const summary = JSON.parse(await readFile(join(runDir, "summary.json"), "utf8")) as RunSummary;
+    await writeBundle(runDir, summary.cause_claim);
+    console.log(await readFile(join(runDir, "report.md"), "utf8"));
     return;
   }
   if (command === "demo") {
@@ -111,7 +125,7 @@ async function main(): Promise<void> {
       results.push({ file, ...(await replayOne(join(dir, file), values.out ?? "runs/replay")) });
     }
     console.log("\n════════ summary ════════");
-    for (const r of results) console.log(`${r.file.padEnd(40)} ${r.replayed.verdict.padEnd(20)} ${r.recorded?.verdict === r.replayed.verdict ? "matches recording" : "DIFFERS from recording"}`);
+    for (const r of results) console.log(`${r.file.padEnd(40)} ${r.replayed.verdict.padEnd(20)} ${r.matches ? "matches recording" : "OUT OF DATE: re-record"}`);
     return;
   }
   throw new Error(USAGE);

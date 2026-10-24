@@ -37,3 +37,8 @@ An HTTP service is fine too; just pick one.
 `domino investigate --change <id> --mode <full|no_tools|no_experiments|no_usl> --out <dir> [--sample]`
 → writes `trace.jsonl`, `receipts.jsonl`, `summary.json` (`RunSummary`).
 Mode A (static checks) is Anish's own baseline. `outage: true` runs are excluded from accuracy and reported separately.
+
+## 4. Evidence bundle: agent → Adhvik / README / PR comment
+Every run (live or replay) writes `bundle.json` (`EvidenceBundle` in [`types.ts`](types.ts)) and `report.md` (a ready-to-paste PR comment) next to its trace.
+It has: the change, the verdict (decided by the deterministic judge), the model's explanation, the causal chain with the facts behind every cited row, every experiment (baseline / candidate / control, who asked for it, reproduce command, artifact hashes), hypotheses, Nemotron call summary, World Model activity, and a **suggested mitigation, always marked unverified**.
+Samples: [`samples/*.bundle.json`](samples/) and [`samples/*.report.md`](samples/).

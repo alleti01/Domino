@@ -125,6 +125,7 @@ export class DataLayerWorlds implements WorldsAdapter {
       logs_tail: Array.isArray(r.logs) ? r.logs.join("\n") : String(r.logs ?? r.error ?? ""),
       artifacts: (r.artifacts ?? []).map((a: any) => ({ name: a.name, sha256: a.sha256, bytes: a.bytes })),
       duration_ms: r.duration_ms ?? 0,
+      ...(r.reproduce?.command ? { reproduce: r.reproduce.command } : {}),
     };
   }
 }

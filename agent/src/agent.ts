@@ -198,7 +198,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     await trace.emit({ type: "memory", engine: "world_model", action: "read", detail: `Causal chain traced through the world model: ${graphChain.length} provenance-carrying links` });
   }
   const causal_chain = graphChain.length
-    ? graphChain.map((l) => ({ edge: `${l.from} ${l.relation} ${l.to}`, status: l.status === "unresolved" ? ("inferred" as const) : l.status, refs: [l.row_id] }))
+    ? graphChain.map((l) => ({ edge: `${l.from} ${l.relation} ${l.to}`, status: l.status === "unresolved" ? ("inferred" as const) : l.status, refs: l.row_ids.length ? l.row_ids : [l.row_id] }))
     : supported.flatMap((h) =>
     [...h.evidence_for].map((ref) => ({
       edge: `${h.hypothesis_id}: ${h.mechanism}`,
@@ -215,6 +215,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     tested: judgement.tested,
     limitations: [...(gateway.finished?.limitations ?? []), ...judgement.reasons.filter((r) => verdict !== "reproduced_failure" || !r.startsWith("Baseline passed")), ...(outage ? ["Model service outage during the run: this result says nothing about the change."] : []), ...(cacheHits ? [`${cacheHits} model answer(s) came from Nightshift's cache.`] : [])],
     decided_by: "deterministic_judge",
+    ...(gateway.finished?.mitigation && verdict === "reproduced_failure" ? { mitigation: gateway.finished.mitigation } : {}),
   });
   await trace.emit({ type: "run_finished", duration_ms: Date.now() - started, model_calls: modelCalls, experiments: state.experiments.length });
 

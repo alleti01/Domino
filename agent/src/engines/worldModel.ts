@@ -26,6 +26,7 @@ export interface ChainLink {
   row_id: string;
   status: "observed" | "inferred" | "unresolved";
   detail?: string;
+  row_ids: string[];
 }
 
 export class InvestigationWorld {
@@ -188,6 +189,7 @@ export class InvestigationWorld {
         to: graph.entity(r.to)?.name ?? r.to,
         source: String(r.attrs?.source ?? ""),
         row_id: String(r.attrs?.row_id ?? ""),
+        row_ids: Array.isArray(r.attrs?.row_ids) ? (r.attrs.row_ids as string[]) : [String(r.attrs?.row_id ?? "")],
         status: r.attrs?.status === "inferred" || r.attrs?.status === "unresolved" ? (r.attrs.status as "inferred" | "unresolved") : "observed",
         ...(r.attrs?.detail ? { detail: String(r.attrs.detail) } : {}),
       });
@@ -214,6 +216,7 @@ export class InvestigationWorld {
       to: graph.entity(r.to)?.name ?? r.to,
       source: String(r.attrs?.source ?? ""),
       row_id: String(r.attrs?.row_id ?? ""),
+      row_ids: Array.isArray(r.attrs?.row_ids) ? (r.attrs.row_ids as string[]) : [String(r.attrs?.row_id ?? "")],
       status: r.attrs?.status === "inferred" || r.attrs?.status === "unresolved" ? (r.attrs.status as "inferred" | "unresolved") : "observed",
       ...(r.attrs?.detail ? { detail: String(r.attrs.detail) } : {}),
     }));

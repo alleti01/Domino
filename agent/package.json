@@ -12,7 +12,8 @@
     "conformance:world-model": "WORLD_MODEL_IMPL=\"$PWD/vendor/meterless-world-model/src/index.ts\" tsx vendor/meterless-world-model/conformance/runner.ts",
     "eval": "tsx scripts/practice-eval.ts",
     "replay": "tsx src/cli.ts replay",
-    "demo": "tsx src/cli.ts demo"
+    "demo": "tsx src/cli.ts demo",
+    "report": "tsx src/cli.ts report"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

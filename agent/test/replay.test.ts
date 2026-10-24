@@ -12,7 +12,7 @@ const NEMOTRON = "nvidia/nemotron-3.5-lightning-30b-a3b";
 const script = [
   [{ name: "get_dependency_path", args: { entity: "svc_builder" } }],
   [{ name: "run_experiment", args: { variant: "candidate", observe: ["consumer_status"], hypothesis_ids: [], rationale: "test" } }],
-  [{ name: "finish", args: { headline: "loader rejects", prediction: "breaks", cause_claim: "wider read", evidence: ["l1"], supported_hypothesis_ids: [], limitations: [] } }],
+  [{ name: "finish", args: { headline: "loader rejects", prediction: "breaks", cause_claim: "wider read", mitigation: "filter by schema", evidence: ["l1"], supported_hypothesis_ids: [], limitations: [] } }],
 ];
 const scripted = (): ChatModel => {
   const steps = structuredClone(script);

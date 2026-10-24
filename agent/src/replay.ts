@@ -84,6 +84,8 @@ export class CassetteOutOfDate extends Error {}
 /** Serves recorded results. Calls are matched by method + arguments, in recorded order. */
 export class Player {
   private modelIndex = 0;
+  /** Set when the agent asked for more than the recording holds: the recording is out of date. */
+  exhausted = false;
   private readonly used = new Set<number>();
   constructor(readonly cassette: Cassette) {
     if (cassette.version !== CASSETTE_VERSION) throw new CassetteOutOfDate(`cassette version ${cassette.version}, expected ${CASSETTE_VERSION}`);
@@ -97,7 +99,10 @@ export class Player {
     return {
       chat: async (_req: ChatRequest) => {
         const next = this.cassette.model[this.modelIndex++];
-        if (!next) throw new NightshiftError("Recording has no more model responses", "offline");
+        if (!next) {
+          this.exhausted = true;
+          throw new NightshiftError("Recording has no more model responses (out of date: re-record it)", "offline");
+        }
         return next;
       },
     };

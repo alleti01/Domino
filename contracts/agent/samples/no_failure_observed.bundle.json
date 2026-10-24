@@ -1,0 +1,155 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261024024752-970106",
+  "replay": true,
+  "mode": "full",
+  "change": {
+    "change_id": "p08/change/1702",
+    "world_id": "p08",
+    "title": "Lower tax-api client timeout to 2s",
+    "files": [
+      "services/cart/clients.yaml"
+    ],
+    "diff": "--- a/services/cart/clients.yaml\n+++ b/services/cart/clients.yaml\n@@ -1,1 +1,1 @@\n-tax_api_timeout_ms: 30000\n+tax_api_timeout_ms: 2000\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Tax API timeout reduction to 2s is safe for default workload",
+    "cause": "The default workload does not exercise tax API calls that take >2s. Both baseline (30s timeout) and candidate (2s timeout) produce 0 timeouts out of 1000 requests. Tax API p99 latency is 1500ms, and the default workload stays within this bound.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-c7b42257ea244d5a: baseline · workload default → all assertions passed",
+      "x-32ade528cd774924: candidate · workload default → all assertions passed",
+      "x-aef8f88c8c274cd8: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "Only the default workload was tested. Other workloads or traffic patterns with tax API latency >2s may behave differently.",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null
+  },
+  "causal_chain": [],
+  "experiments": [
+    {
+      "experiment_id": "x-c7b42257ea244d5a",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "rationale": "Measure timeout rate with the original 30s timeout",
+      "observations": {
+        "client.requests": 1000,
+        "client.timeouts": 0,
+        "client.error_rate": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "state.json",
+          "sha256": "22ebdeba7fe801a2182373077d9d1fae4ec496c15d8d03cf2ef3c2125231d83c",
+          "bytes": 121
+        }
+      ],
+      "reproduce": "python3 -m practice run p08 baseline"
+    },
+    {
+      "experiment_id": "x-32ade528cd774924",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "rationale": "Measure timeout rate with the proposed 2s timeout",
+      "observations": {
+        "client.requests": 1000,
+        "client.timeouts": 0,
+        "client.error_rate": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "state.json",
+          "sha256": "bab6543031246f920c4163d07b3f7fdd1b6c16626e8fece8e6cdbe550e84aee8",
+          "bytes": 120
+        }
+      ],
+      "reproduce": "python3 -m practice run p08 candidate"
+    },
+    {
+      "experiment_id": "x-aef8f88c8c274cd8",
+      "variant": "control",
+      "requested_by": "agent",
+      "rationale": "Verify control matches baseline",
+      "observations": {
+        "client.requests": 1000,
+        "client.timeouts": 0,
+        "client.error_rate": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "state.json",
+          "sha256": "22ebdeba7fe801a2182373077d9d1fae4ec496c15d8d03cf2ef3c2125231d83c",
+          "bytes": 121
+        }
+      ],
+      "reproduce": "python3 -m practice run p08 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Lowering tax_api_timeout_ms from 30s to 2s will increase timeout errors in cart-service (does NOT hold under default workload)",
+      "mechanism": "cart-service calls tax-api with a client timeout setting. When the timeout is 2s, any tax API call taking >2s will return a timeout error instead of waiting up to 30s.",
+      "status": "refuted",
+      "evidence_for": [
+        "telemetry:tel-0014",
+        "config_repo:con-0015"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "telemetry:tel-0014",
+      "source": "telemetry",
+      "facts": "service/tax-api.latency_ms_p99 = 1500"
+    },
+    {
+      "row_id": "config_repo:con-0015",
+      "source": "config_repo",
+      "facts": "service/cart-service.tax_api_timeout_ms = 30000"
+    }
+  ],
+  "models": {
+    "calls": 15,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 15
+    },
+    "request_ids": [
+      "req_vi3eqi55",
+      "req_t1eh2eua",
+      "req_mqp8xbh5",
+      "req_ftefqvec",
+      "req_21p6uxra",
+      "req_yt7v80qh",
+      "req_jp0ai35a",
+      "req_5owpohsa",
+      "req_4dqz7enu",
+      "req_t2xewo8n",
+      "req_9jr2nzj2",
+      "req_hli9hxba",
+      "req_57663c8f",
+      "req_qe1jer9r",
+      "req_q32exxhb"
+    ],
+    "total_latency_ms": 103642,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 0,
+    "updates": 1
+  },
+  "queries": 5,
+  "duration_ms": 4
+}

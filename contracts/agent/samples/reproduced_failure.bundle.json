@@ -1,0 +1,235 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261024024752-477fd1",
+  "replay": true,
+  "mode": "full",
+  "change": {
+    "change_id": "p03/change/1310",
+    "world_id": "p03",
+    "title": "Scale checkout-api to 30 replicas",
+    "files": [
+      "deploy/checkout-api.yaml"
+    ],
+    "diff": "--- a/deploy/checkout-api.yaml\n+++ b/deploy/checkout-api.yaml\n@@ -1,1 +1,1 @@\n-replicas: 10\n+replicas: 30\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Scaling checkout-api to 30 replicas will exceed orders-db max_connections limit",
+    "cause": "30 replicas × 20 pool_size = 600 total connections > orders-db max_connections = 500, causing 100 connections to be refused",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-11ec4929e3e74d61: baseline · workload default → all assertions passed",
+      "x-8d87f5e2dd5042ff: candidate · workload default → failed: all_replicas_get_connections",
+      "x-32006db944d94801: candidate · workload default → failed: all_replicas_get_connections",
+      "x-708f0771f2034f97: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "Pool size of 20 per replica is assumed constant; auto-scaling pool behavior not tested"
+    ],
+    "mitigation": {
+      "text": "Reduce replicas to 25 (25 × 20 = 500, exactly at the limit) or increase orders-db max_connections to accommodate 600 connections, or reduce db_pool_size per replica (e.g., to 16: 30 × 16 = 480 ≤ 500).",
+      "verified": false
+    }
+  },
+  "causal_chain": [
+    {
+      "edge": "1310 scales checkout-api",
+      "status": "observed",
+      "evidence": [
+        {
+          "row_id": "config_repo:con-0005",
+          "facts": "service/checkout-api.replicas = 10"
+        }
+      ]
+    },
+    {
+      "edge": "checkout-api connects_to orders-db",
+      "status": "observed",
+      "evidence": [
+        {
+          "row_id": "config_repo:con-0006",
+          "facts": "service/checkout-api.db_pool_size = 20"
+        },
+        {
+          "row_id": "telemetry:tel-0005",
+          "facts": "db_pool_size=20 per replica"
+        }
+      ]
+    },
+    {
+      "edge": "orders-db configured_with orders-db.max_connections",
+      "status": "inferred",
+      "evidence": [
+        {
+          "row_id": "db_catalog:db_-0003",
+          "facts": "database/orders-db.max_connections = 500"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-11ec4929e3e74d61",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "rationale": "Establish normal operation with 10 replicas to compare against candidate 30 replicas",
+      "observations": {
+        "api.replicas": 10,
+        "api.connections_requested": 200,
+        "db.connections_refused": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "state.json",
+          "sha256": "4a175afd7bd47c43d10e84c2f769e9e53f38249745b89480e2a936ecc7bf5a76",
+          "bytes": 126
+        }
+      ],
+      "reproduce": "python3 -m practice run p03 baseline"
+    },
+    {
+      "experiment_id": "x-8d87f5e2dd5042ff",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "rationale": "Test with 30 replicas to see if connections exceed the 500 limit",
+      "observations": {
+        "api.replicas": 30,
+        "api.connections_requested": 600,
+        "db.connections_refused": 100
+      },
+      "failed_assertions": [
+        {
+          "name": "all_replicas_get_connections",
+          "detail": "observed 100, expected 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "state.json",
+          "sha256": "351d0e425ea45c2142c273f6003a150379598b3f28f0ffc06cd414812d991386",
+          "bytes": 128
+        }
+      ],
+      "reproduce": "python3 -m practice run p03 candidate"
+    },
+    {
+      "experiment_id": "x-32006db944d94801",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "api.replicas": 30,
+        "api.connections_requested": 600,
+        "db.connections_refused": 100
+      },
+      "failed_assertions": [
+        {
+          "name": "all_replicas_get_connections",
+          "detail": "observed 100, expected 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "state.json",
+          "sha256": "351d0e425ea45c2142c273f6003a150379598b3f28f0ffc06cd414812d991386",
+          "bytes": 128
+        }
+      ],
+      "reproduce": "python3 -m practice run p03 candidate"
+    },
+    {
+      "experiment_id": "x-708f0771f2034f97",
+      "variant": "control",
+      "requested_by": "harness",
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "api.replicas": 10,
+        "api.connections_requested": 200,
+        "db.connections_refused": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "state.json",
+          "sha256": "4a175afd7bd47c43d10e84c2f769e9e53f38249745b89480e2a936ecc7bf5a76",
+          "bytes": 126
+        }
+      ],
+      "reproduce": "python3 -m practice run p03 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Scaling checkout-api from 10 to 30 replicas will cause total database connections (30 × 20 = 600) to exceed orders-db max_connections (500), resulting in connection errors or rejected connections.",
+      "mechanism": "Each checkout-api replica maintains a database connection pool of size 20. With 30 replicas, total simultaneous connections = 30 × 20 = 600, which exceeds orders-db's max_connections = 500.",
+      "status": "open",
+      "evidence_for": [
+        "config_repo:con-0005",
+        "config_repo:con-0006",
+        "db_catalog:db_-0003"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "config_repo:con-0005",
+      "source": "config_repo",
+      "facts": "service/checkout-api.replicas = 10"
+    },
+    {
+      "row_id": "config_repo:con-0006",
+      "source": "config_repo",
+      "facts": "service/checkout-api.db_pool_size = 20"
+    },
+    {
+      "row_id": "telemetry:tel-0005",
+      "source": "config_repo",
+      "facts": "db_pool_size=20 per replica"
+    },
+    {
+      "row_id": "db_catalog:db_-0003",
+      "source": "db_catalog",
+      "facts": "database/orders-db.max_connections = 500"
+    }
+  ],
+  "models": {
+    "calls": 15,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 15
+    },
+    "request_ids": [
+      "req_1p1x2jzz",
+      "req_qgjflfyo",
+      "req_erd62srj",
+      "req_814rl5co",
+      "req_vigjq22c",
+      "req_uahp3ids",
+      "req_uld0dgyv",
+      "req_37a22lpu",
+      "req_yhvofuc3",
+      "req_any0207a",
+      "req_lmqlegw6",
+      "req_xvyx2cy5",
+      "req_8neo13cb",
+      "req_6vnp616j",
+      "req_onhkojze"
+    ],
+    "total_latency_ms": 68543,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 1,
+    "updates": 0
+  },
+  "queries": 6,
+  "duration_ms": 8
+}

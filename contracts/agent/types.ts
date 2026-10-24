@@ -81,6 +81,7 @@ export interface ExperimentResult {
   logs_tail: string;
   artifacts: Array<{ name: string; sha256: string; bytes: number }>;
   duration_ms: number;
+  reproduce?: string; // command that re-runs exactly this experiment
 }
 
 // ───────────────────────────── 2. Investigation trace (agent → Adhvik) ─────────────────────────────
@@ -134,6 +135,7 @@ export type TraceEvent = TraceBase &
         tested: string[]; // exactly what was tested
         limitations: string[];
         decided_by: "deterministic_judge"; // the model never sets the verdict
+        mitigation?: string; // suggested by the model, never verified by Domino
       }
     | { type: "error"; stage: string; message: string; recoverable: boolean }
     | { type: "run_finished"; duration_ms: number; model_calls: number; experiments: number }
@@ -166,4 +168,50 @@ export interface RunSummary {
   all_calls_nemotron: boolean;
   model_failures: number; // calls that failed after the client's retries
   cache_hits: number; // calls Nightshift answered from cache (should be 0 for independent runs)
+}
+
+// ───────────────────────────── 4. Evidence bundle (agent → Adhvik, README, PR comment) ─────────────────────────────
+// Built from a run's trace alone (so replays produce one too). Written as bundle.json + report.md.
+
+export interface EvidenceBundle {
+  bundle_version: "1";
+  run_id: string;
+  replay: boolean;
+  mode: RunMode;
+  change: { change_id: string; world_id: string; title: string; files: string[]; diff: string };
+  verdict: {
+    verdict: Verdict;
+    headline: string;
+    cause: string | null; // the model's explanation (verdict itself is the judge's)
+    decided_by: "deterministic_judge";
+    tested: string[];
+    limitations: string[];
+    mitigation: { text: string; verified: false } | null;
+  };
+  causal_chain: Array<{ edge: string; status: "observed" | "inferred"; evidence: Array<{ row_id: string; facts: string }> }>;
+  experiments: Array<{
+    experiment_id: string;
+    variant: "baseline" | "candidate" | "control";
+    requested_by: "agent" | "harness";
+    rationale: string;
+    observations: Record<string, string | number | boolean>;
+    failed_assertions: Array<{ name: string; detail: string }>;
+    passed: boolean;
+    artifacts: Array<{ name: string; sha256: string; bytes: number }>;
+    reproduce: string | null;
+  }>;
+  hypotheses: Array<{ hypothesis_id: string; claim: string; mechanism: string; status: string; evidence_for: string[] }>;
+  cited_evidence: Array<{ row_id: string; source: string; facts: string }>;
+  models: {
+    calls: number;
+    failed: number;
+    all_nemotron: boolean;
+    by_model: Record<string, number>;
+    request_ids: string[];
+    total_latency_ms: number;
+    provider: "Meterless Nightshift";
+  };
+  world_model: { writes: number; reads: number; updates: number };
+  queries: number;
+  duration_ms: number;
 }

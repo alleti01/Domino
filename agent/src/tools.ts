@@ -117,6 +117,7 @@ const TOOLS: ToolDef[] = [
         description: "row_ids / experiment_ids behind your explanation, for a breaking AND a safe verdict: the specific facts (values, limits, settings) your reasoning depends on",
         required: true,
       },
+      mitigation: { type: "string", description: "Required when prediction is breaks: the smallest change that would avoid the failure (shown to engineers as unverified)" },
       supported_hypothesis_ids: { type: "string[]", description: "Hypotheses your explanation rests on", required: true },
       limitations: { type: "string[]", description: "What you could not test or see", required: true },
     },
@@ -208,6 +209,7 @@ export interface FinishArgs {
   prediction: "breaks" | "safe" | "unsure";
   cause_claim?: string;
   evidence: string[];
+  mitigation?: string;
   supported_hypothesis_ids: string[];
   limitations: string[];
 }
@@ -358,6 +360,9 @@ export class ToolGateway {
       }
 
       case "finish": {
+        if (args.prediction === "breaks" && !args.mitigation) {
+          throw new ToolError("prediction is breaks, so propose a mitigation: the smallest change that would avoid the failure. Call finish again with it.");
+        }
         const refs = this.citations(args.evidence);
         if (!refs.known.length) {
           throw new ToolError(
