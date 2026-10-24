@@ -1,4 +1,4 @@
-"""python3 -m practice list | describe ID | path ENTITY_ID | lookup "SQL" | run ID VARIANT | check"""
+"""python3 -m practice list | tables | describe ID | path ENTITY_ID | lookup "SQL" | run ID VARIANT | check"""
 
 from __future__ import annotations
 
@@ -19,6 +19,8 @@ def main(argv=None) -> int:
         return check()
     if cmd == "list":
         out = {"worlds": api.list_worlds()}
+    elif cmd == "tables":
+        out = api.list_tables()
     elif cmd == "describe" and len(rest) == 1:
         out = api.describe_world(rest[0])
     elif cmd == "path" and len(rest) == 1:

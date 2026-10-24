@@ -3,17 +3,20 @@
 Ten **made-up** scenarios for developing and tuning the agent loop before the real worlds are wired in.
 None is a real system. Pure Python 3.9 standard library: no Zetaris, no Docker, no keys.
 
-The module offers **the same four calls, with the same result shapes, as the real data layer** (contract v0.2).
+The module offers **the same four calls, with the same result shapes, as the real data layer** (contract v0.3).
 Code written against `practice` works against `data_layer` by changing the import:
 
 ```python
-from practice import describe_world, dependency_path, lookup, run_experiment, list_worlds
-# later: from data_layer import describe_world, dependency_path, lookup, run_experiment, list_worlds
+from practice import describe_world, dependency_path, list_tables, lookup, run_experiment, list_worlds
+# later: from data_layer import describe_world, dependency_path, list_tables, lookup, run_experiment, list_worlds
 ```
 
 ## Try it
 ```bash
 python3 -m practice list
+```
+```bash
+python3 -m practice tables
 ```
 ```bash
 python3 -m practice describe p01
@@ -22,7 +25,7 @@ python3 -m practice describe p01
 python3 -m practice path p01/change/1203
 ```
 ```bash
-python3 -m practice lookup "SELECT subject, key, value, source_system, source_row_id FROM telemetry WHERE scenario_id = 'p07'"
+python3 -m practice lookup "SELECT subject, key, value, source_system, source_row_id FROM telemetry WHERE system_id = 'p07'"
 ```
 ```bash
 python3 -m practice run p01 candidate
@@ -34,7 +37,7 @@ python3 -m practice check
 ## What an investigation looks like
 1. `describe_world(id)` returns the change (`change.diff`, `change.entity_id`) and the components.
 2. `dependency_path(change.entity_id)` returns the downstream chain across sources. Every edge has `edge_status` (`observed` / `inferred` / `unresolved`), a `detail` with the facts on it, and `evidence` rows.
-3. `lookup(sql)` runs read-only SQL for anything else. Tables: `config_repo`, `telemetry`, `code_index`, `db_catalog`, `schema_registry` (columns `scenario_id, subject, key, value, source_system, source_row_id`) and `dependency_edge`.
+3. `lookup(sql)` runs read-only SQL for anything else. **Ask `list_tables()` for the table names and columns; don't hard-code them.** The real data layer has different tables with long names. Here the tables are `config_repo`, `telemetry`, `code_index`, `db_catalog`, `schema_registry` and `dependency_edge`. In both, filter by `list_tables()["system_column"]` (`system_id`) = the world ID.
 4. `run_experiment(id, "baseline" | "candidate" | "control")` runs a deterministic simulation and returns `passed`, assertions, metrics, logs and hashes.
 5. The verdict is one of `reproduced_failure` / `no_failure_observed` / `inconclusive`, **with the mechanism explained.**
 
@@ -64,3 +67,10 @@ Score both: was the verdict right, and **did the explanation name the real mecha
 - Results always have the same fields whatever their `status` (`ok`, `error`, `timeout`, `unavailable`, `not_in_sample`). Check `status`, not whether a key exists.
 - Values from `lookup` are strings, as in Zetaris.
 - `mode` is `"practice"`, so the real scorecard never mixes these up with real results.
+- `dependency_path` carries `dq_issues` (data-quality findings). It's always empty here; the real data layer fills it from Zetaris.
+
+**v0.3 changes:**
+- `scenario_id` is renamed `system_id`, to match the real data layer
+- new `list_tables()` / `tables` command
+- `dq_issues` added to `dependency_path`
+- `row_ids` name their source system even when a query doesn't select `source_system`
