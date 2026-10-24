@@ -1,0 +1,225 @@
+"""Writes the dashboard's two data files from Anish's side, in the formats of the dashboard's data-formats.md:
+
+  zetaris.json     sources, the compiled USL (tables and keys), every data-quality rule with rejected rows
+  scorecard.json   measured results per mode, from a run_scorecard.py results.json
+
+    python3 scorecard/export_site.py                          -> runs/site_data/ (git-ignored)
+    python3 scorecard/export_site.py --out ../Domino-ui/samples
+    python3 scorecard/export_site.py --results runs/scorecard/<stamp>/results.json
+    python3 scorecard/export_site.py --include-answers        at the freeze only: per-case expected verdicts
+
+By default scorecard.json holds only totals per mode (no per-case verdicts), so it gives no world's answer
+away and is safe to share before the freeze. Unreleased worlds are never written, with or without answers.
+A metric that hasn't been measured is written with display null, which the dashboard shows as
+"Not yet measured". Nothing is rounded up or filled in.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import re
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scorecard"))
+
+from data_layer import config, list_tables  # noqa: E402
+from data_layer.sources import RAW_SOURCES, USL  # noqa: E402
+
+SOURCE_NAMES = {
+    "change_records": "Change records (the proposed change)",
+    "db_catalog": "Database catalog",
+    "inventory_registry": "Record registry",
+    "pipeline_repo": "Pipeline repository",
+    "service_catalog": "Service catalog",
+    "runtime_config": "Runtime configuration",
+    "telemetry": "Query telemetry",
+}
+LIVE_DATABASE_SOURCES = {"db_catalog"}  # served from PostgreSQL over JDBC; the rest are file-store tables
+BASELINE_KEYS = {"A": ("A_static", "Static checks only"), "B": ("B_nemotron_only", "Nemotron alone, no tools"),
+                 "C": ("C_no_experiments", "Context without experiments"), "E": ("E_no_usl", "Full Domino, USL hidden"),
+                 "X": ("X_experiments_only", "Experiments only, no reasoning"),
+                 "R": ("R_reference_script", "Scripted reference investigator")}
+DOMINO_MODE = "D"
+
+
+def _csv_rows(table: str) -> int:
+    with (ROOT / "zetaris" / "sources" / f"{table}.csv").open(newline="", encoding="utf-8") as fh:
+        return sum(1 for _ in csv.reader(fh)) - 1
+
+
+def _relationships() -> list:
+    """Foreign keys declared in the USL DDL: {from: table, to: referenced table, via: column}."""
+    sql = (ROOT / "zetaris" / "sql" / "02_usl.sql").read_text(encoding="utf-8")
+    rels = []
+    for block in re.finditer(r"CREATE TABLE\s+(\w+)\s*\((.*?)\n\)", sql, re.S | re.I):
+        for fk in re.finditer(r"(\w+)\s+\w+(?:\(\d+\))?\s+(?:NOT NULL\s+)?FOREIGN KEY REFERENCES\s+(\w+)\(", block.group(2), re.I):
+            rels.append({"from": block.group(1), "to": fk.group(2), "via": fk.group(1)})
+    return rels
+
+
+def _row_ref(record: dict) -> tuple:
+    if record.get("source_system") and record.get("source_row_id"):
+        return f"{record['source_system']}:{record['source_row_id']}", record["source_system"]
+    evidence = str(record.get("evidence") or "").split(",")[0].strip()
+    return (evidence or record.get("edge_id") or "unknown"), (evidence.split(":")[0] if ":" in evidence else "dependency_edge")
+
+
+def _reason(rule: dict, record: dict) -> str:
+    if rule["type"].lower().startswith("foreign key"):
+        return f"{rule['rule']} {record.get(rule['rule'], '')} points at nothing in the catalog"
+    if rule["rule"] == "resolved_link":
+        return f"unresolved link: {record.get('from_id')} {record.get('relation')} {record.get('to_id')}"
+    return f"fails {rule['expression'] or rule['rule']}"
+
+
+def zetaris_json() -> dict:
+    report = json.loads((ROOT / "zetaris" / "snapshots" / "dq_report.json").read_text(encoding="utf-8"))
+    by_system = {}
+    for table, (system, _prefix) in RAW_SOURCES.items():
+        by_system.setdefault(system, []).append(table)
+    sources = [{"source_id": system, "name": SOURCE_NAMES.get(system, system),
+                "kind": "PostgreSQL database (JDBC)" if system in LIVE_DATABASE_SOURCES else "file store (CSV)",
+                "tables": tables, "row_count": sum(_csv_rows(t) for t in tables), "onboarded_at": None}
+               for system, tables in by_system.items()]
+    tables = list_tables()
+    entities = [{"name": t["short_name"], "from_sources": t["source_systems"]} for t in tables.get("tables", [])]
+    rules = []
+    for rule in report["rules"]:
+        invalid = [{"row_id": _row_ref(r)[0], "source": _row_ref(r)[1], "reason": _reason(rule, r)}
+                   for r in rule.get("invalid_records", [])]
+        rules.append({"rule_id": f"{rule['table']}.{rule['rule']}",
+                      "name": f"{rule['type']}: {rule['rule']} on {rule['table']}",
+                      "expression": rule["expression"] or f"{rule['type'].lower()} on {rule['table']}.{rule['rule']}",
+                      "status": "fail" if rule["invalid"] else "pass", "checked_rows": rule["total"],
+                      "invalid_rows": invalid})
+    return {
+        "schema_version": "0.1",
+        "compiled_at": None,  # not recorded at compile time; the DQ run below proves the USL was active
+        "sources": sources,
+        "usl": {"name": USL, "compile_status": "success",
+                "compile_output": (f"{len(entities)} tables compiled and activated by zetaris/setup.py "
+                                   f"(COMPILE USL + ACTIVATE USL TABLE). All {len(rules)} data-quality rules ran "
+                                   f"against the active USL at {report['generated_at']}."),
+                "entities": entities, "relationships": _relationships()},
+        "dq_rules": rules,
+        "generated_at": report["generated_at"],
+        "synthetic": True,
+    }
+
+
+def _metric_strings(s: dict) -> dict:
+    frac = lambda a, b: f"{a}/{b}" if b else None  # noqa: E731
+    pct = lambda x: None if x is None else f"{round(x * 100)}%"  # noqa: E731
+    return {"accuracy": frac(s["correct"], s["scored"]), "failure_recall": frac(s["caught"], s["failing"]),
+            "false_alarms": frac(s["false_alarms"], s["safe"]), "backed_warnings": frac(s["backed"], s["warnings"]),
+            "cause_score": pct(s["cause_failing"])}
+
+
+def _combined(summary: dict) -> dict:
+    """Practice and held-out groups added together (cause score averaged over failing cases by count)."""
+    groups = list(summary.values())
+    out = {k: sum(g[k] for g in groups) for k in ("correct", "scored", "caught", "failing", "false_alarms", "safe",
+                                                  "backed", "warnings")}
+    weighted = [(g["cause_failing"], g["failing"]) for g in groups if g["cause_failing"] is not None and g["failing"]]
+    out["cause_failing"] = (sum(c * n for c, n in weighted) / sum(n for _, n in weighted)) if weighted else None
+    return out
+
+
+METRIC_DEFS = [
+    ("failure_recall", "Failure recall", lambda s: (s["caught"], s["failing"]), "Dangerous changes flagged / all dangerous changes"),
+    ("false_alarms", "False alarms", lambda s: (s["false_alarms"], s["safe"]), "Safe changes wrongly flagged / all safe changes"),
+    ("accuracy", "Correct verdicts", lambda s: (s["correct"], s["scored"]), "Verdicts matching the label / cases scored (outages excluded)"),
+    ("backed_warnings", "Warnings backed by a reproduced failure", lambda s: (s["backed"], s["warnings"]),
+     "Warnings the judge confirmed with baseline, candidate twice and control / all warnings"),
+]
+
+
+def scorecard_json(results: dict, include_answers: bool) -> dict:
+    held_out = set(config.private_world_ids())
+    modes = results.get("modes", {})
+    domino = modes.get(DOMINO_MODE)
+    metrics = []
+    if domino:
+        s = _combined(domino["summary"])
+        for key, label, parts, definition in METRIC_DEFS:
+            a, b = parts(s)
+            metrics.append({"key": key, "label": label, "value": (a / b) if b else None,
+                            "display": f"{a}/{b}" if b else None, "n": b or None, "definition": definition})
+        cause = s["cause_failing"]
+        metrics.append({"key": "cause_score", "label": "Cause named (keyword proxy)", "value": cause,
+                        "display": None if cause is None else f"{round(cause * 100)}%", "n": s["failing"] or None,
+                        "definition": "Share of each failing case's mechanism words found in the explanation"})
+    else:
+        metrics = [{"key": key, "label": label, "value": None, "display": None, "n": None, "definition": definition}
+                   for key, label, _parts, definition in METRIC_DEFS]
+    cases, runs_included = [], []
+    if domino:
+        runs_included = sorted({r["run_id"] for r in domino["rows"] if r.get("run_id") and r.get("counted", True)})
+    if include_answers:
+        sys.path.insert(0, str(ROOT / "scorecard"))
+        import score as scoring
+        labels = scoring.labels()
+        for world in results.get("worlds", []):
+            if world in held_out:
+                continue
+            runs = [{"run_id": r["run_id"], "verdict": r["verdict"]} for r in (domino or {}).get("rows", [])
+                    if r["world"] == world and r.get("run_id") and r.get("counted", True) and r["status"] == "ok"]
+            cases.append({"case_id": world, "expected_verdict": labels[world]["expected_verdict"], "runs": runs})
+    baselines = []
+    for letter, (key, label) in BASELINE_KEYS.items():
+        if letter not in modes:
+            continue
+        per_case = {}
+        if include_answers:
+            per_case = {r["world"]: r.get("verdict") for r in modes[letter]["rows"]
+                        if r["world"] not in held_out and r.get("counted", True) and r["repeat"] == 0}
+        baselines.append({"key": key, "label": label, "per_case": per_case,
+                          "metrics": _metric_strings(_combined(modes[letter]["summary"]))})
+    return {"schema_version": "0.1",
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S", time.strptime(results["generated_at"], "%Y%m%d-%H%M%S")),
+            "runs_included": runs_included, "metrics": metrics, "cases": cases, "baselines": baselines,
+            "data_mode": results.get("data_mode"), "includes_per_case_answers": include_answers}
+
+
+def latest_results() -> Path:
+    found = sorted((ROOT / "runs" / "scorecard").glob("*/results.json"))
+    if not found:
+        raise SystemExit("No scorecard results yet: run python3 scorecard/run_scorecard.py first.")
+    return found[-1]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--out", default=str(ROOT / "runs" / "site_data"), help="folder to write into")
+    parser.add_argument("--results", help="a run_scorecard.py results.json (default: the newest)")
+    parser.add_argument("--include-answers", action="store_true", help="freeze only: per-case expected verdicts")
+    args = parser.parse_args()
+    out = Path(args.out).expanduser().resolve()
+    if args.include_answers and (out == ROOT or ROOT in out.parents) and (ROOT / "runs") not in (out, *out.parents):
+        raise SystemExit("Per-case answers stay out of tracked files here; write them under runs/ or outside the repo.")
+    results_path = Path(args.results) if args.results else latest_results()
+    results = json.loads(results_path.read_text(encoding="utf-8"))
+    out.mkdir(parents=True, exist_ok=True)
+    zet = zetaris_json()
+    sc = scorecard_json(results, args.include_answers)
+    (out / "zetaris.json").write_text(json.dumps(zet, indent=2) + "\n", encoding="utf-8")
+    (out / "scorecard.json").write_text(json.dumps(sc, indent=2) + "\n", encoding="utf-8")
+    failing = [r for r in zet["dq_rules"] if r["status"] == "fail"]
+    print(f"zetaris.json: {len(zet['sources'])} sources, {len(zet['usl']['entities'])} USL tables, "
+          f"{len(zet['usl']['relationships'])} keys, {len(zet['dq_rules'])} DQ rules ({len(failing)} with rejected rows)")
+    measured = sum(m["display"] is not None for m in sc["metrics"])
+    print(f"scorecard.json from {results_path.relative_to(ROOT) if ROOT in results_path.parents else results_path}: "
+          f"modes {sorted(results.get('modes', {}))}; Domino metrics measured {measured}/{len(sc['metrics'])}; "
+          f"per-case answers {'INCLUDED' if args.include_answers else 'left out'}")
+    print(f"Wrote {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -6,7 +6,7 @@ All data here is synthetic. Every query Domino runs is logged to `runs/query_log
 zetaris/
 ├── build_sources.py   generates sources/*.csv from the world case files
 ├── setup.py           one command: copy files -> register sources -> compile + activate USL -> grant access
-├── sources/           nine synthetic CSVs from six independent source systems
+├── sources/           nine synthetic CSVs from seven source systems
 ├── sql/               01_sources.sql, 02_usl.sql, 04_dq.sql, 03_access.sql (statements separated by a line holding only ";")
 ├── dq_demo.py         the planted broken link for the data-quality demo
 ├── dq_report.py       runs every data-quality rule and shows the invalid records

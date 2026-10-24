@@ -4,7 +4,7 @@ What the Unified Semantic Layer did for Domino, where it would help in real work
 Written from building it during the hackathon (22–27 Oct 2026); numbers are from our own logs.
 
 ## What we built on Zetaris
-- **Sources:** nine synthetic tables from six independent source systems. The **database catalog is a real PostgreSQL database**, read over JDBC (`CREATE DATASOURCE catalog_db`). The rest (change records, record registry, pipeline repo, service catalog, runtime config, telemetry) are file-store tables in `domino_src`. **One USL joins the live database with the files.**
+- **Sources:** nine synthetic tables from seven source systems: the proposed change plus six independent systems. The **database catalog is a real PostgreSQL database**, read over JDBC (`CREATE DATASOURCE catalog_db`). The rest (change records, record registry, pipeline repo, service catalog, runtime config, telemetry) are file-store tables in `domino_src`. **One USL joins the live database with the files.**
 - **USL:** `lightning.metastore.domino.systems`, with 12 tables, canonical IDs (`<system>/<kind>/<name>`) and foreign keys.
 - **`dependency_edge`:** the cross-source join, built **inside Zetaris** when it's activated. Every link between two systems is labelled `observed` (two sources agree), `inferred` (one source, or a name-only match) or `unresolved` (it points at nothing), and keeps the source rows it came from.
 - **Data quality:** 19 key rules generated from the USL's keys, plus 6 custom rules. One of them, `resolved_link`, catches any link that points at nothing. A planted broken link is caught by three rules at once.

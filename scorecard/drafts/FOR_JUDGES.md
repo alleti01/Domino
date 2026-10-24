@@ -3,7 +3,7 @@
 > Draft by Anish for Adhvik to fold into the main README. Commands are tested; numbers marked `TODO` wait on
 > the agent's scored runs.
 
-Domino checks a proposed change **before it ships**. It follows the change through data joined across six
+Domino checks a proposed change **before it ships**. It follows the change through data joined across seven
 source systems in a Zetaris Unified Semantic Layer, forms hypotheses, and only calls a change dangerous when a
 real experiment reproduces the failure (baseline passes, the change fails twice, a control passes).
 
@@ -47,7 +47,7 @@ python3 scorecard/leakage_check.py                    # nothing the agent sees g
 statements that register your database in Zetaris.
 
 ## Where Zetaris does the work
-- **One USL over six sources**, including a live PostgreSQL database. `dependency_edge` is the cross-source join,
+- **One USL over seven source systems** (the change records plus six others), including a live PostgreSQL database. `dependency_edge` is the cross-source join,
   built inside Zetaris, with every link labelled observed / inferred / unresolved.
 - **Data quality:** 19 key rules generated from the USL, plus 6 custom ones. A planted broken link is caught.
 - **Read-only agent user:** sees the USL only; raw sources and writes are refused.

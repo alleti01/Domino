@@ -53,3 +53,5 @@ Results go to `runs/scorecard/<timestamp>/results.json` (gitignored).
 - `pre_push_hook.sh`: blocks pushes that would carry answers
 - `backup_private.sh`: encrypted backup of the private folder to iCloud Drive
 - `score.py`: shared scoring
+- `repo_scan.py`: before submitting, scans every branch's history for big files, secrets and personal data
+- `export_site.py`: writes the dashboard's `zetaris.json` and `scorecard.json` (formats in the dashboard's `docs/data-formats.md`). By default it writes totals only, never per-case answers; use `--include-answers` only at the freeze
