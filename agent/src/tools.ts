@@ -218,6 +218,7 @@ export class ToolGateway {
   queries = 0;
   experimentsRun = 0;
   finished: FinishArgs | null = null;
+  dataOutages = 0;
   private readonly sqlSeen = new Map<string, string>();
 
   constructor(
@@ -248,6 +249,11 @@ export class ToolGateway {
       return await this.dispatch(name, args);
     } catch (err) {
       if (err instanceof ToolError) return `ERROR: ${err.message}`;
+      if ((err as Error).name === "DataLayerUnavailable") {
+        this.dataOutages++;
+        await this.ctx.trace.emit({ type: "error", stage: `data:${name}`, message: (err as Error).message, recoverable: true });
+        return `UNAVAILABLE: the data layer did not answer (${(err as Error).message}). This is an outage, not your mistake; try again once or continue with what you have.`;
+      }
       await this.ctx.trace.emit({ type: "error", stage: `tool:${name}`, message: (err as Error).message, recoverable: true });
       return `ERROR: ${(err as Error).message}`;
     }

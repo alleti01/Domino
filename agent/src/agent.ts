@@ -196,7 +196,11 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
           { world_id: change.world_id, change_id: change.change_id, variant: need.variant, observe, ...(workload ? { workload } : {}), ...(params ? { params } : {}) },
           [],
           `Harness confirmation: ${need.variant} run required before the judge can call a reproduced failure.`,
-        );
+        ).catch(async (err: Error) => {
+          if (err.name !== "DataLayerUnavailable") throw err;
+          gateway.dataOutages++;
+          await trace.emit({ type: "error", stage: "data:confirmation", message: err.message, recoverable: false });
+        });
       }
     };
 
@@ -257,6 +261,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     }
   }
 
+  if (gateway.dataOutages > 0) outage = true; // Zetaris/data layer down at some point: not an agent mistake
   const judgement = judge(state.experiments);
   const verdict: Verdict = outage && judgement.verdict !== "reproduced_failure" ? "inconclusive" : judgement.verdict;
   const supported = [...state.hypotheses.values()].filter((h) => h.status === "supported" || gateway.finished?.supported_hypothesis_ids.includes(h.hypothesis_id));

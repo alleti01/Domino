@@ -17,6 +17,12 @@ import type { EvidenceAdapter, WorldsAdapter } from "../adapters.js";
 
 const run = promisify(execFile);
 
+/** Zetaris (or the data layer) is down or timed out: an outage, never an agent mistake. */
+export class DataLayerUnavailable extends Error {
+  override name = "DataLayerUnavailable";
+}
+const OUTAGE_STATUSES = new Set(["unavailable", "timeout"]);
+
 // Row ids come back as "unknown:con-0001" when a query omits source_system; the same row from
 // dependency_path is "config_repo:con-0001". Map the row-id prefix back to its table so citations match.
 const PREFIX_TO_TABLE: Record<string, string> = { con: "config_repo", tel: "telemetry", cod: "code_index", "db_": "db_catalog", sch: "schema_registry" };
@@ -59,10 +65,24 @@ class DataLayerCli {
   }
 }
 
+/** `tables` (contract v0.3): USL tables with full names, plus the column that scopes rows to one system. */
+async function listTables(cli: DataLayerCli): Promise<{ systemColumn: string; tables: any[] } | null> {
+  try {
+    const t = await cli.call("tables");
+    if (t.status !== "ok") return null;
+    return { systemColumn: t.system_column ?? "system_id", tables: t.tables ?? [] };
+  } catch {
+    return null; // v0.2 data layers have no `tables` command
+  }
+}
+
 export class DataLayerWorlds implements WorldsAdapter {
+  private readonly opts: DataLayerOptions;
   private readonly cli: DataLayerCli;
   private readonly cache = new Map<string, any>();
+  private tables?: Promise<{ systemColumn: string; tables: any[] } | null>;
   constructor(opts: DataLayerOptions) {
+    this.opts = opts;
     this.cli = new DataLayerCli(opts);
   }
 
@@ -85,7 +105,7 @@ export class DataLayerWorlds implements WorldsAdapter {
       title: d.change.title,
       description:
         `${d.change.description}${components ? `\nSystem components: ${components}.` : ""}` +
-        `\nSemantic-layer rows for this system have scenario_id = '${d.world}'; other scenario_ids belong to unrelated systems.`,
+        `\nSemantic-layer rows for this system have ${(await (this.tables ??= listTables(this.cli)))?.systemColumn ?? "scenario_id"} = '${d.world}'; other values belong to unrelated systems.`,
       diff: d.change.diff,
       files: d.change.files ?? [],
     };
@@ -109,7 +129,9 @@ export class DataLayerWorlds implements WorldsAdapter {
 
   async run(req: ExperimentRequest): Promise<ExperimentResult> {
     const args = ["run", req.world_id, req.variant];
+    if (req.params && Object.keys(req.params).length && this.opts.module !== "practice") args.push("--params", JSON.stringify(req.params));
     const r = await this.cli.call(...args);
+    if (OUTAGE_STATUSES.has(r.status)) throw new DataLayerUnavailable(`experiment ${req.variant} ${r.status}: ${r.error ?? ""}`);
     const completed = r.status === "ok";
     return {
       experiment_id: r.experiment_id ?? `x-${Date.now()}`,
@@ -139,6 +161,15 @@ export class DataLayerEvidence implements EvidenceAdapter {
 
   async describe() {
     if (!this.views) {
+      const listed = await listTables(this.cli);
+      if (listed) {
+        this.views = listed.tables.map((t: any) => ({
+          view: t.name,
+          source: `${(t.source_systems ?? []).join(", ") || "semantic layer"}${t.description ? ` (${t.description})` : ""}`,
+          columns: (t.columns ?? []).map((c: any) => (typeof c === "string" ? c : c.name)),
+        }));
+        return this.views;
+      }
       const views: Array<{ view: string; source: string; columns: string[] }> = [];
       for (const table of FACT_TABLES) {
         const r = await this.cli.call("lookup", `SELECT DISTINCT source_system FROM ${table}`);
@@ -160,6 +191,10 @@ export class DataLayerEvidence implements EvidenceAdapter {
 
   async query(sql: string): Promise<QueryResult> {
     const r = await this.cli.call("lookup", sql);
+    if (OUTAGE_STATUSES.has(r.status)) throw new DataLayerUnavailable(`semantic layer ${r.status}: ${r.error ?? ""}`);
+    if (r.status === "not_in_sample") {
+      return { query_id: r.query_id ?? `q-${Date.now()}`, sql, columns: [], rows: [], elapsed_ms: 0, from_snapshot: true, error: "This query was not recorded in sample mode. Use get_dependency_path and experiments, or a recorded query." };
+    }
     const rows = (r.rows ?? []) as Array<Record<string, string | null>>;
     return {
       query_id: r.query_id ?? `q-${Date.now()}`,
@@ -178,6 +213,7 @@ export class DataLayerEvidence implements EvidenceAdapter {
 
   async dependencyPath(changeId: string, entity: string): Promise<DependencyPath> {
     const r = await this.cli.call("path", entity);
+    if (OUTAGE_STATUSES.has(r.status)) throw new DataLayerUnavailable(`dependency_path ${r.status}: ${r.error ?? ""}`);
     if (r.status !== "ok") throw new Error(r.error ?? `dependency_path ${entity} failed`);
     const nodes = new Map<string, DependencyPath["nodes"][number]>();
     const edges: DependencyPath["edges"] = [];
@@ -204,6 +240,7 @@ export class DataLayerEvidence implements EvidenceAdapter {
       const rowIds = (u.evidence ?? []).map((e: any) => `${e.source_system}:${e.source_row_id}`);
       edges.push({ from: u.from, to: u.to, relation: u.relation, status: "unresolved", source: u.evidence?.[0]?.source_system ?? "semantic_layer", row_id: rowIds[0] ?? "", row_ids: rowIds, detail: u.reason });
     }
-    return { change_id: changeId, nodes: [...nodes.values()], edges, dq_issues: [] };
+    const dq_issues = (r.dq_issues ?? []).map((d: any) => ({ rule: String(d.rule ?? ""), row_id: String(d.row_id ?? ""), detail: String(d.detail ?? "") }));
+    return { change_id: changeId, nodes: [...nodes.values()], edges, dq_issues };
   }
 }
