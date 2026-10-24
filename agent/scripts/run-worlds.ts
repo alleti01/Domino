@@ -99,8 +99,9 @@ while (queue.length) {
       run_id: summary.run_id,
     };
     if (row.outage && (attempts.get(world) ?? 0) < 2) {
-      console.log(`outage after ${row.secs}s; will retry once`);
+      console.log(`outage after ${row.secs}s; cooling down 2 min (NVIDIA free-tier limits), then retrying once`);
       queue.push(world);
+      await new Promise((r) => setTimeout(r, 120_000));
       continue;
     }
     rows.push(row);
