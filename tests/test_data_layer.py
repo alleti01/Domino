@@ -179,6 +179,22 @@ iss = lookups.dq_issues("s1")
 check("dq_issues filtered to the system with row ids", [i["row_id"] for i in iss] == ["pipeline_repo:jd-0009", "change_records:cr-0001"]
       and "no matching record" in iss[0]["detail"] and "points at nothing" in iss[1]["detail"])
 check("dq_issues empty without a report", lookups.dq_issues("nobody") == [])
+
+# Scorecard scoring rules (no private labels needed)
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scorecard"))
+import run_scorecard as rs
+mk = [["r0.bundle_fields", "both databases"], ["twice", "duplicat"]]
+check("cause score counts mechanism facts", rs.cause_score("reads both databases so rows appear twice", mk) == 1.0
+      and rs.cause_score("runtime refused to start: 280 > 200", mk) == 0.0 and rs.cause_score("x", None) is None)
+lab = {"a": {"expected_verdict": "reproduced_failure"}, "b": {"expected_verdict": "no_failure_observed"},
+       "c": {"expected_verdict": "reproduced_failure"}, "d": {"expected_verdict": "no_failure_observed"}}
+rows = [{"world": "a", "status": "ok", "verdict": "reproduced_failure", "backed": True, "cause": 1.0, "duration_ms": 1000, "model_calls": 2},
+        {"world": "b", "status": "ok", "verdict": "reproduced_failure", "backed": False, "cause": None, "duration_ms": 1000, "model_calls": 2},
+        {"world": "c", "status": "error", "cause": 0.0, "duration_ms": 1000},
+        {"world": "d", "status": "unavailable", "cause": None}]
+sm = rs.summarize(rows, lab)
+check("summary: crash counts as wrong, outage excluded", sm["scored"] == 3 and sm["correct"] == 1 and sm["errors"] == 1
+      and sm["unavailable"] == 1 and sm["caught"] == 1 and sm["failing"] == 2 and sm["false_alarms"] == 1 and sm["backed"] == 1)
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)
