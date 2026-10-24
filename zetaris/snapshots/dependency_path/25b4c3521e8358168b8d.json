@@ -1,0 +1,273 @@
+{
+  "contract_version": "0.2",
+  "call": "dependency_path",
+  "mode": "live",
+  "status": "ok",
+  "start": {
+    "entity_id": "dq-demo/change/0099",
+    "entity_type": "change"
+  },
+  "paths": [
+    {
+      "hops": [
+        {
+          "from": "dq-demo/change/0099",
+          "from_type": "change",
+          "to": "dq-demo/database/default",
+          "to_type": "database",
+          "relation": "grants_on",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT TO svc_ghost_reader",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0007",
+              "query_id": "q-a80f5682d2c74be6"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0022",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        },
+        {
+          "from": "dq-demo/database/default",
+          "from_type": "database",
+          "to": "dq-demo/table/default.events",
+          "to_type": "table",
+          "relation": "contains",
+          "edge_status": "inferred",
+          "detail": "column_count=14",
+          "evidence": [
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0022",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "dq-demo/change/0099",
+          "from_type": "change",
+          "to": "dq-demo/principal/svc_ghost_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "unresolved",
+          "detail": "GRANT SELECT ON default.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0007",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        },
+        {
+          "from": "dq-demo/principal/svc_ghost_reader",
+          "from_type": "principal",
+          "to": "dq-demo/service/report-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "unresolved",
+          "detail": "service runs as svc_ghost_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0011",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        },
+        {
+          "from": "dq-demo/service/report-builder",
+          "from_type": "service",
+          "to": "dq-demo/query/q-events-daily",
+          "to_type": "query",
+          "relation": "executes",
+          "edge_status": "inferred",
+          "detail": "SELECT day, count(*) FROM default.events GROUP BY day",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0011",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "pipeline_repo"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "dq-demo/change/0099",
+          "from_type": "change",
+          "to": "dq-demo/principal/svc_ghost_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "unresolved",
+          "detail": "GRANT SELECT ON default.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0007",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        },
+        {
+          "from": "dq-demo/principal/svc_ghost_reader",
+          "from_type": "principal",
+          "to": "dq-demo/service/report-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "unresolved",
+          "detail": "service runs as svc_ghost_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0011",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        },
+        {
+          "from": "dq-demo/service/report-builder",
+          "from_type": "service",
+          "to": "dq-demo/table/default.events",
+          "to_type": "table",
+          "relation": "reads",
+          "edge_status": "inferred",
+          "detail": "matched on table name events",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0011",
+              "query_id": "q-a80f5682d2c74be6"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0022",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "dq-demo/change/0099",
+          "from_type": "change",
+          "to": "dq-demo/principal/svc_ghost_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "unresolved",
+          "detail": "GRANT SELECT ON default.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0007",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        },
+        {
+          "from": "dq-demo/principal/svc_ghost_reader",
+          "from_type": "principal",
+          "to": "dq-demo/service/report-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "unresolved",
+          "detail": "service runs as svc_ghost_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0011",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        },
+        {
+          "from": "dq-demo/service/report-builder",
+          "from_type": "service",
+          "to": "dq-demo/artifact/daily_report.csv",
+          "to_type": "artifact",
+          "relation": "writes",
+          "edge_status": "inferred",
+          "detail": "output_mode=as_returned",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0011",
+              "query_id": "q-a80f5682d2c74be6"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "pipeline_repo"
+      ],
+      "meets_two_source_rule": true
+    }
+  ],
+  "unresolved": [
+    {
+      "from": "dq-demo/change/0099",
+      "to": "dq-demo/principal/svc_ghost_reader",
+      "relation": "grants_to",
+      "reason": "referenced entity not found in any other source",
+      "evidence": [
+        {
+          "source_system": "change_records",
+          "source_row_id": "cr-0007",
+          "query_id": "q-a80f5682d2c74be6"
+        }
+      ]
+    },
+    {
+      "from": "dq-demo/principal/svc_ghost_reader",
+      "to": "dq-demo/service/report-builder",
+      "relation": "identity_of",
+      "reason": "referenced entity not found in any other source",
+      "evidence": [
+        {
+          "source_system": "pipeline_repo",
+          "source_row_id": "jd-0011",
+          "query_id": "q-a80f5682d2c74be6"
+        }
+      ]
+    }
+  ],
+  "edges_considered": 7,
+  "query_ids": [
+    "q-a80f5682d2c74be6"
+  ],
+  "duration_ms": 2249,
+  "error": null,
+  "snapshot_request": {
+    "entity_id": "dq-demo/change/0099",
+    "max_hops": 6
+  }
+}

@@ -20,3 +20,4 @@ db_catalog,ti-0018,w-t3n6,default,bundle_fields,90
 db_catalog,ti-0019,w-t3n6,r0,bundle_fields,90
 db_catalog,ti-0020,w-t3n6,default,request_log,12
 db_catalog,ti-0021,w-t3n6,default,user_profile,8
+db_catalog,ti-0022,dq-demo,default,events,14

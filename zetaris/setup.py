@@ -8,6 +8,7 @@ Steps:
   files   regenerate the source CSVs and copy them into the Zetaris file store (domino/)
   sources sql/01_sources.sql   register the files as tables in domino_src
   usl     sql/02_usl.sql       compile and activate the USL lightning.metastore.domino.systems
+  dq      sql/04_dq.sql        register the custom data-quality rules (re-run after every USL rebuild)
   access  sql/03_access.sql    read-only grant for the agent user (re-run after every USL rebuild)
 
 "Already exists" errors are skipped, so it is safe to re-run. Never uses `docker compose down -v`.
@@ -29,8 +30,8 @@ from data_layer.zetaris_client import ZetarisClient, ZetarisError  # noqa: E402
 import build_sources  # noqa: E402
 
 DRIVER = "zetaris-driver-1"
-STEPS = ("files", "sources", "usl", "access")
-SQL_FILES = {"sources": "01_sources.sql", "usl": "02_usl.sql", "access": "03_access.sql"}
+STEPS = ("files", "sources", "usl", "dq", "access")
+SQL_FILES = {"sources": "01_sources.sql", "usl": "02_usl.sql", "dq": "04_dq.sql", "access": "03_access.sql"}
 SQL_TIMEOUT_S = 600
 
 

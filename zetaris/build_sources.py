@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 CASES_DIR = ROOT / "worlds" / "cases"
 OUT_DIR = Path(__file__).resolve().parent / "sources"
 
@@ -103,6 +104,10 @@ def main() -> int:
     """Repo CSVs hold public worlds only. When held-out worlds exist in the private folder, the full set
     (public rows first, so their row IDs never change) is written there, and that is what Zetaris loads."""
     public = _collect(CASES_DIR)
+    # The data-quality demo system (a planted broken link) is public and goes after the worlds' rows.
+    import dq_demo
+    for name, rows in dq_demo.facts().items():
+        public[name] += [{**row, "system_id": dq_demo.SYSTEM_ID} for row in rows]
     _write(OUT_DIR, public)
     sys.path.insert(0, str(ROOT))
     from data_layer import config

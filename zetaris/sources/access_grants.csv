@@ -20,3 +20,4 @@ db_catalog,ag-0018,w-t3n6,svc_bundle_reader,default,SELECT
 db_catalog,ag-0019,w-t3n6,svc_admin_console,default,SELECT
 db_catalog,ag-0020,w-t3n6,svc_admin_console,r0,SELECT
 db_catalog,ag-0021,w-t3n6,svc_metrics,default,SELECT
+db_catalog,ag-0022,dq-demo,svc_events_writer,default,SELECT

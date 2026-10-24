@@ -5,3 +5,4 @@ change_records,cr-0003,w-h9c5,0042,db/migrations/0042_reader_shard_grants.sql,1,
 change_records,cr-0004,w-k7m2,0042,db/migrations/0042_reader_shard_grants.sql,1,GRANT,SELECT,svc_bundle_reader,r0,Explicit shard grants for svc_bundle_reader
 change_records,cr-0005,w-p4r8,0042,db/migrations/0042_reader_shard_grants.sql,1,GRANT,SELECT,svc_bundle_reader,r0,Explicit shard grants for svc_bundle_reader
 change_records,cr-0006,w-t3n6,0042,db/migrations/0042_reader_shard_grants.sql,1,GRANT,SELECT,svc_bundle_reader,r0,Explicit shard grants for svc_bundle_reader
+change_records,cr-0007,dq-demo,0099,db/migrations/0099_report_reader.sql,1,GRANT,SELECT,svc_ghost_reader,default,Grant the report reader access to events

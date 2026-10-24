@@ -9,3 +9,4 @@ pipeline_repo,jd-0007,w-p4r8,bundle-builder,svc_bundle_reader,q-bundle-fields,"S
 pipeline_repo,jd-0008,w-p4r8,metrics-exporter,svc_metrics,q-request-log,"SELECT status, count(*) FROM default.request_log GROUP BY status",request_log,request_metrics.csv,as_returned
 pipeline_repo,jd-0009,w-t3n6,bundle-builder,svc_bundle_reader,q-bundle-fields,"SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name",bundle_fields,bundle.json,as_returned
 pipeline_repo,jd-0010,w-t3n6,metrics-exporter,svc_metrics,q-request-log,"SELECT status, count(*) FROM default.request_log GROUP BY status",request_log,request_metrics.csv,as_returned
+pipeline_repo,jd-0011,dq-demo,report-builder,svc_ghost_reader,q-events-daily,"SELECT day, count(*) FROM default.events GROUP BY day",events,daily_report.csv,as_returned

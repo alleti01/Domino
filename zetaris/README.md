@@ -38,6 +38,11 @@ python3 zetaris/setup.py --dry-run
 - **Keys:** canonical IDs of the form `<system>/<kind>/<name>`. The foreign keys make Zetaris generate DQ rules (`LIST DQ USL lightning.metastore.domino.systems`).
 - **`dependency_edge`:** the cross-source join, done inside Zetaris at activation. Each edge is labelled `observed`, `inferred` or `unresolved` and cites its source rows. `data_layer.dependency_path` reads it with one query.
 
+## Data quality
+- **Rules:** Zetaris generates key rules from the USL's PRIMARY / FOREIGN KEYs; `sql/04_dq.sql` adds custom ones. One of them, `resolved_link`, flags any cross-source link that points at nothing.
+- **Report:** `python3 zetaris/dq_report.py` runs every rule (`LIST DQ USL` → `RUN DQ`) and prints the invalid records (`SHOW DQ INVALID RECORD`) instead of hiding them. A copy is saved to `snapshots/dq_report.json`.
+- **Planted broken link:** the `dq-demo` system (`dq_demo.py`) is not a test world. Its change grants access to `svc_ghost_reader` and a service runs as it, but the catalog has no such principal. Zetaris catches it with both foreign-key rules and `resolved_link`, and `dependency_path("dq-demo/change/0099")` lists both broken links under `unresolved`, so the agent is told the chain can't be trusted.
+
 ## Gotchas met while building
 - **File-store root:** `dffs://` paths resolve under `/home/zetaris/customer-data/<org-id>/file-store/`, not `shared/`. `setup.py` finds it automatically.
 - **Register order:** copy a file into the store before registering it. A table registered against a missing file returns no rows.
