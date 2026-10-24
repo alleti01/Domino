@@ -1,8 +1,8 @@
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "run_experiment",
   "mode": "fake",
-  "experiment_id": "x-6639938ca7bf4397",
+  "experiment_id": "x-680f6b50369348bf",
   "world": "fake-w0",
   "variant": "candidate",
   "params": {},

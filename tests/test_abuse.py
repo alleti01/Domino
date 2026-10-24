@@ -23,12 +23,13 @@ os.environ.update(DOMINO_QUERY_LOG=str(TMP / "qlog.jsonl"), DOMINO_PRIVATE_DIR=s
                   ZETARIS_BASE_URL="http://127.0.0.1:9", ZETARIS_ORG_ID="1", ZETARIS_TIMEOUT_S="2",
                   ZETARIS_AGENT_USERNAME="abuse-agent", ZETARIS_AGENT_PASSWORD="not-real")
 
-from data_layer import describe_world, dependency_path, lookup, lookups, run_experiment, zetaris_client  # noqa: E402
+from data_layer import describe_world, dependency_path, list_tables, lookup, lookups, run_experiment, zetaris_client  # noqa: E402
 from data_layer.experiments import DESCRIBE_FIELDS, RUN_FIELDS  # noqa: E402
 
 zetaris_client.RETRY_BACKOFF_S = (0.05, 0.05)
 STATUSES = {"ok", "error", "timeout", "unavailable", "not_in_sample"}
 FIELDS = {"lookup": set(lookups.FIELDS["lookup"]), "dependency_path": set(lookups.FIELDS["dependency_path"]),
+          "list_tables": set(lookups.FIELDS["list_tables"]),
           "run_experiment": set(RUN_FIELDS), "describe_world": set(DESCRIBE_FIELDS)}
 CASES = [
     ("lookup(None)", lambda: lookup(None)), ("lookup('')", lambda: lookup("")), ("lookup(123)", lambda: lookup(123)),
@@ -51,6 +52,7 @@ CASES = [
     ("run(timeout=-1)", lambda: run_experiment("w-k7m2", "baseline", timeout_s=-1)),
     ("run(timeout='x')", lambda: run_experiment("w-k7m2", "baseline", timeout_s="x")),
     ("run(path traversal)", lambda: run_experiment("../../etc", "baseline")),
+    ("tables()", lambda: list_tables()),
     ("describe(None)", lambda: describe_world(None)), ("describe(path traversal)", lambda: describe_world("../../etc/passwd")),
 ]
 

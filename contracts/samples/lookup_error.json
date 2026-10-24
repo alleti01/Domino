@@ -1,9 +1,9 @@
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "lookup",
   "mode": "fake",
   "status": "error",
-  "query_id": "q-8f07878b5fce4a60",
+  "query_id": "q-91fa38b89bcd44b7",
   "sql": "DELETE FROM some_table",
   "columns": [],
   "rows": [],

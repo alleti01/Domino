@@ -1,14 +1,15 @@
-# Data-layer interface contract — v0.2 (DRAFT, needs Abhi's sign-off)
+# Data-layer interface contract — v0.3 (DRAFT, needs Abhi's sign-off)
 
 How Abhi's agent calls Anish's data layer. Three calls, one Python import:
 
 ```python
-from data_layer import lookup, dependency_path, run_experiment, describe_world
+from data_layer import lookup, dependency_path, list_tables, run_experiment, describe_world
 ```
 
 Each call also works from the shell, so it can be tested without the agent:
 
 ```bash
+python3 -m data_layer tables
 python3 -m data_layer lookup "SELECT * FROM <usl table> LIMIT 5"
 python3 -m data_layer path <entity_id>
 python3 -m data_layer run <world_id> candidate
@@ -30,6 +31,8 @@ or `null`), so you never need to check whether a key exists.
 | `lookup_unavailable.json` | `unavailable` | Zetaris down. Retry later; this is **not** an agent mistake. |
 | `lookup_not_in_sample.json` | `not_in_sample` | sample mode has no recording of this exact query |
 | `dependency_path.json` | `ok` | walking paths, `edge_status`, evidence, the two-source rule |
+| `dependency_path_with_dq_issues.json` | `ok` | a system with data-quality findings: `unresolved` links and `dq_issues` |
+| `list_tables.json` | `ok` | the USL tables, full names, columns and source systems |
 | `describe_world.json` | `ok` | reading the change (`change.diff`, `change.entity_id`) and the component list |
 | `run_experiment_baseline/candidate/control.json` | `ok` | `passed`, assertions, metrics, artifact hashes |
 | `run_experiment_timeout.json` | `timeout` | a world that didn't finish |
@@ -37,6 +40,11 @@ or `null`), so you never need to check whether a key exists.
 `python3 contracts/make_samples.py` regenerates them. `--check` fails if a sample no longer matches the real
 output shape; the offline tests run that check.
 For real data without Zetaris, use `DOMINO_DATA_MODE=sample`. It replays recorded Zetaris results, and worlds always run for real.
+
+**Changes since v0.2 (all additions; nothing removed or renamed):**
+- new call `list_tables()` / CLI `tables`
+- `dependency_path` adds `dq_issues`
+- row IDs name their source system even when a query doesn't select `source_system`
 
 **Changes since v0.1:**
 - every call has a fixed field set
@@ -68,7 +76,7 @@ Runs one SQL statement against the USL and returns the rows. Every USL table car
 
 ```json
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "lookup",
   "mode": "live",
   "status": "ok",
@@ -86,6 +94,26 @@ Runs one SQL statement against the USL and returns the rows. Every USL table car
 
 Values arrive as **strings** (Zetaris returns every value as a string). Numeric columns are cast in the USL, but expect strings anyway and convert them yourself.
 
+`row_ids` are `source_system:source_row_id`. If your query selects `source_row_id` but not `source_system`, the system is worked out from the row-ID prefix (`jd-0005` → `pipeline_repo`), so citations never read `unknown`. Rows with no `source_row_id` (aggregates, `dependency_edge`) get a content hash.
+
+## 0. `list_tables()`
+
+The USL tables the agent may query, read from the USL definition (works in every mode, no Zetaris call):
+
+```json
+{"contract_version": "0.3", "call": "list_tables", "mode": "live", "status": "ok",
+ "system_column": "system_id",
+ "tables": [{"name": "lightning.metastore.domino.systems.job", "short_name": "job",
+             "description": "services: identity they run as, query, output file",
+             "source_systems": ["pipeline_repo"],
+             "columns": [{"name": "job_id", "type": "varchar"}, {"name": "system_id", "type": "varchar"}]}],
+ "error": null}
+```
+
+- **Use the full `name` in SQL** (Zetaris needs it).
+- **Filter by `system_column` (`system_id`) = the world ID** to see one system's rows. Other values are unrelated systems, including `dq-demo`.
+- Every table except `dependency_edge` has `source_system` and `source_row_id`.
+
 ## 2. `dependency_path(entity_id, max_hops=6, timeout_s=60)`
 
 Starting from a changed entity (e.g. the principal or rule touched by the PR), returns the
@@ -94,7 +122,7 @@ downstream chain **as joined by the Zetaris USL**. The join itself runs in Zetar
 
 ```json
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "dependency_path",
   "mode": "live",
   "status": "ok",
@@ -127,6 +155,9 @@ downstream chain **as joined by the Zetaris USL**. The join itself runs in Zetar
   - `inferred`: only one source states the link, or it was matched on a name alone.
   - `unresolved`: the link points at something no other source has. A DQ failure shows up here instead of being dropped.
 - **Two-source rule:** each path lists its `source_systems` and whether it `meets_two_source_rule`. Per the product invariant, a reported risk needs at least two independent sources.
+- **`dq_issues`:** Zetaris data-quality findings for this system, shown not hidden:
+  `[{"rule": "resolved_link", "table": "dependency_edge", "row_id": "change_records:cr-0007", "detail": "grants_to link … points at nothing", "checked_at": "…"}]`.
+  They come from Zetaris's DQ rules (`LIST DQ USL` → `RUN DQ` → `SHOW DQ INVALID RECORD`), run by `zetaris/setup.py` and refreshed on every setup. An empty list means the rules found nothing for this system.
 - **Live behaviour:** one Zetaris query per call against `lightning.metastore.domino.systems.dependency_edge`, taking about 3–7 s on a laptop. The cross-source joins happen inside Zetaris, when the USL table is activated.
 
 ## 3. `run_experiment(world, variant, params=None, timeout_s=60)`
@@ -138,7 +169,7 @@ and what it can observe.
 
 ```json
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "run_experiment",
   "mode": "live",
   "status": "ok",

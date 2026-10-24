@@ -158,6 +158,27 @@ by_call = {}
 for smp in samples:
     by_call.setdefault(smp["call"], []).append(set(smp) - {"_note"})
 check("same fields for every status of a call", all(len({frozenset(k) for k in v}) == 1 for v in by_call.values()))
+
+# list_tables, row-id source inference, dq_issues (contract v0.3 additions)
+from data_layer import query_log as ql
+tb = lookups.list_tables()
+names = {t["short_name"]: t for t in tb["tables"]}
+check("list_tables ok with system_id column", tb["status"] == "ok" and tb["system_column"] == "system_id")
+check("list_tables gives full names and columns", names["dependency_edge"]["name"] == "lightning.metastore.domino.systems.dependency_edge"
+      and all(any(c["name"] == "system_id" for c in t["columns"]) for t in tb["tables"]))
+check("row ids infer source from prefix", ql.row_ids([{"source_row_id": "jd-0005"}, {"source_row_id": "zz-1"}]) ==
+      ["pipeline_repo:jd-0005", "unknown:zz-1"])
+lookups.SNAPSHOT_DIR = S / "snaps3"; (S / "snaps3").mkdir(exist_ok=True)
+(S / "snaps3" / "dq_report.json").write_text(json.dumps({"generated_at": "t", "rules": [
+    {"rule": "principal_id", "table": "job", "type": "Foreign key constraints",
+     "invalid_records": [{"system_id": "s1", "principal_id": "s1/principal/ghost", "source_row_id": "jd-0009"},
+                         {"system_id": "s2", "principal_id": "s2/principal/x", "source_row_id": "jd-0010"}]},
+    {"rule": "resolved_link", "table": "dependency_edge", "type": "Custom Data Quality",
+     "invalid_records": [{"system_id": "s1", "relation": "grants_to", "from_id": "a", "to_id": "b", "evidence": "change_records:cr-0001"}]}]}))
+iss = lookups.dq_issues("s1")
+check("dq_issues filtered to the system with row ids", [i["row_id"] for i in iss] == ["pipeline_repo:jd-0009", "change_records:cr-0001"]
+      and "no matching record" in iss[0]["detail"] and "points at nothing" in iss[1]["detail"])
+check("dq_issues empty without a report", lookups.dq_issues("nobody") == [])
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)

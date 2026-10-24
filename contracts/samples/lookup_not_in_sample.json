@@ -1,5 +1,5 @@
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "lookup",
   "mode": "fake",
   "status": "not_in_sample",

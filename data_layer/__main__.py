@@ -3,6 +3,7 @@
   python3 -m data_layer doctor                 check settings and Zetaris without printing secrets
   python3 -m data_layer lookup "SELECT ..."    agent lookup (read-only user)
   python3 -m data_layer path ENTITY_ID         dependency path from a changed entity
+  python3 -m data_layer tables                 USL tables the agent may query (full names, columns, sources)
   python3 -m data_layer worlds                 list worlds
   python3 -m data_layer describe WORLD
   python3 -m data_layer run WORLD VARIANT [--params JSON]
@@ -22,7 +23,7 @@ import sys
 
 from . import config
 from .experiments import describe_world, list_worlds, run_experiment
-from .lookups import dependency_path, lookup
+from .lookups import dependency_path, list_tables, lookup
 from .zetaris_client import ZetarisClient, ZetarisError
 
 
@@ -99,6 +100,7 @@ def main(argv=None) -> int:
     sub.add_parser("doctor")
     p = sub.add_parser("lookup"); p.add_argument("sql"); p.add_argument("--limit", type=int)
     p = sub.add_parser("path"); p.add_argument("entity_id"); p.add_argument("--max-hops", type=int, default=6)
+    sub.add_parser("tables")
     sub.add_parser("worlds")
     p = sub.add_parser("describe"); p.add_argument("world")
     p = sub.add_parser("run"); p.add_argument("world"); p.add_argument("variant")
@@ -115,6 +117,8 @@ def main(argv=None) -> int:
         result = lookup(args.sql, limit=args.limit)
     elif args.cmd == "path":
         result = dependency_path(args.entity_id, max_hops=args.max_hops)
+    elif args.cmd == "tables":
+        result = list_tables()
     elif args.cmd == "worlds":
         result = {"worlds": list_worlds()}
     elif args.cmd == "describe":

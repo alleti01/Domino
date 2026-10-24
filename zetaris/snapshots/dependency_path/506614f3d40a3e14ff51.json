@@ -1,5 +1,5 @@
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "dependency_path",
   "mode": "live",
   "status": "ok",
@@ -22,12 +22,12 @@
             {
               "source_system": "change_records",
               "source_row_id": "ci-0001",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0003",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         },
@@ -43,7 +43,7 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0003",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         }
@@ -68,12 +68,12 @@
             {
               "source_system": "change_records",
               "source_row_id": "ci-0002",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0001",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         },
@@ -89,12 +89,12 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0001",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0005",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         },
@@ -110,7 +110,7 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0005",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         }
@@ -135,12 +135,12 @@
             {
               "source_system": "change_records",
               "source_row_id": "ci-0002",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0001",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         },
@@ -156,12 +156,12 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0002",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0006",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         },
@@ -177,7 +177,7 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0006",
-              "query_id": "q-c4d6ef7b0d7b46be"
+              "query_id": "q-4480dc863ced4adc"
             }
           ]
         }
@@ -190,11 +190,12 @@
     }
   ],
   "unresolved": [],
+  "dq_issues": [],
   "edges_considered": 15,
   "query_ids": [
-    "q-c4d6ef7b0d7b46be"
+    "q-4480dc863ced4adc"
   ],
-  "duration_ms": 1146,
+  "duration_ms": 1785,
   "error": null,
   "snapshot_request": {
     "entity_id": "w-g4k8/change/0291",

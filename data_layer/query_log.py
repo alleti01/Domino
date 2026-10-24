@@ -21,11 +21,18 @@ def new_query_id() -> str:
 
 
 def row_ids(rows: Iterable[Dict[str, Any]]) -> List[str]:
-    """`source_system:source_row_id` for each row, or a content hash when a row has no source ID."""
+    """`source_system:source_row_id` for each row, or a content hash when a row has no source ID.
+
+    When a query selects source_row_id but not source_system, the system is worked out from the row-ID
+    prefix (e.g. jd-0005 -> pipeline_repo), so citations never read "unknown".
+    """
+    from .sources import source_for_row_id
+
     ids = []
     for row in rows:
         if row.get("source_row_id") not in (None, ""):
-            ids.append(f"{row.get('source_system') or 'unknown'}:{row['source_row_id']}")
+            system = row.get("source_system") or source_for_row_id(str(row["source_row_id"])) or "unknown"
+            ids.append(f"{system}:{row['source_row_id']}")
         else:
             digest = hashlib.sha256(json.dumps(row, sort_keys=True, default=str).encode()).hexdigest()
             ids.append("hash:" + digest[:16])

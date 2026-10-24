@@ -1,5 +1,5 @@
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "dependency_path",
   "mode": "live",
   "status": "ok",
@@ -22,12 +22,12 @@
             {
               "source_system": "change_records",
               "source_row_id": "ci-0005",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0023",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         },
@@ -43,7 +43,7 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0023",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         }
@@ -68,12 +68,12 @@
             {
               "source_system": "change_records",
               "source_row_id": "ci-0006",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0021",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         },
@@ -89,12 +89,12 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0021",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0025",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         },
@@ -110,7 +110,7 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0025",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         }
@@ -135,12 +135,12 @@
             {
               "source_system": "change_records",
               "source_row_id": "ci-0006",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0021",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         },
@@ -156,12 +156,12 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0022",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             },
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0026",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         },
@@ -177,7 +177,7 @@
             {
               "source_system": "service_catalog",
               "source_row_id": "ic-0026",
-              "query_id": "q-26a7680f89cb4eaa"
+              "query_id": "q-ea4a619df1f84f8b"
             }
           ]
         }
@@ -190,11 +190,12 @@
     }
   ],
   "unresolved": [],
+  "dq_issues": [],
   "edges_considered": 15,
   "query_ids": [
-    "q-26a7680f89cb4eaa"
+    "q-ea4a619df1f84f8b"
   ],
-  "duration_ms": 2100,
+  "duration_ms": 1657,
   "error": null,
   "snapshot_request": {
     "entity_id": "w-r1z5/change/0291",

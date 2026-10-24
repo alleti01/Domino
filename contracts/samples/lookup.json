@@ -38,7 +38,7 @@
   "truncated": false,
   "duration_ms": 847,
   "error": null,
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "lookup",
   "mode": "fake",
   "status": "ok",

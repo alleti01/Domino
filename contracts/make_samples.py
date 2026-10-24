@@ -71,6 +71,10 @@ def build() -> dict:
     out["lookup.json"] = _fake(_with_env(sample, lambda: lookups.lookup(LOOKUP_SQL)))
     out["dependency_path.json"] = _fake(_with_env(sample, lambda: lookups.dependency_path(f"{WORLD}/change/0042")))
     out["lookup_not_in_sample.json"] = _fake(_with_env(sample, lambda: lookups.lookup("SELECT 1 AS not_recorded")))
+    # A path whose system has data-quality findings, so the dq_issues item shape is visible.
+    out["dependency_path_with_dq_issues.json"] = {**_with_env(sample, lambda: lookups.dependency_path("dq-demo/change/0099")),
+                                                  "mode": "fake", "_note": NOTE}
+    out["list_tables.json"] = _fake(lookups.list_tables())
 
     # Nothing listens on port 9, and no real credentials are sent anywhere.
     offline = {"DOMINO_DATA_MODE": "live", "ZETARIS_BASE_URL": "http://127.0.0.1:9", "ZETARIS_ORG_ID": "1",

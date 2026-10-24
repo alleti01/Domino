@@ -1,5 +1,5 @@
 {
-  "contract_version": "0.2",
+  "contract_version": "0.3",
   "call": "describe_world",
   "mode": "fake",
   "status": "ok",

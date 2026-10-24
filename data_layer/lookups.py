@@ -9,10 +9,10 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import config, query_log
+from . import config, query_log, sources
 from .zetaris_client import ZetarisClient, ZetarisError
 
-CONTRACT_VERSION = "0.2"
+CONTRACT_VERSION = "0.3"
 SAMPLES_DIR = config.REPO_ROOT / "contracts" / "samples"
 SNAPSHOT_DIR = config.REPO_ROOT / "zetaris" / "snapshots"
 
@@ -25,7 +25,8 @@ FIELDS = {
     "lookup": {"query_id": None, "sql": None, "columns": [], "rows": [], "row_count": 0, "row_ids": [],
                "truncated": False, "duration_ms": None, "error": None},
     "dependency_path": {"start": {"entity_id": None, "entity_type": None}, "paths": [], "unresolved": [],
-                        "edges_considered": 0, "query_ids": [], "duration_ms": None, "error": None},
+                        "dq_issues": [], "edges_considered": 0, "query_ids": [], "duration_ms": None, "error": None},
+    "list_tables": {"system_column": None, "tables": [], "error": None},
 }
 
 
@@ -163,7 +164,8 @@ def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) ->
                        start=walked["start"], edges_considered=walked["edges_considered"],
                        error=f"No edges start at {entity_id!r} in the USL ({walked['edges_considered']} edges "
                              "for that system). Check the id: describe_world(world)['change']['entity_id'].")
-    result = _result("dependency_path", mode, "ok", query_ids=[res.query_id], duration_ms=res.duration_ms, **walked)
+    result = _result("dependency_path", mode, "ok", query_ids=[res.query_id], duration_ms=res.duration_ms,
+                     dq_issues=dq_issues(system_id), **walked)
     _save_snapshot("dependency_path", request, result)
     return result
 
@@ -229,3 +231,75 @@ def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int)
     extend(start, [], {start})
     return {"start": {"entity_id": start, "entity_type": start_type}, "paths": paths, "unresolved": unresolved,
             "edges_considered": len(edges)}
+
+
+USL_DDL = config.REPO_ROOT / "zetaris" / "sql" / "02_usl.sql"
+_TABLE_DDL = re.compile(r"CREATE TABLE (\w+) \((.*?)\n\)", re.S)
+
+
+def list_tables() -> Dict[str, Any]:
+    """Every USL table the agent may query: full name, columns, source systems, and the system column.
+
+    Read from the USL definition (zetaris/sql/02_usl.sql), so it matches Zetaris and works in every mode.
+    """
+    mode = config.mode()
+    try:
+        ddl = USL_DDL.read_text(encoding="utf-8")
+    except OSError as error:
+        return _result("list_tables", mode, "error", error=f"cannot read the USL definition: {error}")
+    all_systems = sorted({system for system, _prefix in sources.RAW_SOURCES.values()})
+    tables = []
+    for name, body in _TABLE_DDL.findall(ddl):
+        raw, description = sources.USL_TABLES.get(name, (None, ""))
+        columns = []
+        for line in body.strip().splitlines():
+            parts = line.strip().rstrip(",").split()
+            if len(parts) >= 2:
+                columns.append({"name": parts[0], "type": parts[1].split("(")[0].lower()})
+        tables.append({"name": f"{sources.USL}.{name}", "short_name": name, "description": description,
+                       "source_systems": [sources.RAW_SOURCES[raw][0]] if raw else all_systems,
+                       "columns": columns})
+    return _result("list_tables", mode, "ok", system_column=sources.SYSTEM_COLUMN, tables=tables)
+
+
+def _dq_report_for(system_id: str) -> Optional[Dict[str, Any]]:
+    """The latest Zetaris DQ results (written by zetaris/dq_report.py, which setup.py runs). Held-out worlds'
+    findings live only in the private copy."""
+    names = [config.private_dir() / "zetaris" / "snapshots" / "dq_report.json", SNAPSHOT_DIR / "dq_report.json"]
+    if system_id not in config.private_world_ids():
+        names = names[1:]
+    for path in names:
+        if path.is_file():
+            return json.loads(path.read_text(encoding="utf-8"))
+    return None
+
+
+def dq_issues(system_id: str) -> List[Dict[str, str]]:
+    """Invalid records from Zetaris's data-quality rules that belong to one system, shown not hidden."""
+    report = _dq_report_for(system_id)
+    issues: List[Dict[str, str]] = []
+    for rule in (report or {}).get("rules", []):
+        for row in rule.get("invalid_records") or []:
+            if row.get(sources.SYSTEM_COLUMN) != system_id:
+                continue
+            if row.get("source_row_id"):
+                src = row.get("source_system") or sources.source_for_row_id(row["source_row_id"]) or "unknown"
+                row_id = f"{src}:{row['source_row_id']}"
+            elif row.get("evidence"):
+                row_id = str(row["evidence"]).split(";")[0]
+            else:
+                row_id = str(row.get("edge_id") or "")
+            kind, name, table = rule.get("type") or "", rule["rule"], rule["table"]
+            if "Foreign" in kind:
+                detail = f"{table}.{name} = {row.get(name)} has no matching record (foreign key)"
+            elif "Primary" in kind:
+                detail = f"{table}.{name} = {row.get(name)} is duplicated (primary key)"
+            elif name == "resolved_link":
+                detail = f"{row.get('relation')} link {row.get('from_id')} -> {row.get('to_id')} points at nothing"
+            else:
+                detail = f"{table} row fails rule {name}" + (f" ({rule['expression']})" if rule.get("expression") else "")
+            issue = {"rule": name, "table": table, "row_id": row_id, "detail": detail,
+                     "checked_at": (report or {}).get("generated_at", "")}
+            if issue not in issues:
+                issues.append(issue)
+    return issues

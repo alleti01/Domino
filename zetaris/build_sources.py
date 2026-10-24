@@ -51,13 +51,11 @@ TABLES = {
     "query_telemetry": ["source_system", "source_row_id", "system_id", "query_id", "service_name", "principal_name",
                         "window_days", "sampled_runs", "rows_returned_p50", "artifact_entries_p50"],
 }
-SOURCE_SYSTEM = {"change_records": "change_records", "change_items": "change_records", "access_grants": "db_catalog",
-                 "table_inventory": "db_catalog", "inventory_records": "inventory_registry",
-                 "job_definitions": "pipeline_repo", "interface_contracts": "service_catalog",
-                 "runtime_config": "runtime_config", "query_telemetry": "telemetry"}
-PREFIX = {"change_records": "cr", "change_items": "ci", "access_grants": "ag", "table_inventory": "ti",
-          "inventory_records": "ir", "job_definitions": "jd", "interface_contracts": "ic", "runtime_config": "rc",
-          "query_telemetry": "qt"}
+sys.path.insert(0, str(ROOT))
+from data_layer.sources import RAW_SOURCES  # noqa: E402  (one map shared with the data layer)
+
+SOURCE_SYSTEM = {table: system for table, (system, _prefix) in RAW_SOURCES.items()}
+PREFIX = {table: prefix for table, (_system, prefix) in RAW_SOURCES.items()}
 
 
 def _facts_module(case_path: Path, engine: str):
