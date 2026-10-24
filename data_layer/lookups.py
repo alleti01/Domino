@@ -24,7 +24,7 @@ _agent: Optional[ZetarisClient] = None
 FIELDS = {
     "lookup": {"query_id": None, "sql": None, "columns": [], "rows": [], "row_count": 0, "row_ids": [],
                "truncated": False, "duration_ms": None, "error": None},
-    "dependency_path": {"start": {"entity_id": None, "entity_type": None}, "paths": [], "unresolved": [],
+    "dependency_path": {"start": {"entity_id": None, "entity_type": None}, "direction": "downstream", "paths": [], "unresolved": [],
                         "dq_issues": [], "edges_considered": 0, "query_ids": [], "duration_ms": None, "error": None},
     "list_tables": {"system_column": None, "tables": [], "error": None},
 }
@@ -128,22 +128,32 @@ def lookup(sql: str, limit: Optional[int] = None, timeout_s: float = 30) -> Dict
     return result
 
 
-def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) -> Dict[str, Any]:
-    """Downstream chain from a changed entity, joined in the Zetaris USL, with per-edge evidence."""
+DIRECTIONS = ("downstream", "upstream")
+
+
+def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60,
+                    direction: str = "downstream") -> Dict[str, Any]:
+    """Chain from an entity, joined in the Zetaris USL, with per-edge evidence.
+
+    downstream (default): what the entity reaches. upstream: what reaches the entity. Hops always keep the
+    link's real from -> to orientation; an upstream path lists them walking backwards from the entity.
+    """
     mode = config.mode()
     start = {"entity_id": entity_id if isinstance(entity_id, str) else None, "entity_type": None}
     problem = None
     if not isinstance(entity_id, str) or not _ENTITY_ID.match(entity_id):
         problem = ("entity_id must look like <system>/<kind>/<name>, e.g. the change.entity_id from "
                    f"describe_world; got {entity_id!r}")
+    elif direction not in DIRECTIONS:
+        problem = f"direction must be one of {DIRECTIONS}, got {direction!r}"
     else:
         problem = (_number_problem("max_hops", max_hops, 1, 12, integer=True)
                    or _number_problem("timeout_s", timeout_s, 0.1, MAX_TIMEOUT_S))
     if problem:
-        return _result("dependency_path", mode, "error", start=start, error=problem)
+        return _result("dependency_path", mode, "error", start=start, direction=direction, error=problem)
     if mode == "fake":
         return _fake("dependency_path.json")
-    request = {"entity_id": entity_id, "max_hops": max_hops}
+    request = {"entity_id": entity_id, "max_hops": max_hops, **({"direction": direction} if direction != "downstream" else {})}
     if mode == "sample":
         return (_load_snapshot("dependency_path", request)
                 or _not_in_sample("dependency_path", request, start={"entity_id": entity_id, "entity_type": None}))
@@ -155,17 +165,18 @@ def dependency_path(entity_id: str, max_hops: int = 6, timeout_s: float = 60) ->
         res = _client().run(sql, timeout_s=timeout_s, purpose="dependency_path")
     except ZetarisError as error:
         qid = getattr(error, "query_id", None)
-        return _result("dependency_path", mode, error.status, start=start, query_ids=[qid] if qid else [],
-                       duration_ms=getattr(error, "duration_ms", None), error=str(error))
-    walked = _walk(entity_id, res.rows, res.query_id, max_hops)
+        return _result("dependency_path", mode, error.status, start=start, direction=direction,
+                       query_ids=[qid] if qid else [], duration_ms=getattr(error, "duration_ms", None), error=str(error))
+    walked = _walk(entity_id, res.rows, res.query_id, max_hops, direction)
     if walked["start"]["entity_type"] is None:
         # An unknown start must not look like "nothing downstream", which reads as "safe".
         return _result("dependency_path", mode, "error", query_ids=[res.query_id], duration_ms=res.duration_ms,
-                       start=walked["start"], edges_considered=walked["edges_considered"],
-                       error=f"No edges start at {entity_id!r} in the USL ({walked['edges_considered']} edges "
-                             "for that system). Check the id: describe_world(world)['change']['entity_id'].")
+                       start=walked["start"], direction=direction, edges_considered=walked["edges_considered"],
+                       error=f"No edges {'start' if direction == 'downstream' else 'end'} at {entity_id!r} in the USL "
+                             f"({walked['edges_considered']} edges for that system). Check the id: "
+                             "describe_world(world)['change']['entity_id'].")
     result = _result("dependency_path", mode, "ok", query_ids=[res.query_id], duration_ms=res.duration_ms,
-                     dq_issues=dq_issues(system_id), **walked)
+                     direction=direction, dq_issues=dq_issues(system_id), **walked)
     _save_snapshot("dependency_path", request, result)
     return result
 
@@ -183,8 +194,10 @@ def _evidence(text: str, query_id: str) -> List[Dict[str, str]]:
     return items
 
 
-def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int) -> Dict[str, Any]:
-    """Every downstream path from `start`, up to max_hops, without revisiting a node on the same path."""
+def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int,
+          direction: str = "downstream") -> Dict[str, Any]:
+    """Every path from `start` (downstream: along links; upstream: against them), up to max_hops, without
+    revisiting a node on the same path."""
     # Several source rows can state the same link (e.g. two GRANT lines in one change); merge them into one
     # edge with all their evidence, so paths aren't duplicated and nothing gets counted twice.
     rank = {"observed": 0, "inferred": 1, "unresolved": 2}
@@ -200,13 +213,14 @@ def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int)
         if rank.get(e["edge_status"], 3) < rank.get(m["edge_status"], 3):
             m["edge_status"] = e["edge_status"]
 
+    near, far = ("from_id", "to_id") if direction == "downstream" else ("to_id", "from_id")
     outgoing: Dict[str, List[Dict[str, Any]]] = {}
     start_type = None
     for key in sorted(merged):
         e = merged[key]
-        outgoing.setdefault(e["from_id"], []).append(e)
-        if e["from_id"] == start:
-            start_type = e["from_type"]
+        outgoing.setdefault(e[near], []).append(e)
+        if e[near] == start:
+            start_type = e[near.replace("_id", "_type")]
 
     def hop(e: Dict[str, Any]) -> Dict[str, Any]:
         return {"from": e["from_id"], "from_type": e["from_type"], "to": e["to_id"], "to_type": e["to_type"],
@@ -216,17 +230,17 @@ def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int)
     paths, unresolved, seen_unresolved = [], [], set()
 
     def extend(node: str, trail: List[Dict[str, Any]], visited: set) -> None:
-        nexts = [e for e in outgoing.get(node, []) if e["to_id"] not in visited] if len(trail) < max_hops else []
+        nexts = [e for e in outgoing.get(node, []) if e[far] not in visited] if len(trail) < max_hops else []
         if not nexts and trail:
             sources = {ev["source_system"] for h in trail for ev in h["evidence"]}
             paths.append({"hops": trail, "source_systems": sorted(sources), "meets_two_source_rule": len(sources) >= 2})
         for e in nexts:
-            if e["edge_status"] == "unresolved" and e["to_id"] not in seen_unresolved:
-                seen_unresolved.add(e["to_id"])
+            if e["edge_status"] == "unresolved" and (e["from_id"], e["to_id"]) not in seen_unresolved:
+                seen_unresolved.add((e["from_id"], e["to_id"]))
                 unresolved.append({"from": e["from_id"], "to": e["to_id"], "relation": e["relation"],
                                    "reason": "referenced entity not found in any other source",
                                    "evidence": e["evidence_items"]})
-            extend(e["to_id"], trail + [hop(e)], visited | {e["to_id"]})
+            extend(e[far], trail + [hop(e)], visited | {e[far]})
 
     extend(start, [], {start})
     return {"start": {"entity_id": start, "entity_type": start_type}, "paths": paths, "unresolved": unresolved,

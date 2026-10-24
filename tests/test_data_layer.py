@@ -195,6 +195,41 @@ rows = [{"world": "a", "status": "ok", "verdict": "reproduced_failure", "backed"
 sm = rs.summarize(rows, lab)
 check("summary: crash counts as wrong, outage excluded", sm["scored"] == 3 and sm["correct"] == 1 and sm["errors"] == 1
       and sm["unavailable"] == 1 and sm["caught"] == 1 and sm["failing"] == 2 and sm["false_alarms"] == 1 and sm["backed"] == 1)
+
+# CLI parity (the agent calls the CLI): same JSON as the Python call, JSON even when status != ok
+import subprocess as sp
+VOLATILE = {"experiment_id", "query_id", "query_ids", "duration_ms", "checked_at"}
+def strip(v):
+    if isinstance(v, dict): return {k: strip(x) for k, x in v.items() if k not in VOLATILE}
+    if isinstance(v, list): return [strip(x) for x in v]
+    return v
+repo = str(pathlib.Path(__file__).resolve().parents[1])
+env = {**os.environ, "DOMINO_DATA_MODE": "sample", "DOMINO_PRIVATE_DIR": str(S / "no-private")}
+os.environ.update(DOMINO_DATA_MODE="sample", DOMINO_PRIVATE_DIR=str(S / "no-private"))
+lookups.SNAPSHOT_DIR = pathlib.Path(repo) / "zetaris" / "snapshots"
+experiments.WORLDS_DIR = pathlib.Path(repo) / "worlds"
+import data_layer
+calls = [(["tables"], lambda: data_layer.list_tables()),
+         (["describe", "w-k7m2"], lambda: data_layer.describe_world("w-k7m2")),
+         (["path", "w-k7m2/change/0042"], lambda: data_layer.dependency_path("w-k7m2/change/0042")),
+         (["path", "w-k7m2/change/0042", "--direction", "upstream"], lambda: data_layer.dependency_path("w-k7m2/change/0042", direction="upstream")),
+         (["lookup", "SELECT 1 AS never_recorded"], lambda: data_layer.lookup("SELECT 1 AS never_recorded")),
+         (["run", "w-k7m2", "candidate"], lambda: data_layer.run_experiment("w-k7m2", "candidate")),
+         (["run", "nope", "baseline"], lambda: data_layer.run_experiment("nope", "baseline"))]
+same, json_on_error = True, True
+for argv, fn in calls:
+    proc = sp.run([sys.executable, "-m", "data_layer", *argv], cwd=repo, env=env, capture_output=True, text=True, timeout=120)
+    try:
+        cli = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        json_on_error = False; continue
+    py = fn()
+    if strip(cli) != strip(py):
+        same = False; print("   differs:", argv)
+    if cli.get("status") != "ok" and proc.returncode != 1:
+        json_on_error = False
+check("CLI JSON matches the Python results", same)
+check("CLI prints JSON and exits 1 when status != ok", json_on_error)
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)

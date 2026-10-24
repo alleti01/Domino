@@ -114,7 +114,7 @@ The USL tables the agent may query, read from the USL definition (works in every
 - **Filter by `system_column` (`system_id`) = the world ID** to see one system's rows. Other values are unrelated systems, including `dq-demo`.
 - Every table except `dependency_edge` has `source_system` and `source_row_id`.
 
-## 2. `dependency_path(entity_id, max_hops=6, timeout_s=60)`
+## 2. `dependency_path(entity_id, max_hops=6, timeout_s=60, direction="downstream")`
 
 Starting from a changed entity (e.g. the principal or rule touched by the PR), returns the
 downstream chain **as joined by the Zetaris USL**. The join itself runs in Zetaris. Every edge has an
@@ -148,6 +148,7 @@ downstream chain **as joined by the Zetaris USL**. The join itself runs in Zetar
 ```
 
 - **Where to start:** `describe_world(world)["change"]["entity_id"]` is the changed entity, for example `w-k7m2/change/0042`.
+- **`direction`:** `"downstream"` (default) walks what the entity reaches. `"upstream"` walks what reaches it; e.g. from a limit setting back to the change. Hops keep the link's real `from → to`, and the result echoes `direction`. CLI: `path <entity> --direction upstream`.
 - **Entity IDs** are `<system>/<kind>/<name>`. Kinds: `change`, `principal`, `database`, `table`, `service`, `query`, `artifact`, `setting`.
 - **Relations:** `grants_to`, `grants_on`, `identity_of`, `contains`, `reads`, `executes`, `writes`, `loaded_by`, `configured_with`. `detail` carries the facts on the edge, for example `column_count=…` or `<setting>=<value>`.
 - **`edge_status`:**
@@ -164,8 +165,9 @@ downstream chain **as joined by the Zetaris USL**. The join itself runs in Zetar
 
 Runs one world in a disposable local process. `variant`: `baseline` (before the change),
 `candidate` (with the change), `control` (change reverted, or a causal control).
-`params` is optional and world-specific; `describe_world(world)` lists what each world accepts
-and what it can observe.
+`params` is optional and world-specific. `describe_world(world)["params"]` lists every accepted param as
+`{"<name>": {"type": "number" | "string" | "boolean", "description": "…", "default": <value>}}`, where `default`
+is normal operation. Today's worlds take no params (`{}`), and any other key is rejected with `status: error`.
 
 ```json
 {
@@ -228,8 +230,8 @@ The data layer is cheap; **model calls are almost all of the time.**
 
 **What that means for the scorecard:** at about 5 min per case, 15 cases come to roughly 75 min for one pass of full Domino (mode D). Mode A has no model calls, and modes B and C have 1–2 each. Plan for at most 2 concurrent model calls (HackOS guidance) and repeats only where they matter (D and E).
 
-## Open questions for Abhi
-1. Do you want `lookup` to take raw SQL, or a small set of named queries? Raw SQL gives the agent more freedom, and Zetaris enforces read-only.
-2. Should `dependency_path` also go **upstream** (who feeds this entity)?
-3. Is `params` free-form OK, or do you want a fixed set (e.g. `probes: [...]`) per world?
-4. Python import vs. a local HTTP endpoint? Import is simplest. HTTP only if your loop runs in another process or language.
+## Decisions (agreed with Abhi, 24 Oct 2026)
+1. **`lookup` takes raw SQL.** The agent writes its own, behind a read-only guard; the Zetaris read-only user is the backstop.
+2. **Upstream:** not needed for the current failures. It was cheap, so it exists: `direction="upstream"`.
+3. **`params` are free-form**, but every one is described in `describe_world` with type, description and a `default` meaning normal operation. The agent runs defaults unless it's deliberately testing a range.
+4. **The agent (TypeScript) calls the CLI** (`python3 -m data_layer …`). The CLI prints exactly the Python result as JSON, including when `status` isn't `ok` (exit code 1). A test locks this in.

@@ -3,6 +3,7 @@
     "entity_id": "fake-w0/change/0042",
     "entity_type": "change"
   },
+  "direction": "downstream",
   "paths": [
     {
       "hops": [

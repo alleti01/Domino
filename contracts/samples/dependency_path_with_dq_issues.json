@@ -3,6 +3,7 @@
     "entity_id": "dq-demo/change/0099",
     "entity_type": "change"
   },
+  "direction": "downstream",
   "paths": [
     {
       "hops": [
