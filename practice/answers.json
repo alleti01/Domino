@@ -1,0 +1,104 @@
+{
+  "_readme": "PRACTICE LABELS for scoring the agent. The agent must never read this file during a run. Made-up scenarios.",
+  "scenarios": {
+    "p01": {
+      "expected_verdict": "reproduced_failure",
+      "family": "redelivery-without-idempotency",
+      "explanation": "ack timeout drops to 5s but the consumer takes ~3-8s per message, so many messages are redelivered while still being processed; the consumer has no idempotency key and the ledger has no unique key on the message, so cards are charged twice.",
+      "key_evidence": [
+        "ack_timeout_s 30 -> 5",
+        "processing_ms_p95=8100",
+        "idempotency_key=none",
+        "delivery=at_least_once"
+      ]
+    },
+    "p02": {
+      "expected_verdict": "no_failure_observed",
+      "family": "redelivery-without-idempotency",
+      "explanation": "Same redeliveries as p01, but the consumer de-duplicates on message_id with a unique key, so no refund is applied twice.",
+      "key_evidence": [
+        "idempotency_key=message_id",
+        "unique_keys=message_id"
+      ]
+    },
+    "p03": {
+      "expected_verdict": "reproduced_failure",
+      "family": "aggregate-connections-exceed-limit",
+      "explanation": "30 replicas x 20 pooled connections = 600, above the database's max_connections of 500, so 100 connections are refused.",
+      "key_evidence": [
+        "replicas 10 -> 30",
+        "db_pool_size=20 per replica",
+        "max_connections=500"
+      ]
+    },
+    "p04": {
+      "expected_verdict": "no_failure_observed",
+      "family": "aggregate-connections-exceed-limit",
+      "explanation": "24 replicas x 20 = 480, just under max_connections=500. Close, but no failure under test.",
+      "key_evidence": [
+        "replicas 10 -> 24",
+        "db_pool_size=20 per replica",
+        "max_connections=500"
+      ]
+    },
+    "p05": {
+      "expected_verdict": "reproduced_failure",
+      "family": "format-contract-mismatch",
+      "explanation": "The producer switches to ISO-8601 with T and Z, but the consumer still parses '%Y-%m-%d %H:%M:%S', so every event fails to parse.",
+      "key_evidence": [
+        "timestamp_format changes",
+        "parses occurred_at with %Y-%m-%d %H:%M:%S"
+      ]
+    },
+    "p06": {
+      "expected_verdict": "reproduced_failure",
+      "family": "retry-amplification",
+      "explanation": "During the daily brownout 20% of 100 rps fail; 5 immediate retries with no backoff push peak load to ~200 rps against a 120 rps gateway limit.",
+      "key_evidence": [
+        "max_retries 1 -> 5; backoff exponential -> none",
+        "error_rate_during_daily_brownout=0.20",
+        "rate_limit_rps=120"
+      ]
+    },
+    "p07": {
+      "expected_verdict": "reproduced_failure",
+      "family": "resource-exhaustion-before-cleanup",
+      "explanation": "DEBUG writes 6 x 400 = 2400 MB/h; rotation runs every 6h (14,400 MB) but only 9,000 MB is free, so the disk fills after ~3.75h.",
+      "key_evidence": [
+        "log_level INFO -> DEBUG",
+        "400 MB/h at INFO; DEBUG is 6x",
+        "free_disk_mb_p05=9000",
+        "interval_hours=6"
+      ]
+    },
+    "p08": {
+      "expected_verdict": "no_failure_observed",
+      "family": "timeout-below-latency",
+      "explanation": "Timeout drops to 2000 ms; the tax API's p99 is 1500 ms and its 30-day max is 1750 ms, so nothing times out under test.",
+      "key_evidence": [
+        "tax_api_timeout_ms 30000 -> 2000",
+        "latency_ms_p99=1500",
+        "max_30d=1750"
+      ]
+    },
+    "p09": {
+      "expected_verdict": "reproduced_failure",
+      "family": "overlapping-scheduled-runs",
+      "explanation": "Runs every 15 minutes but each run takes ~22 minutes and there is no lock; runs overlap and both select the same not-yet-exported invoices, so invoices are exported twice.",
+      "key_evidence": [
+        "schedule hourly -> every 15 min",
+        "run_minutes_p50=22",
+        "run_lock=none"
+      ]
+    },
+    "p10": {
+      "expected_verdict": "no_failure_observed",
+      "family": "additive-schema-change",
+      "explanation": "Adds a nullable column with a concurrent index; both readers use explicit column lists, so nothing breaks.",
+      "key_evidence": [
+        "adds nullable column + concurrent index",
+        "explicit column list"
+      ]
+    }
+  }
+}
