@@ -40,7 +40,11 @@ Reported per mode, and separately for the practice worlds (1 and 2) and the held
 Zetaris gets a health check in live mode. The agent reports model-provider outages itself (`outage` in its summary).
 
 ## Repeats
-`--repeats N` runs the agent modes N times and reports whether verdicts agree. Confirm in the model receipts that repeats weren't served from a cache; otherwise report n = 1.
+`--repeats N` runs the agent modes N times and reports whether verdicts agree. The scorecard checks that the repeats really are separate runs:
+- The first run of each case always counts.
+- A repeat counts only if its summary shows **0 cache hits** and a **new `run_id`**.
+- A repeat with unknown cache status, any cache hit, or a reused run_id is left out of every number. Its reason is saved in `results.json`, and the line shows "repeats left out".
+- Each mode prints `independent runs per case: n = …`. Report that n, not the number of times you ran it.
 
 Results go to `runs/scorecard/<timestamp>/results.json` (gitignored).
 

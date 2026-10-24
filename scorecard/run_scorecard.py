@@ -179,9 +179,29 @@ def zetaris_up() -> dict:
         return {"ok": False, "error": str(error)}
 
 
+def mark_independent(runs: list) -> int:
+    """Repeats must be independent runs, or "3 runs" is really 1. The first run of a case always counts; a
+    repeat counts only if its summary shows zero model cache hits and a run_id not seen before. Unknown cache
+    status can't be confirmed, so that repeat is left out (n = 1). Returns how many runs count."""
+    seen = set()
+    for i, r in enumerate(runs):
+        rid = r.get("run_id")
+        fresh = r.get("cache_hits") == 0 and rid is not None and rid not in seen
+        r["counted"] = i == 0 or r["status"] not in ("ok", "error") or fresh
+        if not r["counted"]:
+            r["not_counted_reason"] = ("same run as an earlier repeat" if rid in seen else
+                                       "cache status unknown" if r.get("cache_hits") is None else "served partly from cache")
+        if rid is not None:
+            seen.add(rid)
+    return sum(r["counted"] and r["status"] in ("ok", "error") for r in runs)
+
+
 def summarize(rows: list, labels: dict) -> dict:
     # Outages (provider or Zetaris down) are excluded from accuracy; an agent crash or unreadable output
     # is the agent's own failure and counts as a wrong answer.
+    dropped = sum(not r.get("counted", True) for r in rows)
+    all_cache_hits = sum(r.get("cache_hits") or 0 for r in rows)  # including left-out repeats, so the reason shows
+    rows = [r for r in rows if r.get("counted", True)]
     scored = [r for r in rows if r["status"] in ("ok", "error")]
     failing = [r for r in scored if labels[r["world"]]["expected_verdict"] == WARN]
     safe = [r for r in scored if labels[r["world"]]["expected_verdict"] != WARN]
@@ -200,7 +220,8 @@ def summarize(rows: list, labels: dict) -> dict:
         "backed": sum(bool(r.get("backed")) for r in warnings), "warnings": len(warnings),
         "avg_seconds": avg([(r.get("duration_ms") or 0) / 1000 for r in scored]),
         "avg_model_calls": avg([r["model_calls"] for r in scored if r.get("model_calls") is not None]),
-        "cache_hits": sum(r.get("cache_hits") or 0 for r in scored),
+        "cache_hits": all_cache_hits,
+        "repeats_not_independent": dropped,
     }
 
 
@@ -209,7 +230,8 @@ def fmt(s: dict) -> str:
     return (f"{s['correct']}/{s['scored']} correct | caught {s['caught']}/{s['failing']} | false alarms {s['false_alarms']}/{s['safe']}"
             f" | cause (failing) {pct(s['cause_failing'])} | backed {s['backed']}/{s['warnings']}"
             f" | {s['avg_seconds']}s | model calls {s['avg_model_calls']} | cache hits {s['cache_hits']}"
-            f" | errors {s['errors']} | unavailable {s['unavailable']}")
+            f" | errors {s['errors']} | unavailable {s['unavailable']}"
+            + (f" | repeats left out (not independent) {s['repeats_not_independent']}" if s.get("repeats_not_independent") else ""))
 
 
 def main() -> int:
@@ -257,22 +279,32 @@ def main() -> int:
             else:
                 runs = [runners[m](world) if health.get("ok") else {"status": "unavailable", "reason": "Zetaris health check failed"}
                         for _ in range(repeats)]
+            independent = mark_independent(runs)
             for rep, r in enumerate(runs):
-                r.update(world=world, repeat=rep, held_out=bool(labels[world].get("held_out")))
+                r.update(world=world, repeat=rep, held_out=bool(labels[world].get("held_out")), independent_runs=independent)
                 markers = labels[world].get("cause_markers")
                 r["cause"] = cause_score(r.get("explanation", ""), markers) if r["status"] in ("ok", "error") else None
                 rows.append(r)
         groups = {"practice worlds": [r for r in rows if not r["held_out"]], "held-out world": [r for r in rows if r["held_out"]]}
         results["modes"][m] = {"health_before_batch": health, "rows": rows,
                                "summary": {g: summarize(rs, labels) for g, rs in groups.items() if rs}}
-        if any(len([r for r in rows if r["world"] == w]) > 1 for w in worlds):
+        n_per_case = [next(r["independent_runs"] for r in rows if r["world"] == w) for w in worlds]
+        results["modes"][m]["independent_runs_per_case"] = {"min": min(n_per_case), "max": max(n_per_case)}
+        if max(n_per_case) > 1:
             verdicts = {}
             for r in rows:
-                verdicts.setdefault(r["world"], set()).add(r.get("verdict"))
+                if r["counted"] and r["status"] in ("ok", "error"):
+                    verdicts.setdefault(r["world"], set()).add(r.get("verdict"))
             results["modes"][m]["repeat_agreement"] = sum(len(v) == 1 for v in verdicts.values()) / len(verdicts)
         print(f"\nMode {m}")
         for g, s in results["modes"][m]["summary"].items():
             print(f"  {g:16} {fmt(s)}")
+        if repeats > 1 or m in imports:
+            lo, hi = min(n_per_case), max(n_per_case)
+            agree = results["modes"][m].get("repeat_agreement")
+            print(f"  independent runs per case: n = {lo}" + (f"-{hi}" if hi != lo else "")
+                  + (" (0 = no usable run for that case)" if lo == 0 else "")
+                  + (f" | repeats agree on {agree * 100:.0f}% of cases" if agree is not None else ""))
 
     (out_dir / "results.json").write_text(json.dumps(results, indent=2, default=str) + "\n", encoding="utf-8")
     print(f"\nSaved {out_dir / 'results.json'}")
