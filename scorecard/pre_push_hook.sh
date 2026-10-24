@@ -1,12 +1,13 @@
 #!/bin/sh
 # Blocks a push if any commit being pushed carries an answer file or a held-out world ID,
-# then runs the full leakage check on the working tree.
+# then runs the full leakage check when the branch has it. Works on every branch (main has no scorecard).
 # Install (once per clone):  cp scorecard/pre_push_hook.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push
 
 ROOT=$(git rev-parse --show-toplevel) || exit 1
 cd "$ROOT" || exit 1
 ZERO=0000000000000000000000000000000000000000
-PRIVATE_IDS=$(python3 -c "from data_layer import config; print('|'.join(config.private_world_ids()))" 2>/dev/null)
+PRIVATE="${DOMINO_PRIVATE_DIR:-$HOME/domino-private}"
+PRIVATE_IDS=$(ls "$PRIVATE/worlds/cases" 2>/dev/null | sed -n 's/\.json$//p' | paste -sd '|' -)
 fail=0
 
 while read -r local_ref local_sha remote_ref remote_sha; do
@@ -22,5 +23,9 @@ while read -r local_ref local_sha remote_ref remote_sha; do
 done
 
 [ $fail -ne 0 ] && exit 1
-python3 scorecard/leakage_check.py || { echo "pre-push: BLOCKED by scorecard/leakage_check.py"; exit 1; }
+if [ -f scorecard/leakage_check.py ]; then
+  python3 scorecard/leakage_check.py || { echo "pre-push: BLOCKED by scorecard/leakage_check.py"; exit 1; }
+else
+  echo "pre-push: no leakage check on this branch; history checks passed."
+fi
 exit 0
