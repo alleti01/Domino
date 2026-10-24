@@ -10,6 +10,9 @@ zetaris/
 ├── sql/               01_sources.sql, 02_usl.sql, 04_dq.sql, 03_access.sql (statements separated by a line holding only ";")
 ├── dq_demo.py         the planted broken link for the data-quality demo
 ├── dq_report.py       runs every data-quality rule and shows the invalid records
+├── backup_zetaris.sh  backs up the platform config and USL model (--volumes: also the Docker volumes)
+├── DATA.md            the data README: origin, tables, row counts, how it's loaded and regenerated
+├── REFLECTION.md      how the USL saved time, real-world use, what we'd improve in Zetaris
 └── snapshots/         saved query results that power sample mode (no Zetaris or keys needed)
 ```
 
