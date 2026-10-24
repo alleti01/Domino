@@ -1,6 +1,7 @@
 import { HACKATHON, REPO_URL } from '../../config'
 import { href } from '../../lib/router'
 import { scrollToSection } from '../../lib/scroll'
+import { useNavState } from '../../hooks/useNavState'
 
 // Everything except GitHub scrolls within the landing page.
 const NAV: { label: string; to: string; section?: string; external?: boolean }[] = [
@@ -40,8 +41,9 @@ export function AnnouncementBar() {
 
 /** Floating pill navigation for the landing and Try it yourself pages. */
 export function SiteNav() {
+  const { hidden, theme } = useNavState()
   return (
-    <header className="site-nav-wrap">
+    <header className={`site-nav-wrap${hidden ? ' is-hidden' : ''} nav-${theme}`}>
       <nav className="site-nav" aria-label="Main">
         <Logo />
         <ul className="site-nav-links">

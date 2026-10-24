@@ -12,6 +12,8 @@ import { ExperimentStory } from './ExperimentStory'
 import { HowItWorks } from './HowItWorks'
 import { Limits } from './Limits'
 import { ProofCounters } from './ProofCounters'
+import { Reveal, ScrambleText } from './Motion'
+import { Haze } from './Shapes'
 
 export function LandingPage({ state, section }: { state: SiteState; section: string | null }) {
   // ?section=demo (from the nav) scrolls to that part of the page.
@@ -26,26 +28,34 @@ export function LandingPage({ state, section }: { state: SiteState; section: str
   return (
     <div className="landing">
       <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-backdrop" aria-hidden="true" />
+        <div className="hero-backdrop" aria-hidden="true">
+          <Haze />
+        </div>
         <div className="hero-inner">
-          <p className="hero-kicker">
-            <span className="hero-kicker-dot" aria-hidden="true" />
-            Pre-deployment failure investigation
-          </p>
-          <h1 id="hero-title" className="hero-title">
-            {HEADLINE.map((line) => (
-              <span key={line}>{line}</span>
-            ))}
-          </h1>
-          <p className="hero-sub">{HERO_SUB}</p>
-          <div className="hero-buttons">
+          <Reveal>
+            <p className="hero-kicker">
+              <span className="hero-kicker-dot" aria-hidden="true" />
+              <ScrambleText text="Pre-deployment failure investigation" />
+            </p>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <h1 id="hero-title" className="hero-title">
+              {HEADLINE.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </h1>
+          </Reveal>
+          <Reveal delay={0.16}>
+            <p className="hero-sub">{HERO_SUB}</p>
+          </Reveal>
+          <Reveal delay={0.24} className="hero-buttons">
             <a className="btn btn-light btn-lg" href={href.try}>
               Try it yourself
             </a>
             <a className="btn btn-muted btn-lg" href={href.landing('demo')}>
               Watch demo
             </a>
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -53,21 +63,29 @@ export function LandingPage({ state, section }: { state: SiteState; section: str
         <h2 id="demo-title" className="visually-hidden">
           Demo video
         </h2>
-        <div className="video-frame">
+        <Reveal className="video-frame">
           <div className="video-screen">
             <DemoVideo />
           </div>
-        </div>
+        </Reveal>
       </section>
 
-      <ChainStory show={show} placeholder={placeholder} />
-      <ExperimentStory show={show} placeholder={placeholder} />
-      <HowItWorks show={show} placeholder={placeholder} />
+      {/* A light band in the middle of the page, entered and left through curved horizons. */}
+      <div className="light-zone theme-light" data-nav-theme="light">
+        <div className="horizon horizon-top" aria-hidden="true" />
+        <ChainStory show={show} placeholder={placeholder} />
+        <ExperimentStory show={show} placeholder={placeholder} />
+        <HowItWorks show={show} placeholder={placeholder} />
+        <div className="horizon horizon-bottom" aria-hidden="true" />
+      </div>
       <CaseTabs cases={site?.cases ?? []} placeholder={placeholder} />
       {site && <ProofCounters site={site} />}
       <Limits />
 
       <section id="start" className="landing-block final-cta" aria-labelledby="start-title" tabIndex={-1}>
+        <div className="final-glow" aria-hidden="true">
+          <Haze small />
+        </div>
         <h2 id="start-title" className="final-cta-title">
           See it break before it ships.
         </h2>

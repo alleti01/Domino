@@ -5,6 +5,7 @@ import { VERDICT } from '../../lib/labels'
 import { href } from '../../lib/router'
 import { useInView } from '../../hooks/useInView'
 import { Icon } from '../Icon'
+import { HoloSwirl } from './Shapes'
 import { TourSection } from './Tour'
 
 /** The core idea as a row of dominoes: each tile is a component, each from a different system. */
@@ -17,6 +18,8 @@ export function ChainStory({ show, placeholder }: { show: Showcase | null; place
   return (
     <TourSection
       id="idea"
+      className="tour-center"
+      decoration={<HoloSwirl />}
       kicker="The idea"
       title="A change can be fine on its own and still break something two systems away."
       lede={

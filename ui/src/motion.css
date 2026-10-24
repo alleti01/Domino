@@ -1,0 +1,422 @@
+/* Motion and colour shapes for the landing page, modelled on cogent.com:
+   smooth reveals, scrambling labels, an auto-hiding nav that turns light over
+   light sections, drifting colour haze, a holographic swirl, curved horizons
+   between dark and light, and rising proof columns. Everything that moves
+   stops for prefers-reduced-motion. */
+
+.site {
+  --peach: #f1b88c;
+  --steel: #7aa4b8;
+  --violet: #7b5cff;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- Nav: hide on the way down, return on the way up ---------- */
+.site-nav-wrap {
+  transition: transform 0.45s var(--ease-out);
+}
+
+.site-nav-wrap.is-hidden {
+  transform: translateY(calc(-100% - 12px));
+}
+
+/* Never hide it from someone tabbing through it. */
+.site-nav-wrap:focus-within {
+  transform: none;
+}
+
+.site-nav {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.site-nav-wrap.nav-light .site-nav {
+  border-color: #dddcd5;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.site-nav-wrap.nav-light .site-brand,
+.site .site-nav-wrap.nav-light .site-nav-links a:hover {
+  color: #1a1a17;
+}
+
+.site .site-nav-wrap.nav-light .site-nav-links a {
+  color: #4f4f48;
+}
+
+.site .site-nav-wrap.nav-light .btn-light {
+  background: #1a1a17;
+  color: #f6f6f3;
+}
+
+/* ---------- Reveal on scroll ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.8s var(--ease-out) var(--reveal-delay, 0s),
+    transform 0.8s var(--ease-out) var(--reveal-delay, 0s);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Scrambling labels ---------- */
+.scramble-glyph-a {
+  color: var(--peach);
+}
+
+.scramble-glyph-b {
+  color: var(--steel);
+}
+
+/* ---------- Hero haze ---------- */
+.haze {
+  position: absolute;
+  inset: -10% -5% 0;
+  filter: blur(70px) saturate(1.2);
+}
+
+.haze-blob {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+}
+
+.haze-violet {
+  top: 8%;
+  left: 46%;
+  width: 46vw;
+  height: 34vw;
+  background: radial-gradient(closest-side, var(--violet), transparent);
+  animation: haze-drift-a 22s ease-in-out infinite alternate;
+}
+
+.haze-peach {
+  top: 22%;
+  left: 14%;
+  width: 38vw;
+  height: 30vw;
+  background: radial-gradient(closest-side, #ff8a4c, transparent);
+  opacity: 0.38;
+  animation: haze-drift-b 26s ease-in-out infinite alternate;
+}
+
+.haze-blue {
+  top: 0;
+  left: 26%;
+  width: 40vw;
+  height: 26vw;
+  background: radial-gradient(closest-side, #4f7cff, transparent);
+  animation: haze-drift-c 30s ease-in-out infinite alternate;
+}
+
+.haze-rose {
+  top: 30%;
+  left: 60%;
+  width: 26vw;
+  height: 22vw;
+  background: radial-gradient(closest-side, #e0569b, transparent);
+  opacity: 0.3;
+  animation: haze-drift-b 24s ease-in-out infinite alternate-reverse;
+}
+
+.haze-small {
+  inset: 10% 15%;
+  filter: blur(60px);
+}
+
+@keyframes haze-drift-a {
+  to {
+    transform: translate(-9vw, 4vw) scale(1.15);
+  }
+}
+
+@keyframes haze-drift-b {
+  to {
+    transform: translate(10vw, -3vw) scale(0.9);
+  }
+}
+
+@keyframes haze-drift-c {
+  to {
+    transform: translate(6vw, 6vw) scale(1.2) rotate(20deg);
+  }
+}
+
+/* The dot grid sits above the haze. */
+.hero-backdrop::after {
+  z-index: 1;
+}
+
+/* ---------- Light band and horizons ---------- */
+.site .theme-light {
+  color-scheme: light;
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --surface-2: #f0f0ec;
+  --border: #dddcd5;
+  --border-strong: #b8b7ae;
+  --text: #1a1a17;
+  --text-2: #4f4f48;
+  --text-3: #6b6b63;
+  --accent: #2f4fd1;
+  --accent-soft: #e9edfc;
+  --accent-border: #b9c5f3;
+  --fail: #b42318;
+  --fail-soft: #fdecea;
+  --fail-border: #f2b8b1;
+  --neutral: #22558a;
+  --neutral-soft: #e8f0f8;
+  --neutral-border: #b5cde6;
+  --warn: #855400;
+  --warn-soft: #fdf3dc;
+  --warn-border: #e9cf8c;
+  --ok: #1d6a3e;
+  --ok-soft: #e6f4ec;
+  --ok-border: #a9d7bb;
+  --muted: #5f5f58;
+  --muted-soft: #efefea;
+  --muted-border: #d3d2ca;
+  --peach: #c2702f;
+  --steel: #3c6f86;
+
+  background: var(--bg);
+  color: var(--text);
+}
+
+.light-zone {
+  position: relative;
+  overflow-x: clip; /* clip (not hidden) keeps the sticky how-it-works steps working */
+  margin-top: -260px; /* start behind the lower half of the video frame */
+  padding: 260px 0 220px;
+}
+
+.video-stage {
+  position: relative;
+  z-index: 2;
+}
+
+/* A dark dome hanging into the light band, and one rising out of it. */
+.horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 420px;
+  pointer-events: none;
+}
+
+.horizon-top {
+  top: 0;
+  background: radial-gradient(68% 100% at 50% 0%, #121211 62%, rgba(18, 18, 17, 0) 100%);
+}
+
+.horizon-bottom {
+  bottom: 0;
+  height: 360px;
+  background: radial-gradient(70% 100% at 50% 100%, #121211 60%, rgba(18, 18, 17, 0) 100%);
+}
+
+.light-zone > .tour {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Holographic swirl ---------- */
+.tour {
+  position: relative;
+}
+
+.tour-decoration {
+  position: absolute;
+  inset: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding-top: 40px;
+  overflow: clip; /* the blurred ring must never widen the page */
+  pointer-events: none;
+}
+
+.tour-decoration ~ * {
+  position: relative;
+}
+
+.tour-center .tour-head {
+  justify-items: center;
+  padding: 120px 0 80px;
+  text-align: center;
+}
+
+.tour-center .tour-head .block-title {
+  max-width: 22ch;
+}
+
+.holo {
+  position: relative;
+  width: min(620px, 88%);
+  aspect-ratio: 1;
+}
+
+.holo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ffc8dd, #ffe2bd, #d4f5e2, #c7e3ff, #ddd2ff, #ffc8dd);
+  -webkit-mask-image: radial-gradient(circle, transparent 54%, #000 57%, #000 66%, transparent 71%);
+  mask-image: radial-gradient(circle, transparent 54%, #000 57%, #000 66%, transparent 71%);
+  filter: blur(14px);
+  opacity: 0.95;
+  animation: holo-spin 40s linear infinite;
+}
+
+.holo-ring-inner {
+  inset: 12%;
+  opacity: 0.6;
+  animation-duration: 28s;
+  animation-direction: reverse;
+}
+
+.holo-dots {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #8a8a82;
+  opacity: 0.6;
+  animation: holo-spin 90s linear infinite reverse;
+}
+
+@keyframes holo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Rising proof columns ---------- */
+.proof-grid {
+  align-items: end;
+}
+
+.proof-grid li:nth-child(1) .proof-card {
+  min-height: 230px;
+}
+
+.proof-grid li:nth-child(2) .proof-card {
+  min-height: 280px;
+}
+
+.proof-grid li:nth-child(3) .proof-card {
+  min-height: 330px;
+}
+
+.proof-grid li:nth-child(4) .proof-card {
+  min-height: 380px;
+}
+
+.site .proof-card {
+  background: linear-gradient(180deg, #2a2a26, #1b1b19 60%);
+  transform-origin: 50% 100%;
+}
+
+.proof-grid li:nth-child(odd) .proof-value {
+  color: var(--peach);
+}
+
+.proof-grid li:nth-child(even) .proof-value {
+  color: var(--steel);
+}
+
+.is-visible .proof-grid li {
+  animation: rise 0.9s var(--ease-out) both;
+}
+
+.is-visible .proof-grid li:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.is-visible .proof-grid li:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.is-visible .proof-grid li:nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scaleY(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .proof-grid li .proof-card {
+    min-height: 0 !important;
+  }
+}
+
+/* ---------- Final call to action glow ---------- */
+.final-cta {
+  position: relative;
+}
+
+.final-glow {
+  position: absolute;
+  inset: 40px 0 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.final-cta > :not(.final-glow) {
+  position: relative;
+}
+
+/* ---------- Reduced motion: everything in place, nothing drifting ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .haze-blob,
+  .holo-ring,
+  .holo-dots,
+  .is-visible .proof-grid li {
+    animation: none;
+  }
+
+  .site-nav-wrap {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .light-zone {
+    margin-top: -120px;
+    padding: 120px 0 140px;
+  }
+
+  .horizon-top {
+    height: 220px;
+  }
+
+  .horizon-bottom {
+    height: 200px;
+  }
+
+  .tour-center .tour-head {
+    padding: 72px 0 48px;
+  }
+
+  .haze {
+    filter: blur(50px);
+  }
+}

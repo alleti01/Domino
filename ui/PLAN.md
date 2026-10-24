@@ -122,6 +122,14 @@ Order: hero → demo video → the domino chain → the experiment → how it wo
 - [x] **L4** Case tabs (keyboard-accessible): verdict, headline, key number and links per case, including the safe change raising no alarm. Proof counters, each linking to its exact proof (Nemotron receipts, Zetaris, rule-based judge, World Model). "What Domino won't tell you": the three verdicts and the honest limits. One final Try it yourself.
 - [x] **L5** Every link checked, keyboard and screen reader pass, reduced motion, phone widths, tests for the helpers.
 
+### S3c: Motion and colour, modelled on cogent.com
+How Cogent does it, measured in the browser: Lenis smooth scrolling; a sticky nav that slides up by its own height on the way down, returns on the way up, and switches to a light look over light sections; blocks that fade in from opacity 0 and 12px lower; labels that scramble through random characters (peach and steel blue) before settling; a looping colour-smoke video behind the hero; pastel holographic swirls on light sections; curved horizons between black and white; rising bar shapes.
+- [x] Lenis smooth scrolling on landing pages only (off for reduced motion), with section links routed through it.
+- [x] Nav hides on scroll down, returns on scroll up, stays while focused, turns light over the light band.
+- [x] Reveal-on-scroll for every tour section and the hero; scrambling kicker labels (screen readers get plain text).
+- [x] Drifting colour haze in CSS instead of a video; a light middle band (chain, experiment, how it works) with curved horizons; a holographic swirl with a dotted arc; proof counters as rising columns; a glow behind the final call to action.
+- [x] Everything still for prefers-reduced-motion; checked at desktop and phone widths.
+
 ### S4: Try it yourself
 - [ ] Change picker, Run button, step-by-step replay driven by the saved trace (speed control, skip to end), live counters, verdict ending with links.
 - [ ] Works on placeholders now, and on real runs once they land, with no extra work.

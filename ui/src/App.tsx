@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CaseEntry, RunEntry, SiteData } from './types'
 import { useSite, type PreviewState } from './data/useSite'
 import { useLocation, type Route } from './lib/router'
+import { startSmoothScroll, stopSmoothScroll } from './lib/smoothScroll'
 import { CasesView } from './components/CasesView'
 import { EvidencePanel } from './components/EvidencePanel'
 import { InvestigationView } from './components/InvestigationView'
@@ -68,13 +69,21 @@ export default function App() {
     document.title = pageTitle(route, caseEntry)
   }, [route, caseEntry])
 
+  // Smooth scrolling on the landing pages only; the dashboard scrolls natively.
+  const landing = isLanding(route)
+  useEffect(() => {
+    if (!landing) return
+    startSmoothScroll()
+    return stopSmoothScroll
+  }, [landing])
+
   const skipLink = (
     <button type="button" className="skip-link" onClick={() => mainRef.current?.focus()}>
       Skip to content
     </button>
   )
 
-  if (isLanding(route)) {
+  if (landing) {
     return (
       <div className="site">
         {skipLink}
