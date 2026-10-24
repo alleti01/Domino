@@ -2,7 +2,7 @@
   "contract_version": "0.2",
   "call": "run_experiment",
   "mode": "fake",
-  "experiment_id": "x-0c03638e6e154611",
+  "experiment_id": "x-284076ce6d1d4c55",
   "world": "fake-w0",
   "variant": "candidate",
   "params": {},
@@ -45,7 +45,7 @@
     "command": "python3 -m data_layer run fake-w0 candidate",
     "input_sha256": "4bb878e36650135a589095170e817f284b74bc536432cc08b89701c6c5242c86"
   },
-  "duration_ms": 232,
+  "duration_ms": 241,
   "error": null,
   "status": "ok",
   "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."

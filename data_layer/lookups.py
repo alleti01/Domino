@@ -183,17 +183,33 @@ def _evidence(text: str, query_id: str) -> List[Dict[str, str]]:
 
 def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int) -> Dict[str, Any]:
     """Every downstream path from `start`, up to max_hops, without revisiting a node on the same path."""
+    # Several source rows can state the same link (e.g. two GRANT lines in one change); merge them into one
+    # edge with all their evidence, so paths aren't duplicated and nothing gets counted twice.
+    rank = {"observed": 0, "inferred": 1, "unresolved": 2}
+    merged: Dict[tuple, Dict[str, Any]] = {}
+    for e in edges:
+        key = (e["from_id"], e["relation"], e["to_id"])
+        if key not in merged:
+            merged[key] = {**e, "evidence_items": [], "details": []}
+        m = merged[key]
+        m["evidence_items"] += [ev for ev in _evidence(e["evidence"], query_id) if ev not in m["evidence_items"]]
+        if e["detail"] and e["detail"] not in m["details"]:
+            m["details"].append(e["detail"])
+        if rank.get(e["edge_status"], 3) < rank.get(m["edge_status"], 3):
+            m["edge_status"] = e["edge_status"]
+
     outgoing: Dict[str, List[Dict[str, Any]]] = {}
     start_type = None
-    for e in sorted(edges, key=lambda e: (e["from_id"], e["relation"], e["to_id"])):
+    for key in sorted(merged):
+        e = merged[key]
         outgoing.setdefault(e["from_id"], []).append(e)
         if e["from_id"] == start:
             start_type = e["from_type"]
 
     def hop(e: Dict[str, Any]) -> Dict[str, Any]:
         return {"from": e["from_id"], "from_type": e["from_type"], "to": e["to_id"], "to_type": e["to_type"],
-                "relation": e["relation"], "edge_status": e["edge_status"], "detail": e["detail"],
-                "evidence": _evidence(e["evidence"], query_id)}
+                "relation": e["relation"], "edge_status": e["edge_status"], "detail": "; ".join(e["details"]),
+                "evidence": e["evidence_items"]}
 
     paths, unresolved, seen_unresolved = [], [], set()
 
@@ -207,7 +223,7 @@ def _walk(start: str, edges: List[Dict[str, Any]], query_id: str, max_hops: int)
                 seen_unresolved.add(e["to_id"])
                 unresolved.append({"from": e["from_id"], "to": e["to_id"], "relation": e["relation"],
                                    "reason": "referenced entity not found in any other source",
-                                   "evidence": _evidence(e["evidence"], query_id)})
+                                   "evidence": e["evidence_items"]})
             extend(e["to_id"], trail + [hop(e)], visited | {e["to_id"]})
 
     extend(start, [], {start})

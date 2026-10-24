@@ -3,14 +3,14 @@
   "call": "lookup",
   "mode": "fake",
   "status": "unavailable",
-  "query_id": "q-8b38b7ccd32d49ca",
+  "query_id": "q-02f869b296b74237",
   "sql": "SELECT job_id, service_name, principal_id, query_id, output_mode, source_system, source_row_id FROM lightning.metastore.domino.systems.job WHERE system_id = 'fake-w0' ORDER BY job_id",
   "columns": [],
   "rows": [],
   "row_count": 0,
   "row_ids": [],
   "truncated": false,
-  "duration_ms": 4018,
+  "duration_ms": 4015,
   "error": "Cannot reach http://127.0.0.1:9: [Errno 61] Connection refused",
   "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
 }
