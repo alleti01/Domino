@@ -14,7 +14,7 @@ import { type ChatMessage, type ChatRequest, type ChatResult, NightshiftError } 
 import { isNemotron } from "./llm/receipts.js";
 import { NO_TOOLS_PROMPT, SYSTEM_PROMPT, taskMessage } from "./prompts.js";
 import { InvestigationState } from "./state.js";
-import { type Budgets, DEFAULT_BUDGETS, type FinishArgs, ToolGateway, toolSpecs } from "./tools.js";
+import { type Budgets, DEFAULT_BUDGETS, type FinishArgs, ToolGateway, toolSpecs, toolsFor } from "./tools.js";
 import { TraceWriter } from "./trace.js";
 
 export const INVESTIGATOR_MODEL = process.env.DOMINO_INVESTIGATOR_MODEL ?? "nvidia/nemotron-3.5-lightning-30b-a3b";
@@ -204,8 +204,47 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
       }
     };
 
+    // Guaranteed ending: if the steps ran out, one last call may only use finish, so every run
+    // ends with an explanation, a mitigation and an independent review.
+    const forceFinish = async (why: string) => {
+      if (gateway.finished || outage || !toolsFor(opts.mode).some((t) => t.name === "finish")) return;
+      let tested = "";
+      if (toolsFor(opts.mode).some((t) => t.name === "run_experiment") && !state.experiments.some((x) => x.request.variant === "candidate" && x.completed)) {
+        // Domino never concludes untested: the harness runs the minimum comparison itself.
+        const catalog = await opts.worlds.catalog(change.world_id).catch(() => null);
+        const observe = (catalog?.observables ?? []).map((o) => o.name);
+        const results = [];
+        for (const variant of ["baseline", "candidate"] as const) {
+          const r = await gateway
+            .runExperiment({ world_id: change.world_id, change_id: change.change_id, variant, observe }, [], "Harness minimum test: the investigation reached its budget without testing the change; Domino always compares baseline and candidate before concluding.")
+            .catch(async (err: Error) => {
+              if (err.name !== "DataLayerUnavailable") throw err;
+              gateway.dataOutages++;
+              return null;
+            });
+          if (r) results.push(r);
+        }
+        await confirm();
+        tested = `\nThe harness ran the comparison you did not run:\n${results.map((r) => `[${r.experiment_id}] ${r.request.variant}: ${Object.entries(r.observations).map(([k, v]) => `${k}=${v}`).join(", ")}; ${r.assertions.filter((a) => !a.passed).map((a) => `FAILED ${a.name} (${a.detail})`).join("; ") || "all assertions passed"}`).join("\n")}`;
+      }
+      gateway.allowFinishUntested = true;
+      messages.push({ role: "user", content: `${why}${tested}\nCall finish now: explain what the evidence and experiments show, cite the rows and experiments, propose a mitigation if it breaks, and list what you could not test.` });
+      for (let attempt = 0; attempt < 2 && !gateway.finished; attempt++) {
+        step++;
+        const result = await callModel({ purpose: `step_${step}_finish`, messages, tools: toolSpecs(opts.mode, ["finish"]), toolChoice: "required", ...(opts.investigatorModel ? { model: opts.investigatorModel } : {}) });
+        if (!result) return;
+        const msg = result.message;
+        messages.push({ role: "assistant", content: msg.content ?? null, ...(msg.tool_calls?.length ? { tool_calls: msg.tool_calls } : {}) });
+        for (const call of msg.tool_calls ?? []) {
+          const output = await gateway.call(call.function.name, call.function.arguments);
+          messages.push({ role: "tool", tool_call_id: call.id, name: call.function.name, content: output });
+        }
+      }
+    };
+
     await investigate_(budgets.max_steps);
     await confirm();
+    await forceFinish("Your step budget is used up.");
 
     // Independent review: a second Nemotron model checks the explanation; problems go back to the investigator.
     if (opts.critic && opts.mode === "full" && gateway.finished && !outage) {
@@ -249,6 +288,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
         messages.push({ role: "user", content: revisionRequest(review) });
         await trace.emit({ type: "revision", what_changed: `Sent back by the independent reviewer: ${review.issues.map((i) => i.problem).join(" | ").slice(0, 400)}`, hypothesis_ids: [] });
         await investigate_(opts.critic.revisionSteps);
+        await forceFinish("Your revision budget is used up.");
         if (!gateway.finished) gateway.finished = previous; // keep the last complete explanation
         await confirm();
       }
@@ -271,7 +311,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     await trace.emit({ type: "memory", engine: "world_model", action: "read", detail: `Causal chain traced through the world model: ${graphChain.length} provenance-carrying links` });
   }
   const causal_chain = graphChain.length
-    ? graphChain.map((l) => ({ edge: `${l.from} ${l.relation} ${l.to}`, status: l.status === "unresolved" ? ("inferred" as const) : l.status, refs: l.row_ids.length ? l.row_ids : [l.row_id] }))
+    ? graphChain.map((l) => ({ edge: `${l.from} ${l.relation} ${l.to}`, status: l.status === "unresolved" ? ("inferred" as const) : l.status, refs: l.row_ids.length ? l.row_ids : [l.row_id], ...(l.detail ? { detail: l.detail } : {}) }))
     : supported.flatMap((h) =>
     [...h.evidence_for].map((ref) => ({
       edge: `${h.hypothesis_id}: ${h.mechanism}`,

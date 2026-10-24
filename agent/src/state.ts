@@ -2,6 +2,7 @@
 // with the Meterless World Model engine; the interface stays the same.
 
 import type { ExperimentResult, QueryResult } from "../../contracts/agent/types.js";
+import { rowFact } from "./facts.js";
 
 export type HypothesisStatus = "open" | "supported" | "refuted" | "untested";
 
@@ -29,11 +30,7 @@ export class InvestigationState {
   recordQuery(result: QueryResult): void {
     for (const row of result.rows) {
       this.seenRows.set(row.row_id, { source: row.source, query_id: result.query_id });
-      const v = row.values;
-      this.rowFacts.set(
-        row.row_id,
-        v.subject && v.key ? `${v.subject}.${v.key} = ${v.value}` : Object.entries(v).filter(([k]) => !["source_system", "source_row_id", "scenario_id"].includes(k)).map(([k, x]) => `${k}=${x}`).join(", "),
-      );
+      this.rowFacts.set(row.row_id, rowFact(row.values));
     }
   }
 

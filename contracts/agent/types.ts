@@ -131,7 +131,7 @@ export type TraceEvent = TraceBase &
         type: "verdict";
         verdict: Verdict;
         headline: string; // one line for the PR comment
-        causal_chain: Array<{ edge: string; status: "observed" | "inferred"; refs: string[] }>;
+        causal_chain: Array<{ edge: string; status: "observed" | "inferred"; refs: string[]; detail?: string }>;
         tested: string[]; // exactly what was tested
         limitations: string[];
         decided_by: "deterministic_judge"; // the model never sets the verdict
@@ -196,7 +196,7 @@ export interface EvidenceBundle {
     limitations: string[];
     mitigation: { text: string; verified: false } | null;
   };
-  causal_chain: Array<{ edge: string; status: "observed" | "inferred"; evidence: Array<{ row_id: string; facts: string }> }>;
+  causal_chain: Array<{ edge: string; status: "observed" | "inferred"; detail: string | null; evidence: Array<{ row_id: string; facts: string }> }>;
   experiments: Array<{
     experiment_id: string;
     variant: "baseline" | "candidate" | "control";

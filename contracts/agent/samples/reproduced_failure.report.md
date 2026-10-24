@@ -1,35 +1,40 @@
-### 🟢 Domino: no failure observed under the tested conditions
+### 🔴 Domino: failure reproduced under tested conditions
 > Replayed from a recorded run (no live model or data layer).
-**Lower tax-api client timeout to 2s**: Tax API timeout reduced to 2s - safe, no increase in timeouts expected
+**Explicit shard grants for svc_bundle_reader**: Explicit shard grants for svc_bundle_reader breaks worker-runtime startup by exceeding max_entries=200
 
-The 2s timeout is sufficient for the observed tax API latency distribution. Tax API p99 latency is 1500ms and max 30d is 1750ms, both well within 2000ms. Experiments with 1000 requests show 0 client.timeouts with both the original 30s and new 2s timeout settings.
+The GRANT SELECT ON r0.* given to svc_bundle_reader causes the bundle-builder to discover and include metadata from both default.bundle_fields (140 entries) and r0.bundle_fields (140 entries), totaling 280 entries. The worker-runtime is configured with max_entries=200 (runtime_config:rc-0007), so 280 > 200 causes a fatal startup error: "bundle has 280 entries but the runtime preallocates 200; refusing to start"
 
 **How the change reaches the failure** (joined across sources in the semantic layer)
 | # | Link | | Evidence |
 |---|---|---|---|
-| 1 | h1: Tax API latency (p50=180ms, p99=1500ms, max_30d=1750ms) is well within 2s timeout; experiments confirm 0 timeouts with both timeout settings | observed | `telemetry:tel-0013` service/tax-api.latency_ms_p50 = 180 |
-| 2 | h1: Tax API latency (p50=180ms, p99=1500ms, max_30d=1750ms) is well within 2s timeout; experiments confirm 0 timeouts with both timeout settings | observed | `telemetry:tel-0014` service/tax-api.latency_ms_p99 = 1500 |
-| 3 | h1: Tax API latency (p50=180ms, p99=1500ms, max_30d=1750ms) is well within 2s timeout; experiments confirm 0 timeouts with both timeout settings | observed | `telemetry:tel-0015` service/tax-api.latency_ms_max_30d = 1750 |
+| 1 | 0042 grants_to svc_bundle_reader<br><sub>GRANT SELECT ON r0.*</sub> | observed | `change_records:cr-0004`<br>`db_catalog:ag-0010` grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT |
+| 2 | svc_bundle_reader identity_of bundle-builder<br><sub>service runs as svc_bundle_reader</sub> | observed | `pipeline_repo:jd-0005` service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned<br>`db_catalog:ag-0010` grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT |
+| 3 | bundle-builder writes bundle.json<br><sub>output_mode=as_returned</sub> | observed | `pipeline_repo:jd-0005` service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned<br>`runtime_config:rc-0007` worker-runtime.max_entries = 200 |
+| 4 | bundle.json loaded_by worker-runtime<br><sub>read at startup</sub> | observed | `runtime_config:rc-0007` worker-runtime.max_entries = 200<br>`pipeline_repo:jd-0005` service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned |
+| 5 | worker-runtime configured_with worker-runtime.max_entries<br><sub>max_entries=200</sub> | inferred | `runtime_config:rc-0007` worker-runtime.max_entries = 200 |
 
 **Experiments** (same workload; only the change differs)
-| Variant | client.requests | client.timeouts | client.error_rate | Result |
-|---|---|---|---|---|
-| baseline | 1000 | 0 | 0 | ✅ pass |
-| candidate | 1000 | 0 | 0 | ✅ pass |
-| control (change reverted) | 1000 | 0 | 0 | ✅ pass |
+| Variant | meta-store.rows_visible_to_builder | bundle-builder.entries | bundle-builder.bundle_bytes | worker-runtime.exit_code | worker-runtime.loaded_entries | Result |
+|---|---|---|---|---|---|---|
+| baseline | 140 | 140 | 4390 | 0 | 140 | ✅ pass |
+| candidate | 280 | 280 | 8731 | 2 | 0 | ❌ runtime_starts_with_bundle |
+| candidate ·harness | 280 | 280 | 8731 | 2 | 0 | ❌ runtime_starts_with_bundle |
+| control (change reverted) ·harness | 140 | 140 | 4390 | 0 | 140 | ✅ pass |
 
 **Independent review:** ✓ explanation checked against the evidence by nvidia/nemotron-3-ultra-550b-a55b.
 
-**What was tested:** 3 runs. This is not a claim of production safety.
-**Limits:** Latency measurements may not cover all edge cases (e.g. · network spikes · degraded states); real-world traffic patterns may differ from the default workload · Baseline and candidate both passed under every tested workload.
+**Suggested mitigation** (from Nemotron, *not verified by Domino*): Remove the explicit GRANT SELECT ON r0.* from the change, or reduce worker-runtime.max_entries from 200 to >= 280 (if 280 entries is the intended capacity), or ensure the bundle-builder only queries bundle_fields in one database rather than both default and r0
 
-<sub>Verdict decided by Domino's deterministic judge, not the model. 17 model calls via Meterless Nightshift: nvidia/nemotron-3.5-lightning-30b-a3b ×16, nvidia/nemotron-3-ultra-550b-a55b ×1 (all NVIDIA Nemotron). 5 semantic-layer queries · Meterless World Model: 2 writes, 0 reads, 1 updates · 0s · run run-20261024030313-310c97</sub>
+**What was tested:** 4 runs. 
+**Limits:** Could not test per-principal query limit enforcement separately; could not observe audit logging behavior change; only tested default workload
+
+<sub>Verdict decided by Domino's deterministic judge, not the model. 21 model calls via Meterless Nightshift: nvidia/nemotron-3.5-lightning-30b-a3b ×20, nvidia/nemotron-3-ultra-550b-a55b ×1 (all NVIDIA Nemotron). 8 semantic-layer queries · Meterless World Model: 4 writes, 1 reads, 2 updates · 0s · run run-20261024042534-d91dff</sub>
 
 <details><summary>Reproduce</summary>
 
 ```bash
-python3 -m practice run p08 baseline
-python3 -m practice run p08 candidate
-python3 -m practice run p08 control
+python3 -m data_layer run w-k7m2 baseline
+python3 -m data_layer run w-k7m2 candidate
+python3 -m data_layer run w-k7m2 control
 ```
 </details>

@@ -5,6 +5,7 @@
 
 import type { ExperimentResult, Verdict } from "../../contracts/agent/types.js";
 import type { ChatModel } from "./agent.js";
+import type { ChatMessage } from "./llm/nightshift.js";
 import type { InvestigationState } from "./state.js";
 import type { FinishArgs } from "./tools.js";
 
@@ -22,6 +23,7 @@ Check:
 3. The described mechanism is consistent with the experiment observations.
 4. The mitigation, if any, would actually avoid the failure given the numbers in the evidence (check the arithmetic).
 5. For a "no failure observed" verdict: the explanation of why it is safe uses the evidence correctly and does not overclaim production safety.
+6. A claim that the change is safe, or that it breaks, must agree with the experiment results. If the experiments contradict it, or no experiment was run, flag it as unsupported even when each individual fact is correct.
 Ignore style and wording. Approve unless something material is wrong. Cite evidence ids in refs. Use the submit_review tool.`;
 
 const TOOL = {
@@ -73,6 +75,8 @@ export async function reviewExplanation(
     ctx.diff.trim(),
     "```",
     `Judge's verdict: ${ctx.verdict} (${ctx.judgeReasons.join(" ")})`,
+    `Experiments run: ${ctx.state.experiments.length}`,
+    `Investigator's prediction: ${finish.prediction}`,
     ``,
     `Explanation to review:`,
     `Headline: ${finish.headline}`,
@@ -82,25 +86,30 @@ export async function reviewExplanation(
     evidencePack(ctx.state),
   ].join("\n");
 
-  const result = await model.chat({
-    model: reviewerModel,
-    purpose: "review",
-    messages: [
-      { role: "system", content: SYSTEM },
-      { role: "user", content: user },
-    ],
-    tools: [TOOL],
-    toolChoice: "required",
-  });
-  const call = result.message.tool_calls?.find((c) => c.function.name === "submit_review");
-  if (!call) throw new Error("reviewer did not call submit_review");
-  const args = JSON.parse(call.function.arguments) as { approved?: unknown; issues?: unknown };
+  // Ultra sometimes answers in prose instead of calling the tool: read JSON from the text, else retry once.
+  let args: { approved?: unknown; issues?: unknown } | null = null;
+  let routed: string | null = null;
+  const messages: ChatMessage[] = [
+    { role: "system", content: SYSTEM },
+    { role: "user", content: user },
+  ];
+  for (let attempt = 0; attempt < 2 && !args; attempt++) {
+    const result = await model.chat({ model: reviewerModel, purpose: attempt ? "review_retry" : "review", messages, tools: [TOOL], toolChoice: "required" });
+    routed = result.receipt.routedModel;
+    const call = result.message.tool_calls?.find((c) => c.function.name === "submit_review");
+    args = call ? safeJson(call.function.arguments) : extractReview(result.message.content);
+    if (!args) {
+      messages.push({ role: "assistant", content: result.message.content ?? "" });
+      messages.push({ role: "user", content: 'Respond ONLY by calling submit_review, or with a single JSON object {"approved": boolean, "issues": [{"statement": string, "problem": string, "refs": [string]}]}.' });
+    }
+  }
+  if (!args) throw new Error("reviewer did not return a review");
   const issues = Array.isArray(args.issues)
     ? args.issues
         .filter((i: any) => i && typeof i.statement === "string" && typeof i.problem === "string")
         .map((i: any) => ({ statement: i.statement, problem: i.problem, refs: Array.isArray(i.refs) ? i.refs.map(String) : [] }))
     : [];
-  return { approved: args.approved === true, issues, reviewerModel: result.receipt.routedModel };
+  return { approved: args.approved === true, issues, reviewerModel: routed };
 }
 
 /** What the investigator is told when the reviewer sends the explanation back. */
@@ -110,4 +119,25 @@ export function revisionRequest(review: Review): string {
     ...review.issues.map((i, n) => `${n + 1}. "${i.statement}": ${i.problem}${i.refs.length ? ` [${i.refs.join(", ")}]` : ""}`),
     `Fix them: retrieve or test what you need, correct the explanation and mitigation so every statement is backed by evidence, then call finish again.`,
   ].join("\n");
+}
+
+function safeJson(text: string): { approved?: unknown; issues?: unknown } | null {
+  try {
+    const v = JSON.parse(text);
+    return v && typeof v === "object" && "approved" in v ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Find a {"approved": ..., "issues": ...} object in a prose answer. */
+export function extractReview(text: string | null): { approved?: unknown; issues?: unknown } | null {
+  if (!text) return null;
+  for (let start = text.indexOf("{"); start !== -1; start = text.indexOf("{", start + 1)) {
+    for (let end = text.lastIndexOf("}"); end > start; end = text.lastIndexOf("}", end - 1)) {
+      const found = safeJson(text.slice(start, end + 1));
+      if (found) return found;
+    }
+  }
+  return null;
 }

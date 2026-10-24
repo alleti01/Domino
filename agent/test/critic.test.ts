@@ -80,4 +80,10 @@ describe("independent reviewer", () => {
     const events = (await readFile(join(out, summary.run_id, "trace.jsonl"), "utf8")).trim().split("\n").map((l) => JSON.parse(l) as TraceEvent);
     expect(events.find((e) => e.type === "review")).toMatchObject({ outcome: "unavailable" });
   });
+
+  it("reads a review written as prose JSON instead of a tool call", async () => {
+    const { extractReview } = await import("../src/critic.js");
+    expect(extractReview('Here is my review: {"approved": false, "issues": [{"statement": "x", "problem": "y"}]} Thanks.')).toEqual({ approved: false, issues: [{ statement: "x", problem: "y" }] });
+    expect(extractReview("I think it is fine.")).toBeNull();
+  });
 });

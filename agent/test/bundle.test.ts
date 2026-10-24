@@ -37,7 +37,9 @@ describe("evidence bundle", () => {
     expect(bundle.verdict.verdict).toBe("reproduced_failure");
     expect(bundle.verdict.mitigation).toEqual({ text: "filter the builder query to one schema", verified: false });
     expect(bundle.causal_chain.map((c) => c.edge)).toEqual(["svc_builder identity_of builder", "builder produces items.list", "items.list consumed_by loader"]);
-    expect(bundle.causal_chain.every((c) => c.evidence.every((e) => e.row_id && e.facts))).toBe(true);
+    // every link cites rows; a row only shows content if the run actually retrieved it
+    expect(bundle.causal_chain.every((c) => c.evidence.length > 0 && c.evidence.every((e) => e.row_id))).toBe(true);
+    expect(bundle.causal_chain.flatMap((c) => c.evidence).every((e) => e.facts === "")).toBe(true); // stub run never queried these rows
     // paired baseline + model's candidate + harness repeat + harness control
     expect(bundle.experiments.map((x) => `${x.variant}:${x.requested_by}`)).toEqual(["baseline:harness", "candidate:agent", "candidate:harness", "control:harness"]);
     expect(bundle.models).toMatchObject({ calls: 3, failed: 0, all_nemotron: true, provider: "Meterless Nightshift" });

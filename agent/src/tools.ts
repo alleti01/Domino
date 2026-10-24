@@ -17,7 +17,7 @@ export interface Budgets {
   max_queries: number;
 }
 
-export const DEFAULT_BUDGETS: Budgets = { max_steps: 20, max_model_calls: 24, max_ms: 10 * 60_000, max_experiments: 10, max_queries: 20 };
+export const DEFAULT_BUDGETS: Budgets = { max_steps: 20, max_model_calls: 26, max_ms: 10 * 60_000, max_experiments: 10, max_queries: 8 };
 
 type JsonType = "string" | "number" | "boolean" | "string[]" | "object";
 interface ToolDef {
@@ -135,8 +135,8 @@ export function toolsFor(mode: RunMode): ToolDef[] {
   return TOOLS.filter((t) => GROUPS_BY_MODE[mode].includes(t.group));
 }
 
-export function toolSpecs(mode: RunMode): ToolSpec[] {
-  return toolsFor(mode).map((t) => ({
+export function toolSpecs(mode: RunMode, only?: string[]): ToolSpec[] {
+  return toolsFor(mode).filter((t) => !only || only.includes(t.name)).map((t) => ({
     type: "function",
     function: {
       name: t.name,
@@ -219,6 +219,8 @@ export class ToolGateway {
   experimentsRun = 0;
   finished: FinishArgs | null = null;
   dataOutages = 0;
+  /** Set by the harness once it has run the minimum test itself. */
+  allowFinishUntested = false;
   private readonly sqlSeen = new Map<string, string>();
 
   constructor(
@@ -280,7 +282,7 @@ export class ToolGateway {
         this.sqlSeen.set(sql.replace(/\s+/g, " ").toLowerCase(), result.query_id);
         await trace.emit({ type: "usl_query", purpose: args.purpose, result });
         if (result.error) return `ERROR from semantic layer: ${result.error}`;
-        return compact({ query_id: result.query_id, row_count: result.rows.length, rows: result.rows.slice(0, MAX_ROWS) });
+        return compact({ query_id: result.query_id, row_count: result.rows.length, queries_left: budgets.max_queries - this.queries, rows: result.rows.slice(0, MAX_ROWS) });
       }
 
       case "get_dependency_path": {
@@ -289,7 +291,8 @@ export class ToolGateway {
         for (const e of path.edges) {
           for (const id of e.row_ids?.length ? e.row_ids : [e.row_id]) {
             state.seenRows.set(id, { source: e.source, query_id: "path" });
-            if (!state.rowFacts.has(id)) state.rowFacts.set(id, e.detail ?? `${e.from} ${e.relation} ${e.to}`);
+            // A path row is only known through the link it supports: say so, rather than pass the link's detail off as the row's content.
+            if (!state.rowFacts.has(id)) state.rowFacts.set(id, `supports link ${e.from} ${e.relation} ${e.to}${e.detail ? ` (${e.detail})` : ""}`);
           }
         }
         await trace.emit({ type: "dependency_path", path });
@@ -371,6 +374,10 @@ export class ToolGateway {
       }
 
       case "finish": {
+        const canTest = toolsFor(this.ctx.mode).some((t) => t.name === "run_experiment") && this.experimentsRun < budgets.max_experiments;
+        if (canTest && !this.allowFinishUntested && !state.experiments.some((x) => x.request.variant === "candidate" && x.completed)) {
+          throw new ToolError("Test before concluding: run_experiment with variant candidate (a baseline is paired automatically) so the judge has evidence, then call finish.");
+        }
         if (args.prediction === "breaks" && !args.mitigation) {
           throw new ToolError("prediction is breaks, so propose a mitigation: the smallest change that would avoid the failure. Call finish again with it.");
         }

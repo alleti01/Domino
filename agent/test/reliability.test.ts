@@ -64,4 +64,36 @@ describe("reliability", () => {
     expect(summary.outage).toBe(true);
     expect(summary.verdict).toBe("inconclusive");
   });
+
+  it("forces a finish when the step budget runs out, so every run has an explanation", async () => {
+    const seen: string[][] = [];
+    const summary = await investigate({
+      changeId: "stub-chg-1",
+      mode: "full",
+      outDir: await mkdtemp(join(tmpdir(), "domino-rel-")),
+      evidence: new StubEvidence(),
+      worlds: new StubWorlds(),
+      budgets: { max_steps: 3 },
+      model: {
+        chat: async (req) => {
+          const names = (req.tools ?? []).map((t) => t.function.name);
+          seen.push(names);
+          if (names.length === 1 && names[0] === "finish") {
+            return {
+              ...finish(),
+              message: {
+                role: "assistant",
+                content: null,
+                tool_calls: [{ id: "f", type: "function", function: { name: "finish", arguments: JSON.stringify({ headline: "forced", prediction: "unsure", cause_claim: "ran out of steps", evidence: ["g1"], supported_hypothesis_ids: [], limitations: ["budget"] }) } }],
+              },
+            };
+          }
+          return { ...finish(), message: { role: "assistant", content: null, tool_calls: [{ id: "q", type: "function", function: { name: "get_dependency_path", arguments: JSON.stringify({ entity: "svc_builder" }) } }] } };
+        },
+      },
+    });
+    expect(seen.at(-1)).toEqual(["finish"]);
+    expect(summary.cause_claim).toBe("ran out of steps");
+    expect(summary.model_prediction).toBe("unsure");
+  });
 });

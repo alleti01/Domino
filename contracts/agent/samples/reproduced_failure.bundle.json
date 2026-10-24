@@ -1,196 +1,312 @@
 {
   "bundle_version": "1",
-  "run_id": "run-20261024030313-310c97",
+  "run_id": "run-20261024042534-d91dff",
   "replay": true,
   "mode": "full",
   "change": {
-    "change_id": "p08/change/1702",
-    "world_id": "p08",
-    "title": "Lower tax-api client timeout to 2s",
+    "change_id": "w-k7m2/change/0042",
+    "world_id": "w-k7m2",
+    "title": "Explicit shard grants for svc_bundle_reader",
     "files": [
-      "services/cart/clients.yaml"
+      "db/migrations/0042_reader_shard_grants.sql"
     ],
-    "diff": "--- a/services/cart/clients.yaml\n+++ b/services/cart/clients.yaml\n@@ -1,1 +1,1 @@\n-tax_api_timeout_ms: 30000\n+tax_api_timeout_ms: 2000\n"
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
   },
   "verdict": {
-    "verdict": "no_failure_observed",
-    "headline": "Tax API timeout reduced to 2s - safe, no increase in timeouts expected",
-    "cause": "The 2s timeout is sufficient for the observed tax API latency distribution. Tax API p99 latency is 1500ms and max 30d is 1750ms, both well within 2000ms. Experiments with 1000 requests show 0 client.timeouts with both the original 30s and new 2s timeout settings.",
+    "verdict": "reproduced_failure",
+    "headline": "Explicit shard grants for svc_bundle_reader breaks worker-runtime startup by exceeding max_entries=200",
+    "cause": "The GRANT SELECT ON r0.* given to svc_bundle_reader causes the bundle-builder to discover and include metadata from both default.bundle_fields (140 entries) and r0.bundle_fields (140 entries), totaling 280 entries. The worker-runtime is configured with max_entries=200 (runtime_config:rc-0007), so 280 > 200 causes a fatal startup error: \"bundle has 280 entries but the runtime preallocates 200; refusing to start\"",
     "decided_by": "deterministic_judge",
     "tested": [
-      "x-4b540a355bbc4814: baseline · workload default → all assertions passed",
-      "x-7198440f58704f8a: candidate · workload default → all assertions passed",
-      "x-d9a2a3e834984c6c: control · workload default → all assertions passed"
+      "x-80e97cfbd0524372: baseline · workload default → all assertions passed",
+      "x-2d7d913a89c64299: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-5e0b5c4470d04fd9: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-d056ce4d223c4220: control · workload default → all assertions passed"
     ],
     "limitations": [
-      "Latency measurements may not cover all edge cases (e.g.",
-      "network spikes",
-      "degraded states); real-world traffic patterns may differ from the default workload",
-      "Baseline and candidate both passed under every tested workload."
+      "Could not test per-principal query limit enforcement separately; could not observe audit logging behavior change; only tested default workload"
     ],
-    "mitigation": null
+    "mitigation": {
+      "text": "Remove the explicit GRANT SELECT ON r0.* from the change, or reduce worker-runtime.max_entries from 200 to >= 280 (if 280 entries is the intended capacity), or ensure the bundle-builder only queries bundle_fields in one database rather than both default and r0",
+      "verified": false
+    }
   },
   "causal_chain": [
     {
-      "edge": "h1: Tax API latency (p50=180ms, p99=1500ms, max_30d=1750ms) is well within 2s timeout; experiments confirm 0 timeouts with both timeout settings",
+      "edge": "0042 grants_to svc_bundle_reader",
       "status": "observed",
+      "detail": "GRANT SELECT ON r0.*",
       "evidence": [
         {
-          "row_id": "telemetry:tel-0013",
-          "facts": "service/tax-api.latency_ms_p50 = 180"
+          "row_id": "change_records:cr-0004",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": "grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT"
         }
       ]
     },
     {
-      "edge": "h1: Tax API latency (p50=180ms, p99=1500ms, max_30d=1750ms) is well within 2s timeout; experiments confirm 0 timeouts with both timeout settings",
+      "edge": "svc_bundle_reader identity_of bundle-builder",
       "status": "observed",
+      "detail": "service runs as svc_bundle_reader",
       "evidence": [
         {
-          "row_id": "telemetry:tel-0014",
-          "facts": "service/tax-api.latency_ms_p99 = 1500"
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": "grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT"
         }
       ]
     },
     {
-      "edge": "h1: Tax API latency (p50=180ms, p99=1500ms, max_30d=1750ms) is well within 2s timeout; experiments confirm 0 timeouts with both timeout settings",
+      "edge": "bundle-builder writes bundle.json",
       "status": "observed",
+      "detail": "output_mode=as_returned",
       "evidence": [
         {
-          "row_id": "telemetry:tel-0015",
-          "facts": "service/tax-api.latency_ms_max_30d = 1750"
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
+        },
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": "worker-runtime.max_entries = 200"
+        }
+      ]
+    },
+    {
+      "edge": "bundle.json loaded_by worker-runtime",
+      "status": "observed",
+      "detail": "read at startup",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": "worker-runtime.max_entries = 200"
+        },
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
+        }
+      ]
+    },
+    {
+      "edge": "worker-runtime configured_with worker-runtime.max_entries",
+      "status": "inferred",
+      "detail": "max_entries=200",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": "worker-runtime.max_entries = 200"
         }
       ]
     }
   ],
   "experiments": [
     {
-      "experiment_id": "x-4b540a355bbc4814",
+      "experiment_id": "x-80e97cfbd0524372",
       "variant": "baseline",
       "requested_by": "agent",
-      "rationale": "Compare baseline (30s timeout) to measure current timeout rate",
+      "rationale": "Establish baseline metrics before the change is applied",
       "observations": {
-        "client.requests": 1000,
-        "client.timeouts": 0,
-        "client.error_rate": 0
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
       },
       "failed_assertions": [],
       "passed": true,
       "artifacts": [
         {
-          "name": "state.json",
-          "sha256": "22ebdeba7fe801a2182373077d9d1fae4ec496c15d8d03cf2ef3c2125231d83c",
-          "bytes": 121
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
         }
       ],
-      "reproduce": "python3 -m practice run p08 baseline"
+      "reproduce": "python3 -m data_layer run w-k7m2 baseline"
     },
     {
-      "experiment_id": "x-7198440f58704f8a",
+      "experiment_id": "x-2d7d913a89c64299",
       "variant": "candidate",
       "requested_by": "agent",
-      "rationale": "Compare candidate (2s timeout) to see if timeouts increase",
+      "rationale": "Run the candidate with the explicit shard grants to observe differences",
       "observations": {
-        "client.requests": 1000,
-        "client.timeouts": 0,
-        "client.error_rate": 0
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
       },
-      "failed_assertions": [],
-      "passed": true,
-      "artifacts": [
+      "failed_assertions": [
         {
-          "name": "state.json",
-          "sha256": "bab6543031246f920c4163d07b3f7fdd1b6c16626e8fece8e6cdbe550e84aee8",
-          "bytes": 120
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
         }
       ],
-      "reproduce": "python3 -m practice run p08 candidate"
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
     },
     {
-      "experiment_id": "x-d9a2a3e834984c6c",
-      "variant": "control",
-      "requested_by": "agent",
-      "rationale": "Verify control matches baseline for comparison",
+      "experiment_id": "x-5e0b5c4470d04fd9",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
       "observations": {
-        "client.requests": 1000,
-        "client.timeouts": 0,
-        "client.error_rate": 0
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
+    },
+    {
+      "experiment_id": "x-d056ce4d223c4220",
+      "variant": "control",
+      "requested_by": "harness",
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
       },
       "failed_assertions": [],
       "passed": true,
       "artifacts": [
         {
-          "name": "state.json",
-          "sha256": "22ebdeba7fe801a2182373077d9d1fae4ec496c15d8d03cf2ef3c2125231d83c",
-          "bytes": 121
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
         }
       ],
-      "reproduce": "python3 -m practice run p08 control"
+      "reproduce": "python3 -m data_layer run w-k7m2 control"
     }
   ],
   "hypotheses": [
     {
       "hypothesis_id": "h1",
-      "claim": "Lowering tax_api_timeout_ms to 2000ms will NOT increase client.timeouts - the 2s timeout is sufficient for the observed latency distribution",
-      "mechanism": "Tax API latency (p50=180ms, p99=1500ms, max_30d=1750ms) is well within 2s timeout; experiments confirm 0 timeouts with both timeout settings",
+      "claim": "The explicit grant may allow svc_bundle_reader to query additional tables in database r0 beyond bundle_fields, triggering per-principal query limits. However, the experiment shows the failure is specifically due to max_entries being exceeded (280 > 200), not due to per-principal query limit throttling. The runtime exits with code 2 because of entry count overflow, not query limit violations.",
+      "mechanism": "The failure mechanism is max_entries overflow, not per-principal query limit enforcement. The explicit grant r0.* provides access to all tables in r0, but the observed failure is the entries limit, not query limits.",
+      "status": "refuted",
+      "evidence_for": [
+        "change_records:cr-0004",
+        "db_catalog:ti-0011",
+        "pipeline_repo:jd-0005",
+        "x-80e97cfbd0524372",
+        "x-2d7d913a89c64299"
+      ]
+    },
+    {
+      "hypothesis_id": "h2",
+      "claim": "The explicit shard grant for svc_bundle_reader on database r0 causes the bundle-builder to read metadata from both default.bundle_fields AND r0.bundle_fields, doubling the entries from 140 to 280 and exceeding the worker-runtime max_entries=200 limit, causing runtime startup failure.",
+      "mechanism": "The GRANT SELECT ON r0.* gives svc_bundle_reader access to all tables in r0, including r0.bundle_fields. Combined with existing access to default.bundle_fields, the bundle-builder now discovers 280 total rows (140 from each database) instead of 140. The worker-runtime is configured with max_entries=200, so 280 > 200 causes the fatal error.",
       "status": "supported",
       "evidence_for": [
-        "telemetry:tel-0013",
-        "telemetry:tel-0014",
-        "telemetry:tel-0015"
+        "change_records:cr-0004",
+        "db_catalog:ti-0011",
+        "pipeline_repo:jd-0005",
+        "runtime_config:rc-0007",
+        "x-80e97cfbd0524372",
+        "x-2d7d913a89c64299"
+      ]
+    },
+    {
+      "hypothesis_id": "h3",
+      "claim": "The explicit shard grant for svc_bundle_reader on database r0 could bypass audit logging that was previously enforced on the implicit principal access, creating an audit blind spot for queries originating from bundle-builder.",
+      "mechanism": "Previously, svc_bundle_reader accessed shard databases implicitly, which may have been covered by audit logging on the implicit principal. Making the grant explicit could change how audit systems track the principal, or the audit system may have been configured for the implicit access pattern and not the explicit grant.",
+      "status": "open",
+      "evidence_for": [
+        "change_records:cr-0004",
+        "db_catalog:ag-0010"
       ]
     }
   ],
   "cited_evidence": [
     {
-      "row_id": "telemetry:tel-0013",
-      "source": "telemetry",
-      "facts": "service/tax-api.latency_ms_p50 = 180"
+      "row_id": "db_catalog:ag-0010",
+      "source": "db_catalog",
+      "facts": "grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT"
     },
     {
-      "row_id": "telemetry:tel-0014",
-      "source": "telemetry",
-      "facts": "service/tax-api.latency_ms_p99 = 1500"
+      "row_id": "pipeline_repo:jd-0005",
+      "source": "pipeline_repo",
+      "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
     },
     {
-      "row_id": "telemetry:tel-0015",
-      "source": "telemetry",
-      "facts": "service/tax-api.latency_ms_max_30d = 1750"
+      "row_id": "runtime_config:rc-0007",
+      "source": "runtime_config",
+      "facts": "worker-runtime.max_entries = 200"
+    },
+    {
+      "row_id": "db_catalog:ti-0011",
+      "source": "db_catalog",
+      "facts": "table=r0.bundle_fields, database=r0, table_name=bundle_fields, column_count=140"
     }
   ],
   "models": {
-    "calls": 17,
+    "calls": 21,
     "failed": 0,
     "all_nemotron": true,
     "by_model": {
-      "nvidia/nemotron-3.5-lightning-30b-a3b": 16,
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 20,
       "nvidia/nemotron-3-ultra-550b-a55b": 1
     },
     "request_ids": [
-      "req_78bzjvop",
-      "req_thrjcfdj",
-      "req_61207xjb",
-      "req_p8blful1",
-      "req_iguxjwpl",
-      "req_vzuvqv3j",
-      "req_7poysmsi",
-      "req_kgc3gfub",
-      "req_0vhkk527",
-      "req_6ccsccqh",
-      "req_y1tfwakd",
-      "req_kgghuwwz",
-      "req_copnm8ti",
-      "req_oo13no0g",
-      "req_4x7hlj8z",
-      "req_4juwpx8l",
-      "req_s5ka1y0z"
+      "req_t83niadx",
+      "req_f6rjvggs",
+      "req_08vjpxzh",
+      "req_trq5m8qc",
+      "req_ytd0s96n",
+      "req_wbf13xai",
+      "req_7h64r0iz",
+      "req_t6px2dnj",
+      "req_3y0q4kim",
+      "req_wq0irksw",
+      "req_zfex1ssm",
+      "req_f27veavc",
+      "req_oagnkrwh",
+      "req_nlzjaedh",
+      "req_p57vyvb6",
+      "req_axlrozht",
+      "req_ygwffz5w",
+      "req_iv0bn725",
+      "req_6uq7isyd",
+      "req_in5024f8",
+      "req_3rnkefdo"
     ],
-    "total_latency_ms": 73671,
+    "total_latency_ms": 144160,
     "provider": "Meterless Nightshift"
   },
   "world_model": {
-    "writes": 2,
-    "reads": 0,
-    "updates": 1
+    "writes": 4,
+    "reads": 1,
+    "updates": 2
   },
   "review": {
     "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
@@ -198,6 +314,6 @@
     "final": "approved",
     "issues": []
   },
-  "queries": 5,
+  "queries": 8,
   "duration_ms": 4
 }

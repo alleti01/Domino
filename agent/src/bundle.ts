@@ -4,6 +4,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { EvidenceBundle, ExperimentResult, TraceEvent } from "../../contracts/agent/types.js";
+import { rowFact } from "./facts.js";
 
 export function buildBundle(events: TraceEvent[]): EvidenceBundle {
   const ev = events as any[];
@@ -17,15 +18,14 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
   for (const e of ev) {
     if (e.type === "usl_query") {
       for (const r of e.result.rows) {
-        const v = r.values;
-        const text = v.subject && v.key ? `${v.subject}.${v.key} = ${v.value}` : Object.entries(v).filter(([k]) => !["source_system", "source_row_id", "scenario_id"].includes(k)).map(([k, x]) => `${k}=${x}`).join(", ");
-        facts.set(r.row_id, { source: r.source, facts: text });
+        facts.set(r.row_id, { source: r.source, facts: rowFact(r.values) });
       }
     }
     if (e.type === "dependency_path") {
+      // Rows seen only through a path have no content of their own here; record the source, not a borrowed fact.
       for (const edge of e.path.edges) {
         for (const id of edge.row_ids?.length ? edge.row_ids : [edge.row_id]) {
-          if (!facts.has(id)) facts.set(id, { source: edge.source, facts: edge.detail ?? `${short(edge.from)} ${edge.relation} ${short(edge.to)}` });
+          if (!facts.has(id)) facts.set(id, { source: edge.source, facts: "" });
         }
       }
     }
@@ -81,10 +81,10 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
       limitations: verdict.limitations,
       mitigation: verdict.mitigation ? { text: verdict.mitigation, verified: false } : null,
     },
-    causal_chain: verdict.causal_chain.map((c: any) => ({ edge: c.edge, status: c.status, evidence: c.refs.map((id: string) => ({ row_id: id, facts: factOf(id) })) })),
+    causal_chain: verdict.causal_chain.map((c: any) => ({ edge: c.edge, status: c.status, detail: c.detail ?? null, evidence: c.refs.map((id: string) => ({ row_id: id, facts: factOf(id) })) })),
     experiments,
     hypotheses: [...hyps.values()].map((h) => ({ hypothesis_id: h.hypothesis_id, claim: h.claim, mechanism: h.mechanism, status: h.status, evidence_for: h.evidence_for })),
-    cited_evidence: [...citedIds].filter((id) => facts.has(id)).map((id) => ({ row_id: id, ...facts.get(id)! })),
+    cited_evidence: [...citedIds].filter((id) => facts.get(id)?.facts).map((id) => ({ row_id: id, ...facts.get(id)! })),
     models: {
       calls: calls.length,
       failed: calls.length - okCalls.length,
@@ -135,7 +135,7 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
     out.push(`\n**How the change reaches the failure** (joined across sources in the semantic layer)`);
     out.push(`| # | Link | | Evidence |`, `|---|---|---|---|`);
     b.causal_chain.forEach((c, i) =>
-      out.push(`| ${i + 1} | ${cell(c.edge.split("/").pop())} | ${c.status === "observed" ? "observed" : "inferred"} | ${c.evidence.map((e) => `\`${e.row_id}\`${e.facts ? ` ${cell(e.facts)}` : ""}`).join("<br>")} |`),
+      out.push(`| ${i + 1} | ${cell(c.edge.split("/").pop())}${c.detail ? `<br><sub>${cell(c.detail)}</sub>` : ""} | ${c.status === "observed" ? "observed" : "inferred"} | ${c.evidence.map((e) => `\`${e.row_id}\`${e.facts ? ` ${cell(e.facts)}` : ""}`).join("<br>")} |`),
     );
   }
 

@@ -10,7 +10,7 @@ A proposed change can be correct in isolation and still break something elsewher
 Your job: find which downstream consumers the change can reach, form falsifiable hypotheses about what could go wrong, and test them before anyone deploys.
 
 Method
-1. Map. Start from each entity the change touches: call get_dependency_path on it, then query the semantic layer to fill gaps. Join facts from more than one independent source; no single source tells the whole story. Follow the chain to the consumers at its end and to any limits or contracts they hold.
+1. Map. Start from the change entity: call get_dependency_path on it first. Its links already carry the facts (detail) and evidence rows; read them before querying. Query the semantic layer only for a specific fact the path does not give you, and select only the columns you need. Join facts from more than one independent source; no single source tells the whole story. Follow the chain to the consumers at its end and to any limits or contracts they hold.
 2. Hypothesize. Record each concrete, testable consequence with record_hypothesis. Cite the row_ids you retrieved. Say which experiment result would falsify it.
 3. Test. Look at the available experiments, then compare baseline (without the change) and candidate (with the change) under the same workload and params, observing what discriminates between your hypotheses. Keep params at realistic values from the data unless you are deliberately testing a range; the baseline should represent normal operation.
 4. Revise. Update hypotheses with what you observed. If evidence is missing, retrieve more or run another experiment.
@@ -22,7 +22,7 @@ Rules
 - Be economical: steps, queries and experiments are budgeted.
 - A change can be safe. If the experiments show no meaningful difference, say so.
 - Always act through tools. You may call several tools in one step. Do not write long prose between tool calls.
-- Every tool result shows how many steps you have left. Call finish before you run out.`;
+- Every tool result shows how many steps you have left, and query results show queries left. Aim to run your first experiment within about 8 steps. Call finish before you run out.`;
 
 export const NO_TOOLS_PROMPT = `You are Domino, a pre-deployment reviewer. You have only the change itself: no data access and no experiments.
 Decide whether the change is likely to break something downstream once deployed.
