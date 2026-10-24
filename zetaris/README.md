@@ -31,7 +31,7 @@ zetaris/
    - create a **General** (non-admin) user for the agent (Management → Users)
 4. **Domino settings:** from the repo root, `cp .env.example .env`, set `ZETARIS_ORG_ID` in it, then run
    `python3 -m data_layer set-credentials`. Passwords are typed hidden.
-5. **Load the data:** `python3 zetaris/setup.py` (sources → USL → data-quality rules → read access).
+5. **Load the data:** `python3 zetaris/setup.py`: files → PostgreSQL catalog → sources → USL → data-quality rules → read access → DQ report. It starts the PostgreSQL catalog container itself and generates its password into `.env`.
 6. **Two UI steps the SQL grant can't do** (see "First-time UI steps" below), then check:
    ```bash
    python3 -m data_layer doctor
@@ -74,6 +74,7 @@ python3 zetaris/setup.py --dry-run
 - **Planted broken link:** the `dq-demo` system (`dq_demo.py`) is not a test world. Its change grants access to `svc_ghost_reader` and a service runs as it, but the catalog has no such principal. Zetaris catches it with both foreign-key rules and `resolved_link`, and `dependency_path("dq-demo/change/0099")` lists both broken links under `unresolved`, so the agent is told the chain can't be trusted.
 
 ## Gotchas met while building
+- **JDBC aggregation:** a `MIN … GROUP BY` over the PostgreSQL datasource inside the big edge `UNION ALL` fails in Spark planning. Pre-aggregate in PostgreSQL (`principal_refs`, `database_refs`, built by `setup.py`).
 - **File-store root:** `dffs://` paths resolve under `/home/zetaris/customer-data/<org-id>/file-store/`, not `shared/`. `setup.py` finds it automatically.
 - **Register order:** copy a file into the store before registering it. A table registered against a missing file returns no rows.
 - **`NOT NULL` columns:** these need `COALESCE(...)` in `ACTIVATE`, or activation fails with "Schema mismatch".

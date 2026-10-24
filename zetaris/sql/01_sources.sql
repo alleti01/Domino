@@ -22,3 +22,11 @@ CREATE LIGHTNING FILESTORE TABLE inventory_records FROM domino_src FORMAT CSV OP
 ;
 CREATE LIGHTNING FILESTORE TABLE interface_contracts FROM domino_src FORMAT CSV OPTIONS (PATH "dffs://domino/interface_contracts.csv", header "true", inferSchema "false")
 ;
+-- The database catalog lives in a real PostgreSQL database (started by setup.py), read over JDBC.
+-- {catalog_password} is filled in from .env by setup.py and masked in every log.
+CREATE DATASOURCE catalog_db DESCRIBE BY "Database catalog - PostgreSQL"
+OPTIONS (jdbcdriver "org.postgresql.Driver", jdbcurl "jdbc:postgresql://domino-catalog-db:5432/catalog",
+username "domino_catalog", password "{catalog_password}")
+;
+REGISTER DATASOURCE TABLES ("access_grants", "table_inventory", "principal_refs", "database_refs") FROM catalog_db
+;

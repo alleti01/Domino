@@ -1,6 +1,6 @@
 {
   "usl": "lightning.metastore.domino.systems",
-  "generated_at": "2026-10-23T22:27:55-0400",
+  "generated_at": "2026-10-24T11:59:35-0400",
   "rules": [
     {
       "rule": "principal_id",

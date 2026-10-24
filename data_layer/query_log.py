@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 import uuid
 from pathlib import Path
@@ -39,9 +40,20 @@ def row_ids(rows: Iterable[Dict[str, Any]]) -> List[str]:
     return ids
 
 
+_SECRET = re.compile(r"""(password\s*["']?\s*[:=]?\s*)(["'])[^"']*\2""", re.IGNORECASE)
+
+
+def redact(text: str) -> str:
+    """Mask password values in SQL (e.g. CREATE DATASOURCE ... password "x") before anything is logged."""
+    return _SECRET.sub(lambda m: f"{m.group(1)}{m.group(2)}***{m.group(2)}", text) if isinstance(text, str) else text
+
+
 def record(entry: Dict[str, Any]) -> None:
-    """Never let logging break a query; a failed write is reported on stderr only."""
+    """Never let logging break a query; a failed write is reported on stderr only. Secrets are masked."""
     entry = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), **entry}
+    for key in ("sql", "error"):
+        if key in entry:
+            entry[key] = redact(entry[key])
     path = log_path()
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

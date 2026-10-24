@@ -51,4 +51,5 @@ Don't edit another owner's code. If you need a change across that boundary, prop
 - A USL foreign key auto-generates a DQ rule, and DQ commands are admin-only.
 - REST-API tables re-fetch on every query, so `CACHE TABLE` them. The cache is lost on restart.
 - Set non-admin passwords in the UI. Changing them over REST reports success but doesn't work.
+- The database catalog is a PostgreSQL datasource (`catalog_db`). Don't `MIN/GROUP BY` it inside the edge `UNION ALL` (Spark planning error); use the `*_refs` tables `setup.py` builds in PostgreSQL. Never print or commit `DOMINO_CATALOG_DB_PASSWORD`.
 - Reference docs: https://github.com/zetaris/getting-started (`AGENTS.md`, `docs/guides/zetaris-lightning-sql-companion.md`).

@@ -4,7 +4,7 @@ What the Unified Semantic Layer did for Domino, where it would help in real work
 Written from building it during the hackathon (22–27 Oct 2026); numbers are from our own logs.
 
 ## What we built on Zetaris
-- **Sources:** nine synthetic tables from six independent source systems, registered as file-store tables in `domino_src`: change records, database catalog, record registry, pipeline repo, service catalog, runtime config, telemetry.
+- **Sources:** nine synthetic tables from six independent source systems. The **database catalog is a real PostgreSQL database**, read over JDBC (`CREATE DATASOURCE catalog_db`). The rest (change records, record registry, pipeline repo, service catalog, runtime config, telemetry) are file-store tables in `domino_src`. **One USL joins the live database with the files.**
 - **USL:** `lightning.metastore.domino.systems`, with 12 tables, canonical IDs (`<system>/<kind>/<name>`) and foreign keys.
 - **`dependency_edge`:** the cross-source join, built **inside Zetaris** when it's activated. Every link between two systems is labelled `observed` (two sources agree), `inferred` (one source, or a name-only match) or `unresolved` (it points at nothing), and keeps the source rows it came from.
 - **Data quality:** 19 key rules generated from the USL's keys, plus 6 custom rules. One of them, `resolved_link`, catches any link that points at nothing. A planted broken link is caught by three rules at once.
@@ -29,4 +29,5 @@ Each of these cost us real time:
 4. **API tokens failed with 400 "Not Allowed"** on the hackathon build. We switched to the login token. Changing a non-admin password over REST reported success but didn't take effect.
 5. **No query log to show.** We logged every query ourselves (SQL, row IDs, timing) because we couldn't find one in the platform.
 6. **Rebuilding a USL issues a new ID,** so grants have to be redone; our setup script re-runs them every time. Keeping access attached to the namespace name would help.
-7. **Speed on Apple Silicon.** The images run under Rosetta. Small queries took 0.2–3 s and the first query after a restart 5–7 s. That's fine for this use, but native arm64 images would help interactive agents.
+7. **Aggregating a JDBC table inside a larger query failed.** Our edge query, a `UNION ALL` with a `MIN(...) GROUP BY` over the PostgreSQL datasource, failed with `MISSING_ATTRIBUTES.RESOLVED_ATTRIBUTE_MISSING_FROM_INPUT` from the native aggregate operator. The same query over file tables, a plain join, and a plain `UNION ALL` of the JDBC table all worked. We moved that small aggregation into PostgreSQL. Swapping the catalog from CSV to PostgreSQL then gave **identical** dependency paths for all 15 systems.
+8. **Speed on Apple Silicon.** The images run under Rosetta. Small queries took 0.2–3 s and the first query after a restart 5–7 s. That's fine for this use, but native arm64 images would help interactive agents.

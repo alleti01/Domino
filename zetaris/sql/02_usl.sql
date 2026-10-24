@@ -1,4 +1,4 @@
--- Unified Semantic Layer over the domino_src sources.
+-- Unified Semantic Layer over the domino_src file sources and the catalog_db PostgreSQL database.
 -- Canonical IDs are "<system>/<kind>/<name>". Foreign keys make Zetaris generate DQ rules.
 -- dependency_edge is the cross-source join: every edge is built by joining two sources in Zetaris and
 -- labelled observed (two sources agree), inferred (one source, or a name-only match) or unresolved
@@ -144,7 +144,7 @@ SELECT COALESCE(principal_id, '') AS principal_id,
 FROM (
   SELECT concat(system_id, '/principal/', principal_name) AS principal_id, system_id, principal_name,
          'db_catalog' AS source_system, MIN(source_row_id) AS source_row_id
-  FROM domino_src.access_grants GROUP BY system_id, principal_name
+  FROM catalog_db.access_grants GROUP BY system_id, principal_name
 ) src
 ;
 ACTIVATE USL TABLE lightning.metastore.domino.systems.database_entity AS
@@ -156,7 +156,7 @@ SELECT COALESCE(database_id, '') AS database_id,
 FROM (
   SELECT concat(system_id, '/database/', database_name) AS database_id, system_id, database_name,
          'db_catalog' AS source_system, MIN(source_row_id) AS source_row_id
-  FROM domino_src.table_inventory GROUP BY system_id, database_name
+  FROM catalog_db.table_inventory GROUP BY system_id, database_name
 ) src
 ;
 ACTIVATE USL TABLE lightning.metastore.domino.systems.data_table AS
@@ -171,7 +171,7 @@ FROM (
   SELECT concat(system_id, '/table/', database_name, '.', table_name) AS table_id,
          concat(system_id, '/database/', database_name) AS database_id, system_id, table_name,
          CAST(column_count AS INT) AS column_count, source_system, source_row_id
-  FROM domino_src.table_inventory
+  FROM catalog_db.table_inventory
 ) src
 ;
 ACTIVATE USL TABLE lightning.metastore.domino.systems.access_grant AS
@@ -186,7 +186,7 @@ FROM (
   SELECT concat(system_id, '/grant/', source_row_id) AS grant_id,
          concat(system_id, '/principal/', principal_name) AS principal_id,
          concat(system_id, '/database/', database_name) AS database_id, system_id, privilege, source_system, source_row_id
-  FROM domino_src.access_grants
+  FROM catalog_db.access_grants
 ) src
 ;
 ACTIVATE USL TABLE lightning.metastore.domino.systems.change_statement AS
@@ -316,41 +316,38 @@ FROM (
   SELECT concat(c.system_id, '/edge/', c.source_row_id, '/principal') AS edge_id, c.system_id,
            concat(c.system_id, '/change/', c.change_id) AS from_id, 'change' AS from_type,
            concat(c.system_id, '/principal/', c.principal_name) AS to_id, 'principal' AS to_type, 'grants_to' AS relation,
-           CASE WHEN p.src IS NULL THEN 'unresolved' ELSE 'observed' END AS edge_status,
-           concat('change_records:', c.source_row_id, CASE WHEN p.src IS NULL THEN '' ELSE concat(';db_catalog:', p.src) END) AS evidence,
+           CASE WHEN p.src0 IS NULL THEN 'unresolved' ELSE 'observed' END AS edge_status,
+           concat('change_records:', c.source_row_id, CASE WHEN p.src0 IS NULL THEN '' ELSE concat(';db_catalog:', p.src0) END) AS evidence,
            concat(c.action, ' ', c.privilege, ' ON ', c.database_name, '.*') AS detail
     FROM domino_src.change_records c
-    LEFT JOIN (SELECT system_id, principal_name, MIN(source_row_id) AS src FROM domino_src.access_grants
-               GROUP BY system_id, principal_name) p
+    LEFT JOIN (SELECT system_id, principal_name, src AS src0 FROM catalog_db.principal_refs) p
       ON p.system_id = c.system_id AND p.principal_name = c.principal_name
     UNION ALL
     SELECT concat(c.system_id, '/edge/', c.source_row_id, '/database'), c.system_id,
            concat(c.system_id, '/change/', c.change_id), 'change',
            concat(c.system_id, '/database/', c.database_name), 'database', 'grants_on',
-           CASE WHEN d.src IS NULL THEN 'unresolved' ELSE 'observed' END,
-           concat('change_records:', c.source_row_id, CASE WHEN d.src IS NULL THEN '' ELSE concat(';db_catalog:', d.src) END),
+           CASE WHEN d.src1 IS NULL THEN 'unresolved' ELSE 'observed' END,
+           concat('change_records:', c.source_row_id, CASE WHEN d.src1 IS NULL THEN '' ELSE concat(';db_catalog:', d.src1) END),
            concat(c.action, ' ', c.privilege, ' TO ', c.principal_name)
     FROM domino_src.change_records c
-    LEFT JOIN (SELECT system_id, database_name, MIN(source_row_id) AS src FROM domino_src.table_inventory
-               GROUP BY system_id, database_name) d
+    LEFT JOIN (SELECT system_id, database_name, src AS src1 FROM catalog_db.database_refs) d
       ON d.system_id = c.system_id AND d.database_name = c.database_name
     UNION ALL
     SELECT concat(j.system_id, '/edge/', j.source_row_id, '/identity'), j.system_id,
            concat(j.system_id, '/principal/', j.runs_as_principal), 'principal',
            concat(j.system_id, '/service/', j.service_name), 'service', 'identity_of',
-           CASE WHEN p.src IS NULL THEN 'unresolved' ELSE 'observed' END,
-           concat('pipeline_repo:', j.source_row_id, CASE WHEN p.src IS NULL THEN '' ELSE concat(';db_catalog:', p.src) END),
+           CASE WHEN p.src2 IS NULL THEN 'unresolved' ELSE 'observed' END,
+           concat('pipeline_repo:', j.source_row_id, CASE WHEN p.src2 IS NULL THEN '' ELSE concat(';db_catalog:', p.src2) END),
            concat('service runs as ', j.runs_as_principal)
     FROM domino_src.job_definitions j
-    LEFT JOIN (SELECT system_id, principal_name, MIN(source_row_id) AS src FROM domino_src.access_grants
-               GROUP BY system_id, principal_name) p
+    LEFT JOIN (SELECT system_id, principal_name, src AS src2 FROM catalog_db.principal_refs) p
       ON p.system_id = j.system_id AND p.principal_name = j.runs_as_principal
     UNION ALL
     SELECT concat(t.system_id, '/edge/', t.source_row_id, '/contains'), t.system_id,
            concat(t.system_id, '/database/', t.database_name), 'database',
            concat(t.system_id, '/table/', t.database_name, '.', t.table_name), 'table', 'contains', 'inferred',
            concat('db_catalog:', t.source_row_id), concat('column_count=', t.column_count)
-    FROM domino_src.table_inventory t
+    FROM catalog_db.table_inventory t
     UNION ALL
     SELECT concat(j.system_id, '/edge/', j.source_row_id, '/reads/', COALESCE(t.source_row_id, 'none')), j.system_id,
            concat(j.system_id, '/service/', j.service_name), 'service',
@@ -360,7 +357,7 @@ FROM (
            concat('pipeline_repo:', j.source_row_id, CASE WHEN t.source_row_id IS NULL THEN '' ELSE concat(';db_catalog:', t.source_row_id) END),
            concat('matched on table name ', j.reads_table)
     FROM domino_src.job_definitions j
-    LEFT JOIN domino_src.table_inventory t ON t.system_id = j.system_id AND t.table_name = j.reads_table
+    LEFT JOIN catalog_db.table_inventory t ON t.system_id = j.system_id AND t.table_name = j.reads_table
     UNION ALL
     SELECT concat(j.system_id, '/edge/', j.source_row_id, '/executes'), j.system_id,
            concat(j.system_id, '/service/', j.service_name), 'service',
