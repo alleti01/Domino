@@ -6,10 +6,37 @@ All data here is synthetic. Every query Domino runs is logged to `runs/query_log
 zetaris/
 ├── build_sources.py   generates sources/*.csv from the world case files
 ├── setup.py           one command: copy files -> register sources -> compile + activate USL -> grant access
-├── sources/           six synthetic CSVs from four independent source systems
-├── sql/               01_sources.sql, 02_usl.sql, 03_access.sql (statements separated by a line holding only ";")
+├── sources/           nine synthetic CSVs from six independent source systems
+├── sql/               01_sources.sql, 02_usl.sql, 04_dq.sql, 03_access.sql (statements separated by a line holding only ";")
+├── dq_demo.py         the planted broken link for the data-quality demo
+├── dq_report.py       runs every data-quality rule and shows the invalid records
 └── snapshots/         saved query results that power sample mode (no Zetaris or keys needed)
 ```
+
+## Set up on a new machine (about 30–40 minutes, mostly downloads)
+1. **Docker Desktop:** install it, then in Settings give it **≥ 8 GB memory** (12–14 GB is better) and turn on **Rosetta** (Apple Silicon).
+2. **Zetaris:** sign in at cloud.enterprise.zetaris.com (the free Hobby plan is fine). On **Run locally**:
+   - run your personal `docker login zetarishackathon.azurecr.io …` command (it's yours; don't share it)
+   - download `zetaris-platform.zip`, move it to your home folder, then:
+   ```bash
+   cd ~ && unzip -q zetaris-platform.zip && cd zetaris-platform && ./preflight.sh && docker compose pull && docker compose up -d && ./verify.sh
+   ```
+   `verify.sh` must end with **9/9**. Never run `docker compose down -v`, which wipes everything.
+3. **Zetaris UI** (http://localhost:3000, sign in as `admin@zetaris.com` / `Zetaris1@`):
+   - change the admin password
+   - note your **Org ID** (Management → Organisation)
+   - create a **General** (non-admin) user for the agent (Management → Users)
+4. **Domino settings:** from the repo root, `cp .env.example .env`, set `ZETARIS_ORG_ID` in it, then run
+   `python3 -m data_layer set-credentials`. Passwords are typed hidden.
+5. **Load the data:** `python3 zetaris/setup.py` (sources → USL → data-quality rules → read access).
+6. **Two UI steps the SQL grant can't do** (see "First-time UI steps" below), then check:
+   ```bash
+   python3 -m data_layer doctor
+   ```
+   ```bash
+   DOMINO_DATA_MODE=live python3 -m data_layer path w-k7m2/change/0042
+   ```
+   Both logins should say `ok`, and the path call should return `status: ok` with several paths.
 
 ## Build or rebuild
 ```bash
