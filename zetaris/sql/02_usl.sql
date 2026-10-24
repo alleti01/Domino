@@ -442,5 +442,17 @@ FROM (
   LEFT JOIN (SELECT system_id, component, MIN(source_row_id) AS src FROM domino_src.interface_contracts
              GROUP BY system_id, component) t
     ON t.system_id = i.system_id AND t.component = i.target
+  UNION ALL
+  SELECT concat(c.system_id, '/edge/', c.source_row_id, '/item'), c.system_id,
+         concat(c.system_id, '/change/', c.change_id), 'change',
+         concat(c.system_id, '/interface/', c.item_ref), 'interface', c.item_kind,
+         CASE WHEN k.src IS NULL THEN 'inferred' ELSE 'observed' END,
+         concat('change_records:', c.source_row_id, CASE WHEN k.src IS NULL THEN '' ELSE concat(';service_catalog:', k.src) END),
+         c.item_detail
+  FROM domino_src.change_items c
+  LEFT JOIN (SELECT system_id, component, MIN(source_row_id) AS src FROM domino_src.interface_contracts
+             GROUP BY system_id, component) k
+    ON k.system_id = c.system_id AND k.component = c.item_ref
+  WHERE c.item_kind NOT IN ('target_id', 'runs_component')
 ) src
 ;

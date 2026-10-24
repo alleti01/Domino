@@ -114,6 +114,9 @@ def main() -> int:
         facts, findings = truth.get(world, {}).get("key_facts", {}), (r["prediction"] or {}).get("findings", [])
         got = (findings[0]["expected_entries"], findings[0]["limit"]) if findings else (None, None)
         want = (facts.get("entries_after_change"), facts.get("max_entries"))
+        if want == (None, None):
+            print(f"  -- {world}: n/a (this script only knows World 1's mechanism)")
+            continue
         print(f"  {'ok' if got == want else 'XX'} {world}: entries/limit derived {got} vs true {want}")
     print("\nCalls per case (average) and time:")
     n = len(results) or 1

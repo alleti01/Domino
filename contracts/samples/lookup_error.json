@@ -3,7 +3,7 @@
   "call": "lookup",
   "mode": "fake",
   "status": "error",
-  "query_id": "q-520854eb51ae4980",
+  "query_id": "q-fbe841031ce54ecf",
   "sql": "DELETE FROM some_table",
   "columns": [],
   "rows": [],

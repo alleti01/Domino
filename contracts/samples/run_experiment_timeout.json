@@ -2,7 +2,7 @@
   "contract_version": "0.2",
   "call": "run_experiment",
   "mode": "fake",
-  "experiment_id": "x-fa1bcf86030c4a05",
+  "experiment_id": "x-5327bec3944a4532",
   "world": "fake-w0",
   "variant": "candidate",
   "params": {},
