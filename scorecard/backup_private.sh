@@ -22,7 +22,11 @@ mkdir -p "$DEST"
 
 echo "Backing up $SRC"
 echo "Choose a password for the backup. You'll type it twice; it won't be shown."
-hdiutil create -quiet -encryption AES-256 -srcfolder "$SRC" -volname domino-private -format UDZO "$OUT"
+if ! hdiutil create -encryption AES-256 -srcfolder "$SRC" -volname domino-private -format UDZO "$OUT"; then
+  echo "Backup FAILED (most often: the two passwords did not match). Nothing was saved; run it again."
+  rm -f "$OUT"
+  exit 1
+fi
 
 # Refuse to call it done unless the image really is encrypted.
 if hdiutil isencrypted "$OUT" | grep -q "encrypted: YES"; then
