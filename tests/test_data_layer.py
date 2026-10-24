@@ -230,6 +230,18 @@ for argv, fn in calls:
         json_on_error = False
 check("CLI JSON matches the Python results", same)
 check("CLI prints JSON and exits 1 when status != ok", json_on_error)
+
+# Scorecard: modes B/C answer via model_prediction; importing run-worlds folders
+b = rs._agent_row("inconclusive", "breaks", "no_tools", "x", 1, 0, 1000, True, 0, "r")
+d = rs._agent_row("reproduced_failure", "breaks", "full", "x", 9, 4, 1000, True, 0, "r")
+check("mode B uses the model's prediction and is never backed", b["verdict"] == "reproduced_failure" and b["verdict_source"] == "model_prediction" and not b["backed"])
+check("mode D uses the judge and is backed", d["verdict_source"] == "judge" and d["backed"])
+imp = S / "imp" / "no_experiments-20261024-0900"; imp.mkdir(parents=True)
+(imp / "results.json").write_text(json.dumps([{"world": "w1", "verdict": "inconclusive", "prediction": "safe", "calls": 3, "secs": 5, "outage": False, "cause": "c"},
+                                              {"world": "w2", "verdict": "error", "error": "e"}, {"world": "w3", "verdict": "inconclusive", "outage": True}]))
+letter, by_world = rs.imported(str(imp))
+check("imported folder: mode from folder name, outage and error kept apart", letter == "C" and by_world["w1"][0]["verdict"] == "no_failure_observed"
+      and by_world["w2"][0]["status"] == "error" and by_world["w3"][0]["status"] == "unavailable")
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)

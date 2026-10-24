@@ -7,8 +7,13 @@ are read only from `$DOMINO_PRIVATE_DIR/ground_truth/` (default `~/domino-privat
 python3 scorecard/run_scorecard.py
 ```
 ```bash
+python3 scorecard/run_scorecard.py --import <agent run-worlds folder> [--import ...]
+```
+```bash
 python3 scorecard/run_scorecard.py --agent-cmd "<agent command with {world} and {mode}>" --repeats 2
 ```
+`--import` grades the agent's own batch results (`agent/scripts/run-worlds.ts`, folders named `<mode>-<stamp>`), so the model token never has to be on this machine.
+Modes B and C run no experiments, so they're graded on the model's own `prediction` (breaks / safe / unsure), and their warnings are never counted as backed. D and E are graded on the judge's verdict, which only says "reproduced" after baseline pass, two matching candidate failures and a passing control.
 
 | Mode | What it is |
 |---|---|
@@ -27,6 +32,7 @@ Reported per mode, and separately for the practice worlds (1 and 2) and the held
 - warnings backed by a reproduced failure
 - average time
 - average model calls
+- cache hits (should be 0, which shows repeated runs were really independent)
 - errors (agent crashes or unreadable output, which **count as wrong**)
 - unavailable (outages and the 10-minute budget, **excluded** from accuracy)
 

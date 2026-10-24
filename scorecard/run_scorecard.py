@@ -1,6 +1,8 @@
 """Scorecard: runs every labelled case through each mode and reports honest numbers.
 
     python3 scorecard/run_scorecard.py                         modes A, X, R (no agent needed)
+    python3 scorecard/run_scorecard.py --import runs/worlds/full-<stamp> [--import ...]
+                                                               grade Abhi's run-worlds result folders (no token needed here)
     python3 scorecard/run_scorecard.py --agent-cmd "CMD"       also Abhi's agent modes B, C, D, E
         CMD is run once per case and mode, with {world} and {mode} filled in, e.g.
         "npx tsx agent/src/cli.ts investigate --change {world} --mode {mode} --data data_layer --repo . --quiet"
@@ -120,13 +122,52 @@ def agent(cmd_template: str, mode_name: str):
         if summary.get("outage"):
             return {"status": "unavailable", "reason": "model provider outage", "summary": summary,
                     "duration_ms": summary.get("duration_ms")}
-        verdict = summary.get("verdict")
-        return {"status": "ok", "verdict": verdict, "explanation": summary.get("cause_claim") or "",
-                "model_calls": summary.get("model_calls"), "experiments": summary.get("experiments", 0),
-                "backed": verdict == WARN and (summary.get("experiments") or 0) >= 2,
-                "all_calls_nemotron": summary.get("all_calls_nemotron"), "run_id": summary.get("run_id"),
-                "duration_ms": summary.get("duration_ms") or int((time.monotonic() - started) * 1000)}
+        return _agent_row(summary.get("verdict"), summary.get("model_prediction"), mode_name,
+                          summary.get("cause_claim"), summary.get("model_calls"), summary.get("experiments"),
+                          summary.get("duration_ms") or int((time.monotonic() - started) * 1000),
+                          summary.get("all_calls_nemotron"), summary.get("cache_hits"), summary.get("run_id"))
     return run
+
+
+PREDICTION_TO_VERDICT = {"breaks": WARN, "safe": "no_failure_observed", "unsure": "inconclusive"}
+NO_EXPERIMENT_MODES = ("no_tools", "no_experiments")
+
+
+def _agent_row(verdict, prediction, mode_name, cause, calls, experiments, duration_ms, nemotron, cache_hits, run_id):
+    """Modes B and C run no experiments, so the judge can't decide; their answer is the model's own prediction,
+    and a warning from them is never backed by a reproduced failure."""
+    if mode_name in NO_EXPERIMENT_MODES:
+        verdict, source = PREDICTION_TO_VERDICT.get(prediction or "", "inconclusive"), "model_prediction"
+    else:
+        source = "judge"
+    return {"status": "ok", "verdict": verdict, "verdict_source": source, "explanation": cause or "",
+            "model_calls": calls, "experiments": experiments or 0,
+            "backed": verdict == WARN and source == "judge",  # the judge only says reproduced after baseline/candidate x2/control
+            "all_calls_nemotron": nemotron, "cache_hits": cache_hits, "run_id": run_id, "duration_ms": duration_ms}
+
+
+FOLDER_MODE = {"full": "D", "no_tools": "B", "no_experiments": "C", "no_usl": "E"}
+
+
+def imported(folder: str):
+    """Rows from one of Abhi's `run-worlds` result folders (results.json), so his runs can be graded here
+    without his model token on this machine. The mode comes from each row, else the folder name (<mode>-<stamp>)."""
+    path = Path(folder)
+    rows = json.loads((path / "results.json").read_text(encoding="utf-8"))
+    folder_mode = next((m for m in sorted(FOLDER_MODE, key=len, reverse=True) if path.name.startswith(m + "-")), None)
+    by_world = {}
+    for row in rows:
+        mode_name = row.get("mode") or folder_mode
+        if row.get("verdict") == "error":
+            r = {"status": "error", "reason": row.get("error", ""), "explanation": ""}
+        elif row.get("outage"):
+            r = {"status": "unavailable", "reason": row.get("error") or "model provider outage"}
+        else:
+            r = _agent_row(row.get("verdict"), row.get("prediction"), mode_name, row.get("cause"), row.get("calls"),
+                           row.get("experiments"), (row.get("secs") or 0) * 1000, row.get("nemotron"),
+                           row.get("cache_hits"), row.get("run_id"))
+        by_world.setdefault(row["world"], []).append(r)
+    return FOLDER_MODE.get(folder_mode or "", "D"), by_world
 
 
 def zetaris_up() -> dict:
@@ -159,6 +200,7 @@ def summarize(rows: list, labels: dict) -> dict:
         "backed": sum(bool(r.get("backed")) for r in warnings), "warnings": len(warnings),
         "avg_seconds": avg([(r.get("duration_ms") or 0) / 1000 for r in scored]),
         "avg_model_calls": avg([r["model_calls"] for r in scored if r.get("model_calls") is not None]),
+        "cache_hits": sum(r.get("cache_hits") or 0 for r in scored),
     }
 
 
@@ -166,7 +208,8 @@ def fmt(s: dict) -> str:
     pct = lambda x: "-" if x is None else f"{x * 100:.0f}%"  # noqa: E731
     return (f"{s['correct']}/{s['scored']} correct | caught {s['caught']}/{s['failing']} | false alarms {s['false_alarms']}/{s['safe']}"
             f" | cause (failing) {pct(s['cause_failing'])} | backed {s['backed']}/{s['warnings']}"
-            f" | {s['avg_seconds']}s | model calls {s['avg_model_calls']} | errors {s['errors']} | unavailable {s['unavailable']}")
+            f" | {s['avg_seconds']}s | model calls {s['avg_model_calls']} | cache hits {s['cache_hits']}"
+            f" | errors {s['errors']} | unavailable {s['unavailable']}")
 
 
 def main() -> int:
@@ -175,6 +218,8 @@ def main() -> int:
     parser.add_argument("--agent-cmd", help="command template for the agent, with {world} and {mode}")
     parser.add_argument("--repeats", type=int, default=1, help="runs per case for agent modes (deterministic modes run once)")
     parser.add_argument("--worlds", help="comma list of world ids (default: every labelled world)")
+    parser.add_argument("--import", dest="imports", action="append", default=[],
+                        help="a run-worlds result folder from the agent (repeatable); graded instead of running it")
     args = parser.parse_args()
 
     labels = scoring.labels()
@@ -186,7 +231,14 @@ def main() -> int:
     for m, name in AGENT_MODES.items():
         if args.agent_cmd:
             runners[m] = agent(args.agent_cmd, name)
-    missing = [m for m in modes if m not in runners]
+    imports = {}
+    for folder in args.imports:
+        letter, by_world = imported(folder)
+        for world, rs_ in by_world.items():
+            imports.setdefault(letter, {}).setdefault(world, []).extend(rs_)
+    if imports:
+        modes = [m for m in modes if m not in imports] + sorted(imports)
+    missing = [m for m in modes if m not in runners and m not in imports]
     if missing:
         print(f"Skipping {missing}: pass --agent-cmd to run the agent modes.")
         modes = [m for m in modes if m in runners]
@@ -197,11 +249,15 @@ def main() -> int:
     results = {"generated_at": stamp, "data_mode": data_layer.config.mode(), "worlds": worlds, "modes": {}}
     for m in modes:
         repeats = args.repeats if m in AGENT_MODES else 1
-        health = zetaris_up()
+        health = {"ok": True, "note": "imported results"} if m in imports else zetaris_up()
         rows = []
         for world in worlds:
-            for rep in range(repeats):
-                r = runners[m](world) if health.get("ok") else {"status": "unavailable", "reason": "Zetaris health check failed"}
+            if m in imports:
+                runs = imports[m].get(world) or [{"status": "unavailable", "reason": "not in the imported results"}]
+            else:
+                runs = [runners[m](world) if health.get("ok") else {"status": "unavailable", "reason": "Zetaris health check failed"}
+                        for _ in range(repeats)]
+            for rep, r in enumerate(runs):
                 r.update(world=world, repeat=rep, held_out=bool(labels[world].get("held_out")))
                 markers = labels[world].get("cause_markers")
                 r["cause"] = cause_score(r.get("explanation", ""), markers) if r["status"] in ("ok", "error") else None
@@ -209,7 +265,7 @@ def main() -> int:
         groups = {"practice worlds": [r for r in rows if not r["held_out"]], "held-out world": [r for r in rows if r["held_out"]]}
         results["modes"][m] = {"health_before_batch": health, "rows": rows,
                                "summary": {g: summarize(rs, labels) for g, rs in groups.items() if rs}}
-        if repeats > 1:
+        if any(len([r for r in rows if r["world"] == w]) > 1 for w in worlds):
             verdicts = {}
             for r in rows:
                 verdicts.setdefault(r["world"], set()).add(r.get("verdict"))
