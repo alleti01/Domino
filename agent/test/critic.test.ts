@@ -22,6 +22,7 @@ class TwoModelScript implements ChatModel {
   requests: ChatRequest[] = [];
   private investigator = [
     [{ name: "get_dependency_path", args: { entity: "svc_builder" } }],
+    [{ name: "query_usl", args: { sql: "SELECT * FROM limits", purpose: "consumer limits" } }],
     [{ name: "run_experiment", args: { variant: "candidate", observe: ["artifact_entries", "consumer_status"], hypothesis_ids: [], rationale: "test" } }],
     [finish("entries double to 60 and the loader also runs out of memory")],
     [finish("entries double from 30 to 60, past the loader's max_items of 50")],
@@ -55,7 +56,7 @@ describe("independent reviewer", () => {
     expect(model.requests.filter((r) => r.purpose === "review").map((r) => r.model)).toEqual([ULTRA, ULTRA]);
     expect(model.requests.filter((r) => r.purpose !== "review").every((r) => r.model === LIGHTNING)).toBe(true);
     // the reviewer's complaint reached the investigator
-    const revisionPrompt = model.requests[4]!.messages.find((m) => m.role === "user" && m.content?.includes("independent reviewer"));
+    const revisionPrompt = model.requests[5]!.messages.find((m) => m.role === "user" && m.content?.includes("independent reviewer"));
     expect(revisionPrompt?.content).toContain("no evidence of memory use");
     expect(summary.cause_claim).toBe("entries double from 30 to 60, past the loader's max_items of 50");
     expect(summary.verdict).toBe("reproduced_failure");

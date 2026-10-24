@@ -6,6 +6,7 @@
 import type { ExperimentResult, Verdict } from "../../contracts/agent/types.js";
 import type { ChatModel } from "./agent.js";
 import type { ChatMessage } from "./llm/nightshift.js";
+import { unsupportedNumbers } from "./numbers.js";
 import type { InvestigationState } from "./state.js";
 import type { FinishArgs } from "./tools.js";
 
@@ -15,40 +16,52 @@ export interface Review {
   reviewerModel: string | null;
 }
 
-const SYSTEM = `You are an independent reviewer. A different model investigated a proposed software change; you check its written explanation against the evidence pack.
-The verdict is NOT yours to judge: it was decided by a deterministic judge from controlled experiments in which baseline, candidate and control differ only by the change. Causation shown by those experiments is established.
-Check:
-1. Every factual statement (numbers, settings, names, limits, rates) matches the evidence pack exactly.
-2. No statement is unsupported by the evidence (invented components, causes or effects).
-3. The described mechanism is consistent with the experiment observations.
-4. The mitigation, if any, would actually avoid the failure given the numbers in the evidence (check the arithmetic).
-5. For a "no failure observed" verdict: the explanation of why it is safe uses the evidence correctly and does not overclaim production safety.
-6. A claim that the change is safe, or that it breaks, must agree with the experiment results. If the experiments contradict it, or no experiment was run, flag it as unsupported even when each individual fact is correct.
-Ignore style and wording. Approve unless something material is wrong. Cite evidence ids in refs. Use the submit_review tool.`;
+const SYSTEM = `You are an independent reviewer. A different model investigated a proposed software change; you check its written explanation and mitigation against the evidence pack.
+The verdict is NOT yours to judge: a deterministic judge decided it from controlled experiments in which baseline, candidate and control differ only by the change. Causation shown by those experiments is established, and reasonable inferences that follow from the experiment results are fine.
+Work through it as a checklist and submit it with submit_review:
+1. claims: split the explanation into its factual claims (each number, setting, limit, component, cause or effect). For each, give the evidence id that supports it and mark it supported, unsupported (no evidence says this) or contradicted (evidence says otherwise). Numbers must match the evidence exactly or follow from it by simple arithmetic.
+2. mitigation: if there is one, decide whether applying it would actually avoid the failure seen in the candidate experiment, doing the arithmetic against the limits in the evidence. Answer would_fix true or false with your reasoning.
+3. consistency: does the explanation agree with the experiments (a failure reproduced vs. no failure observed)?
+Flag only what is wrong or unsupported; do not flag wording, style or reasonable inference.`;
 
 const TOOL = {
   type: "function" as const,
   function: {
     name: "submit_review",
-    description: "Submit the review of the explanation.",
+    description: "Submit the checklist review of the explanation.",
     parameters: {
       type: "object",
       properties: {
-        approved: { type: "boolean", description: "true if nothing material is wrong" },
-        issues: {
+        claims: {
           type: "array",
           items: {
             type: "object",
             properties: {
-              statement: { type: "string", description: "the exact statement that is wrong or unsupported" },
-              problem: { type: "string", description: "what is wrong, according to the evidence" },
-              refs: { type: "array", items: { type: "string" }, description: "evidence ids showing the problem" },
+              statement: { type: "string", description: "one factual claim from the explanation" },
+              verdict: { type: "string", enum: ["supported", "unsupported", "contradicted"] },
+              evidence: { type: "string", description: "evidence id(s) for it, or the evidence that contradicts it" },
+              problem: { type: "string", description: "what is wrong, if not supported" },
             },
-            required: ["statement", "problem"],
+            required: ["statement", "verdict"],
           },
         },
+        mitigation: {
+          type: "object",
+          properties: {
+            present: { type: "boolean" },
+            would_fix: { type: "boolean", description: "would applying it avoid the failure, given the numbers in the evidence" },
+            reasoning: { type: "string" },
+          },
+          required: ["present"],
+        },
+        consistent_with_experiments: { type: "boolean" },
+        approved: { type: "boolean", description: "true if nothing material is wrong" },
+        issues: {
+          type: "array",
+          items: { type: "object", properties: { statement: { type: "string" }, problem: { type: "string" }, refs: { type: "array", items: { type: "string" } } }, required: ["statement", "problem"] },
+        },
       },
-      required: ["approved", "issues"],
+      required: ["claims", "mitigation", "consistent_with_experiments"],
     },
   },
 };
@@ -100,16 +113,35 @@ export async function reviewExplanation(
     args = call ? safeJson(call.function.arguments) : extractReview(result.message.content);
     if (!args) {
       messages.push({ role: "assistant", content: result.message.content ?? "" });
-      messages.push({ role: "user", content: 'Respond ONLY by calling submit_review, or with a single JSON object {"approved": boolean, "issues": [{"statement": string, "problem": string, "refs": [string]}]}.' });
+      messages.push({ role: "user", content: 'Respond ONLY by calling submit_review, or with a single JSON object {"claims": [{"statement": string, "verdict": "supported"|"unsupported"|"contradicted", "evidence": string, "problem": string}], "mitigation": {"present": boolean, "would_fix": boolean, "reasoning": string}, "consistent_with_experiments": boolean}.' });
     }
   }
   if (!args) throw new Error("reviewer did not return a review");
-  const issues = Array.isArray(args.issues)
-    ? args.issues
-        .filter((i: any) => i && typeof i.statement === "string" && typeof i.problem === "string")
-        .map((i: any) => ({ statement: i.statement, problem: i.problem, refs: Array.isArray(i.refs) ? i.refs.map(String) : [] }))
-    : [];
-  return { approved: args.approved === true, issues, reviewerModel: routed };
+  const a = args as any;
+  const issues: Review["issues"] = [];
+  for (const c of Array.isArray(a.claims) ? a.claims : []) {
+    if (c && (c.verdict === "unsupported" || c.verdict === "contradicted")) {
+      issues.push({ statement: String(c.statement ?? ""), problem: `${c.verdict}: ${c.problem ?? c.evidence ?? "no evidence supports this"}`, refs: c.evidence ? [String(c.evidence)] : [] });
+    }
+  }
+  if (ctx.finish.mitigation && a.mitigation?.would_fix === false) {
+    issues.push({ statement: ctx.finish.mitigation, problem: `mitigation would not avoid the failure: ${a.mitigation.reasoning ?? ""}`.trim(), refs: [] });
+  }
+  if (a.consistent_with_experiments === false) {
+    issues.push({ statement: ctx.finish.headline, problem: "the explanation disagrees with the experiment results", refs: [] });
+  }
+  for (const i of Array.isArray(a.issues) ? a.issues : []) {
+    if (i && typeof i.statement === "string" && typeof i.problem === "string" && !issues.some((x) => x.statement === i.statement)) {
+      issues.push({ statement: i.statement, problem: i.problem, refs: Array.isArray(i.refs) ? i.refs.map(String) : [] });
+    }
+  }
+  // Deterministic number check: every quantity in the explanation must come from the evidence.
+  const evidenceText = [ctx.diff, ...ctx.state.rowFacts.values(), ...ctx.state.experiments.map((x) => JSON.stringify(x.observations) + x.assertions.map((s2) => s2.detail).join(" "))].join(" ");
+  for (const n of unsupportedNumbers(`${ctx.finish.headline} ${ctx.finish.cause_claim ?? ""}`, evidenceText)) {
+    issues.push({ statement: String(n), problem: `the number ${n} does not appear in the evidence and does not follow from it (deterministic check)`, refs: [] });
+  }
+  const checklistFound = Array.isArray(a.claims);
+  return { approved: checklistFound ? issues.length === 0 : a.approved === true && issues.length === 0, issues, reviewerModel: routed };
 }
 
 /** What the investigator is told when the reviewer sends the explanation back. */
@@ -124,7 +156,7 @@ export function revisionRequest(review: Review): string {
 function safeJson(text: string): { approved?: unknown; issues?: unknown } | null {
   try {
     const v = JSON.parse(text);
-    return v && typeof v === "object" && "approved" in v ? v : null;
+    return v && typeof v === "object" && ("approved" in v || "claims" in v) ? v : null;
   } catch {
     return null;
   }
