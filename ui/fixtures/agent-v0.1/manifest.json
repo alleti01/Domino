@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.2",
+  "cases": [
+    {
+      "case_id": "stub-world",
+      "label": "Agent sample: stub world",
+      "kind": "practice",
+      "description": "Two real investigations by Abhi's agent (Nemotron via Nightshift) against a throwaway stub world, used to build the dashboard. Not one of the scored cases.",
+      "change_ids": ["stub-chg-1", "stub-chg-2"]
+    }
+  ]
+}
