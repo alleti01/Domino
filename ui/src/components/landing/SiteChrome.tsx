@@ -1,16 +1,17 @@
 import { HACKATHON, REPO_URL } from '../../config'
 import { href } from '../../lib/router'
 
-const LINKS: [string, string][] = [
-  ['how', 'How it works'],
-  ['cases', 'Cases'],
-  ['proof', 'Proof'],
-  ['demo', 'Demo'],
+const NAV: { label: string; to: string; external?: boolean }[] = [
+  { label: 'Demo', to: href.landing('demo') },
+  { label: 'Try it yourself', to: href.try },
+  { label: 'Results', to: href.results },
+  { label: 'Under the hood', to: href.underTheHood },
+  { label: 'GitHub', to: REPO_URL, external: true },
 ]
 
 function Logo() {
   return (
-    <a className="brand" href={href.home} aria-label="Domino home page">
+    <a className="brand site-brand" href={href.home} aria-label="Domino home page">
       <span className="brand-mark" aria-hidden="true">
         <span />
         <span />
@@ -20,25 +21,42 @@ function Logo() {
   )
 }
 
-/** Top navigation for the landing and Try it yourself pages. */
+/** Thin strip above the nav: what this site is, and where the write-up lives. */
+export function AnnouncementBar() {
+  return (
+    <div className="announce">
+      <p>
+        <span className="announce-label">Hackathon 2026</span>
+        <span>Domino is our entry for Track 1: Solving Fragmented Intelligence.</span>
+      </p>
+      <a className="announce-button" href={`${REPO_URL}#readme`} target="_blank" rel="noreferrer">
+        Read the README<span className="visually-hidden"> (opens in a new tab)</span>
+      </a>
+    </div>
+  )
+}
+
+/** Floating pill navigation for the landing and Try it yourself pages. */
 export function SiteNav() {
   return (
     <header className="site-nav-wrap">
       <nav className="site-nav" aria-label="Main">
         <Logo />
         <ul className="site-nav-links">
-          {LINKS.map(([section, label]) => (
-            <li key={section}>
-              <a href={href.landing(section)}>{label}</a>
+          {NAV.map((item) => (
+            <li key={item.label}>
+              {item.external ? (
+                <a href={item.to} target="_blank" rel="noreferrer">
+                  {item.label}
+                  <span className="visually-hidden"> (opens in a new tab)</span>
+                </a>
+              ) : (
+                <a href={item.to}>{item.label}</a>
+              )}
             </li>
           ))}
-          <li>
-            <a href={REPO_URL} target="_blank" rel="noreferrer">
-              GitHub<span className="visually-hidden"> (opens in a new tab)</span>
-            </a>
-          </li>
         </ul>
-        <a className="button button-primary site-nav-cta" href={href.cases}>
+        <a className="btn btn-light site-nav-cta" href={href.cases}>
           Open the dashboard
         </a>
       </nav>
@@ -51,7 +69,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer-inner">
         <Logo />
-        <p className="small muted">{HACKATHON}</p>
+        <p className="small">{HACKATHON}</p>
         <ul className="site-footer-links small">
           <li>
             <a href={href.try}>Try it yourself</a>
@@ -71,7 +89,7 @@ export function SiteFooter() {
             </a>
           </li>
         </ul>
-        <p className="small muted">
+        <p className="small site-footer-note">
           Incidents named on this site are public postmortems. Domino recreates their mechanisms in isolated simulations; it
           does not claim it would have prevented them.
         </p>

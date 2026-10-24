@@ -103,8 +103,13 @@ It's clearly labelled as a replay of a saved run. The "run it on your own machin
 - [x] Footer: GitHub, team, hackathon and track.
 - [x] Move the current Home content into the landing page and the dashboard overview.
 
-### S3: Hero preview animation
-- [ ] Steps tick off in order, then the chain fills in and the verdict appears. Plays once, respects reduced motion, can be replayed.
+### S3: Landing redesign, modelled on Cogent's layout (replaces the hero preview animation)
+Short and to the point, keeping our colours for now (colour pass comes in Phase U).
+- [x] Announcement strip (hackathon entry + README link) and a floating pill nav with a white "Open the dashboard" button.
+- [x] Centred hero on a dark stage with a soft glow and dot grid: small mono kicker pill, two-line dot-matrix headline, one sentence, **Try it yourself** (white) + **Watch demo** (grey).
+- [x] Next section: a large framed window holding the demo video; a clear placeholder until the video exists. The mini dashboard preview is removed (the nav already links to the dashboard).
+- [x] Below it, only what judges need: a compact resources row (Try it yourself, Dashboard, Results, Under the hood, GitHub) and the final **Try it yourself** call to action, then the footer.
+- [x] Fonts bundled with the site (works offline): Doto for the headline, Inter for text, JetBrains Mono for labels.
 
 ### S4: Try it yourself
 - [ ] Change picker, Run button, step-by-step replay driven by the saved trace (speed control, skip to end), live counters, verdict ending with links.

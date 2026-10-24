@@ -5,7 +5,13 @@ import type { IconName } from './components/Icon'
 import type { Verdict } from './types'
 import { REPO_URL } from './config'
 
-export const ONE_LINER = 'Find what your change breaks, before you ship it.'
+/** Hero headline, one line per entry. */
+export const HEADLINE = ['Find what breaks', 'before you ship.']
+
+export const ONE_LINER = 'Find what breaks before you ship.'
+
+export const HERO_SUB =
+  'Domino reads a proposed change, connects the code, data and runtime facts around it, and runs the experiment that shows what would break, with the proof attached.'
 
 export const PITCH =
   'A change can be correct on its own and still break something two systems away. Domino reads a proposed change, joins the code, data and runtime facts around it, runs the experiment that would expose a hidden failure, and shows you the proof.'

@@ -1,140 +1,96 @@
 import { useEffect } from 'react'
-import type { SiteData } from '../../types'
 import type { SiteState } from '../../data/useSite'
-import { DEMO_VIDEO_URL } from '../../config'
-import { INCIDENTS, ONE_LINER, PITCH, RUN_LOCALLY, STEPS } from '../../content'
-import { CASE_KIND, VERDICT, isNemotron } from '../../lib/labels'
+import { DEMO_VIDEO_URL, REPO_URL } from '../../config'
+import { HEADLINE, HERO_SUB, RUN_LOCALLY } from '../../content'
 import { href } from '../../lib/router'
-import { plural, summarizeRuns } from '../../lib/runs'
 import { scrollToSection } from '../../lib/scroll'
-import { Badge, CommandBlock } from '../common'
-import { Icon } from '../Icon'
-import { HeroPreview } from './HeroPreview'
+import { CommandBlock } from '../common'
+import { Icon, type IconName } from '../Icon'
 
-export function LandingPage({ state, section }: { state: SiteState; section: string | null }) {
-  // ?section=how (from the nav) scrolls to that part of the page.
+const RESOURCES: { title: string; text: string; to: string; icon: IconName; external?: boolean }[] = [
+  { title: 'Try it yourself', text: 'Pick a change and watch Domino investigate it, step by step.', to: href.try, icon: 'flask' },
+  { title: 'Dashboard', text: 'Every case, with the full report and the PR comment.', to: href.cases, icon: 'list' },
+  { title: 'Results', text: 'How Domino did across all cases, and against simpler methods.', to: href.results, icon: 'bar-chart' },
+  { title: 'Under the hood', text: 'Proof of Zetaris, Meterless and NVIDIA Nemotron at work.', to: href.underTheHood, icon: 'cpu' },
+  { title: 'Source on GitHub', text: 'Code, README and how to run it with no keys.', to: REPO_URL, icon: 'git-pr', external: true },
+]
+
+export function LandingPage({ section }: { state: SiteState; section: string | null }) {
+  // ?section=demo (from the nav) scrolls to that part of the page.
   useEffect(() => {
     if (section) scrollToSection(section)
   }, [section])
 
-  const site = state.status === 'ready' ? state.site : null
-
   return (
     <div className="landing">
       <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="page-kicker">Pre-deployment failure investigation</p>
-          <h1 id="hero-title">{ONE_LINER}</h1>
-          <p className="hero-lede">{PITCH}</p>
-          <div className="hero-actions">
-            <a className="button button-primary button-large" href={href.try}>
+        <div className="hero-backdrop" aria-hidden="true" />
+        <div className="hero-inner">
+          <p className="hero-kicker">
+            <span className="hero-kicker-dot" aria-hidden="true" />
+            Pre-deployment failure investigation
+          </p>
+          <h1 id="hero-title" className="hero-title">
+            {HEADLINE.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </h1>
+          <p className="hero-sub">{HERO_SUB}</p>
+          <div className="hero-buttons">
+            <a className="btn btn-light btn-lg" href={href.try}>
               Try it yourself
             </a>
-            <a className="button button-large" href={href.landing('demo')}>
+            <a className="btn btn-muted btn-lg" href={href.landing('demo')}>
               Watch demo
             </a>
           </div>
-          <p className="small muted">
-            No sign-up and no keys. Or <a href={href.cases}>open the dashboard</a>.
-          </p>
-        </div>
-        <div className="hero-visual">
-          <HeroPreview state={state} />
         </div>
       </section>
 
-      <section id="problem" className="landing-section" aria-labelledby="problem-title" tabIndex={-1}>
-        <h2 id="problem-title">Outages start in the system nobody thought to test.</h2>
-        <p className="landing-lede">
-          Teams test the file they changed. Two of the biggest outages of recent years came from changes that were
-          fine on their own and broke something further down the line.
-        </p>
-        <ul className="incident-list">
-          {INCIDENTS.map((i) => (
-            <li key={i.name} className="incident">
-              <h3>{i.name}</h3>
-              <p>{i.mechanism}</p>
-              <a className="small" href={i.source} target="_blank" rel="noreferrer">
-                Read the postmortem<span className="visually-hidden"> for {i.name} (opens in a new tab)</span>
+      <section id="demo" className="video-stage" aria-labelledby="demo-title" tabIndex={-1}>
+        <h2 id="demo-title" className="visually-hidden">
+          Demo video
+        </h2>
+        <div className="video-frame">
+          <div className="video-screen">
+            <DemoVideo />
+          </div>
+        </div>
+      </section>
+
+      <section id="resources" className="landing-block" aria-labelledby="resources-title" tabIndex={-1}>
+        <p className="block-kicker">Explore</p>
+        <h2 id="resources-title" className="block-title">
+          Everything you need to check our work.
+        </h2>
+        <ul className="resource-grid">
+          {RESOURCES.map((r) => (
+            <li key={r.title}>
+              <a
+                className="resource-card"
+                href={r.to}
+                {...(r.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              >
+                <Icon name={r.icon} size={18} />
+                <span className="resource-title">{r.title}</span>
+                <span className="resource-text">{r.text}</span>
+                {r.external && <span className="visually-hidden"> (opens in a new tab)</span>}
               </a>
             </li>
           ))}
         </ul>
-        <p className="small muted">
-          Domino recreates these mechanisms in small, isolated simulations. They are real public incidents, not results we
-          claim credit for.
-        </p>
       </section>
 
-      <section id="how" className="landing-section" aria-labelledby="how-title" tabIndex={-1}>
-        <h2 id="how-title">How it works</h2>
-        <ol className="steps">
-          {STEPS.map((s, i) => (
-            <li key={s.key} className="step">
-              <span className="step-num" aria-hidden="true">
-                {i + 1}
-              </span>
-              <div className="step-body">
-                <h3>
-                  <Icon name={s.icon} size={16} /> {s.title}
-                </h3>
-                <p>{s.text}</p>
-                <span className="step-tech">{s.tech}</span>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section id="cases" className="landing-section" aria-labelledby="cases-title" tabIndex={-1}>
-        <h2 id="cases-title">One engine, different failures</h2>
-        <p className="landing-lede">
-          Every case runs through the same investigation. A safe change is included to check Domino doesn't raise a
-          false alarm.
-        </p>
-        {site ? <CaseCards site={site} /> : <p className="muted">Loading cases…</p>}
-      </section>
-
-      <section id="proof" className="landing-section" aria-labelledby="proof-title" tabIndex={-1}>
-        <h2 id="proof-title">Every claim links to its proof</h2>
-        {site ? <ProofStrip site={site} /> : <p className="muted">Loading…</p>}
-        <p className="hero-actions">
-          <a className="button" href={href.results}>
-            Results and scorecard
-          </a>
-          <a className="button" href={href.underTheHood}>
-            Under the hood: Zetaris, Meterless, Nemotron
-          </a>
-        </p>
-      </section>
-
-      <section id="demo" className="landing-section" aria-labelledby="demo-title" tabIndex={-1}>
-        <h2 id="demo-title">Watch the demo</h2>
-        {DEMO_VIDEO_URL ? (
-          <p>
-            <a className="button button-primary button-large" href={DEMO_VIDEO_URL} target="_blank" rel="noreferrer">
-              Watch the demo video<span className="visually-hidden"> (opens in a new tab)</span>
-            </a>
-          </p>
-        ) : (
-          <div className="demo-placeholder">
-            <Icon name="clock" size={24} />
-            <p>
-              The demo video is recorded from a real run and will appear here. Until then, try it yourself: it replays a
-              saved investigation step by step.
-            </p>
-          </div>
-        )}
-      </section>
-
-      <section id="start" className="landing-section landing-cta" aria-labelledby="start-title" tabIndex={-1}>
-        <h2 id="start-title">See Domino investigate a change.</h2>
-        <p className="landing-lede">Pick a pull request, run Domino, and watch it find what breaks. No keys needed.</p>
-        <p>
-          <a className="button button-primary button-large" href={href.try}>
+      <section id="start" className="landing-block final-cta" aria-labelledby="start-title" tabIndex={-1}>
+        <h2 id="start-title" className="final-cta-title">
+          See it break before it ships.
+        </h2>
+        <p className="hero-sub">Pick a pull request, run Domino and watch it find what breaks. No keys needed.</p>
+        <div className="hero-buttons">
+          <a className="btn btn-light btn-lg" href={href.try}>
             Try it yourself
           </a>
-        </p>
+        </div>
         <details className="run-locally">
           <summary>Prefer your own machine? Run it locally</summary>
           <CommandBlock lines={RUN_LOCALLY} />
@@ -144,62 +100,32 @@ export function LandingPage({ state, section }: { state: SiteState; section: str
   )
 }
 
-function CaseCards({ site }: { site: SiteData }) {
+function DemoVideo() {
+  if (DEMO_VIDEO_URL && /\.(mp4|webm)$/i.test(DEMO_VIDEO_URL)) {
+    return <video className="video-media" src={DEMO_VIDEO_URL} controls preload="metadata" />
+  }
+  if (DEMO_VIDEO_URL) {
+    return (
+      <iframe
+        className="video-media"
+        src={DEMO_VIDEO_URL}
+        title="Domino demo video"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen
+      />
+    )
+  }
   return (
-    <ul className="case-cards">
-      {site.cases.map((c) => {
-        const latest = c.runs[0]
-        const v = latest?.verdict ? VERDICT[latest.verdict] : null
-        const sum = summarizeRuns(c)
-        return (
-          <li key={c.id} className="case-card">
-            <h3>
-              <a href={href.case(c.id)}>{c.label}</a>
-            </h3>
-            <p className="small muted">{CASE_KIND[c.kind]}</p>
-            {v ? (
-              <Badge tone={v.tone} icon={v.icon}>
-                {v.label}
-              </Badge>
-            ) : (
-              <Badge tone="muted" icon="clock">
-                No verdict yet
-              </Badge>
-            )}
-            <p className="small muted">{plural(sum.total, 'run')}</p>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-/** Numbers computed from the saved runs; nothing here is typed in by hand. */
-function ProofStrip({ site }: { site: SiteData }) {
-  const invs = site.cases.flatMap((c) => c.runs.flatMap((r) => (r.load.ok ? [r.load.investigation] : [])))
-  const calls = invs.flatMap((i) => i.receipts)
-  const nemotron = calls.filter((r) => r.routedModel && isNemotron(r.routedModel)).length
-  const sources = new Set(invs.flatMap((i) => [...i.evidence.values()].filter((e) => e.kind === 'row').map((e) => e.source)))
-  const judged = invs.filter((i) => i.verdict?.decidedBy === 'deterministic_judge').length
-  const memory = invs.reduce((n, i) => n + i.memory.length, 0)
-
-  const stats: [string, string][] = [
-    [`${nemotron} / ${calls.length}`, 'model calls answered by NVIDIA Nemotron, via Meterless Nightshift'],
-    [String(sources.size), 'independent data sources joined in the Zetaris semantic layer'],
-    [`${judged} / ${invs.length}`, 'verdicts decided by a rule-based judge, not the model'],
-    [String(memory), 'Meterless World Model reads and writes across runs'],
-  ]
-  return (
-    <>
-      {site.isPlaceholder && <p className="small muted">Computed from placeholder runs until real runs are saved.</p>}
-      <ul className="tiles">
-        {stats.map(([value, label]) => (
-          <li key={label} className="tile">
-            <span className="tile-value">{value}</span>
-            <span className="tile-desc">{label}</span>
-          </li>
-        ))}
-      </ul>
-    </>
+    <div className="video-placeholder">
+      <span className="video-play" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5.5v13l11-6.5z" />
+        </svg>
+      </span>
+      <p className="video-label">Demo video · coming soon</p>
+      <p className="video-note">
+        Recorded from a real Domino run. Until then, <a href={href.try}>try it yourself</a>.
+      </p>
+    </div>
   )
 }

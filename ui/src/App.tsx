@@ -10,7 +10,7 @@ import { Sidebar } from './components/Sidebar'
 import { EmptyView, ErrorView, LoadingView, NotFoundView } from './components/StateViews'
 import { UnderTheHoodView } from './components/UnderTheHoodView'
 import { LandingPage } from './components/landing/LandingPage'
-import { SiteFooter, SiteNav } from './components/landing/SiteChrome'
+import { AnnouncementBar, SiteFooter, SiteNav } from './components/landing/SiteChrome'
 import { TryPage } from './components/landing/TryPage'
 
 /** The case and run a case route points at; latest run when ?run is absent. */
@@ -24,7 +24,7 @@ function resolveRun(site: SiteData, route: Route): { caseEntry?: CaseEntry; run?
 function pageTitle(route: Route, caseEntry?: CaseEntry) {
   switch (route.name) {
     case 'home':
-      return 'Domino: find what your change breaks before you ship it'
+      return 'Domino: find what breaks before you ship'
     case 'try':
       return 'Try it yourself · Domino'
     case 'cases-index':
@@ -78,6 +78,7 @@ export default function App() {
     return (
       <div className="site">
         {skipLink}
+        <AnnouncementBar />
         <SiteNav />
         <main id="main" ref={mainRef} tabIndex={-1} className="site-main">
           {route.name === 'try' ? <TryPage state={state} /> : <LandingPage state={state} section={route.section} />}
