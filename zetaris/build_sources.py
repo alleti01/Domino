@@ -1,14 +1,19 @@
 """Generates the synthetic Zetaris source files (CSV) from the world case files.
 
 Each world case is one "system". Its facts are split across independent sources so that no single
-file holds the whole chain from a change to its downstream effect:
+file holds the whole chain from a change to its downstream effect. Each engine supplies its own facts
+through `worlds/engines/<engine>/facts.py` (`facts_for_case(case_id, case) -> {table: [rows]}`), so an
+engine kept in the private folder never reveals its domain in the repo.
 
-  change_records.csv    change_records   statements in the proposed change (the PR)
-  access_grants.csv     db_catalog       current read grants per principal and database
-  table_inventory.csv   db_catalog       tables per database with their column counts
-  job_definitions.csv   pipeline_repo    services: identity they run as, query, output file
-  runtime_config.csv    runtime_config   services: input file and settings
-  query_telemetry.csv   telemetry        observed query results over recent runs
+  change_records.csv       change_records      grant statements in a proposed change
+  change_items.csv         change_records      other items in a proposed change (files, IDs, rules, jobs)
+  access_grants.csv        db_catalog          current read grants per principal and database
+  table_inventory.csv      db_catalog          tables per database with their column counts
+  inventory_records.csv    inventory_registry  registered records, their kind, parent, owner and status
+  job_definitions.csv      pipeline_repo       services: identity they run as, query, output file
+  interface_contracts.csv  service_catalog     what components call, declare and accept
+  runtime_config.csv       runtime_config      services: input file and settings
+  query_telemetry.csv      telemetry           observed query results over recent runs
 
 Every row carries `source_system` and `source_row_id`. All data is synthetic.
 
@@ -18,8 +23,8 @@ Every row carries `source_system` and `source_row_id`. All data is synthetic.
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -30,89 +35,51 @@ OUT_DIR = Path(__file__).resolve().parent / "sources"
 TABLES = {
     "change_records": ["source_system", "source_row_id", "system_id", "change_id", "file_path", "statement_seq",
                        "action", "privilege", "principal_name", "database_name", "title"],
+    "change_items": ["source_system", "source_row_id", "system_id", "change_id", "file_path", "item_kind",
+                     "item_ref", "item_detail", "title"],
     "access_grants": ["source_system", "source_row_id", "system_id", "principal_name", "database_name", "privilege"],
     "table_inventory": ["source_system", "source_row_id", "system_id", "database_name", "table_name", "column_count"],
+    "inventory_records": ["source_system", "source_row_id", "system_id", "record_id", "record_kind",
+                          "parent_record_id", "owner", "status"],
     "job_definitions": ["source_system", "source_row_id", "system_id", "service_name", "runs_as_principal", "query_id",
                         "query_text", "reads_table", "output_artifact", "output_mode"],
+    "interface_contracts": ["source_system", "source_row_id", "system_id", "component", "relation", "target",
+                            "contract_key", "contract_value"],
     "runtime_config": ["source_system", "source_row_id", "system_id", "service_name", "input_artifact", "setting_key",
                        "setting_value"],
     "query_telemetry": ["source_system", "source_row_id", "system_id", "query_id", "service_name", "principal_name",
                         "window_days", "sampled_runs", "rows_returned_p50", "artifact_entries_p50"],
 }
-SOURCE_SYSTEM = {"change_records": "change_records", "access_grants": "db_catalog", "table_inventory": "db_catalog",
-                 "job_definitions": "pipeline_repo", "runtime_config": "runtime_config", "query_telemetry": "telemetry"}
-PREFIX = {"change_records": "cr", "access_grants": "ag", "table_inventory": "ti", "job_definitions": "jd",
-          "runtime_config": "rc", "query_telemetry": "qt"}
-_GRANT = re.compile(r"^(GRANT|REVOKE)\s+(SELECT)\s+ON\s+([a-z0-9_]+)\.\*\s+(?:TO|FROM)\s+([a-z0-9_]+);?$", re.IGNORECASE)
+SOURCE_SYSTEM = {"change_records": "change_records", "change_items": "change_records", "access_grants": "db_catalog",
+                 "table_inventory": "db_catalog", "inventory_records": "inventory_registry",
+                 "job_definitions": "pipeline_repo", "interface_contracts": "service_catalog",
+                 "runtime_config": "runtime_config", "query_telemetry": "telemetry"}
+PREFIX = {"change_records": "cr", "change_items": "ci", "access_grants": "ag", "table_inventory": "ti",
+          "inventory_records": "ir", "job_definitions": "jd", "interface_contracts": "ic", "runtime_config": "rc",
+          "query_telemetry": "qt"}
 
 
-def _statements(sql: str):
-    for line in sql.splitlines():
-        match = _GRANT.match(line.strip())
-        if match:
-            yield match.group(1).upper(), match.group(2).upper(), match.group(3), match.group(4)
-
-
-def facts_for_case(case_id: str, case: dict) -> dict:
-    """Rows for one system, before source_system / source_row_id are assigned."""
-    setup, change = case["setup"], case["describe"]["change"]
-    principal, table = setup["principal"], setup["table"]
-    rows = {name: [] for name in TABLES}
-
-    for seq, (action, privilege, db, who) in enumerate(_statements(setup["change_sql"]), start=1):
-        rows["change_records"].append({"change_id": "0042", "file_path": change["files"][0], "statement_seq": seq,
-                                       "action": action, "privilege": privilege, "principal_name": who,
-                                       "database_name": db, "title": change["title"]})
-
-    for _action, privilege, db, who in _statements(setup["base_sql"]):
-        rows["access_grants"].append({"principal_name": who, "database_name": db, "privilege": privilege})
-    # Other principals in the same catalog, so the reader is one identity among several.
-    for who, dbs in (("svc_admin_console", setup["databases"]), ("svc_metrics", ["default"])):
-        for db in dbs:
-            rows["access_grants"].append({"principal_name": who, "database_name": db, "privilege": "SELECT"})
-
-    for db in setup["databases"]:
-        rows["table_inventory"].append({"database_name": db, "table_name": table, "column_count": setup["n_columns"]})
-    for other, count in (("request_log", 12), ("user_profile", 8)):
-        rows["table_inventory"].append({"database_name": "default", "table_name": other, "column_count": count})
-
-    rows["job_definitions"].append({
-        "service_name": "bundle-builder", "runs_as_principal": principal, "query_id": "q-bundle-fields",
-        "query_text": f"SELECT name, type FROM system.columns WHERE table = '{table}' ORDER BY name",
-        "reads_table": table, "output_artifact": "bundle.json",
-        "output_mode": "collapse_same_name" if setup["builder"].get("collapse_same_name") else "as_returned"})
-    rows["job_definitions"].append({
-        "service_name": "metrics-exporter", "runs_as_principal": "svc_metrics", "query_id": "q-request-log",
-        "query_text": "SELECT status, count(*) FROM default.request_log GROUP BY status",
-        "reads_table": "request_log", "output_artifact": "request_metrics.csv", "output_mode": "as_returned"})
-
-    for key, value in (("max_entries", setup["runtime"]["max_entries"]), ("startup_timeout_s", 30)):
-        rows["runtime_config"].append({"service_name": "worker-runtime", "input_artifact": "bundle.json",
-                                       "setting_key": key, "setting_value": value})
-    rows["runtime_config"].append({"service_name": "status-dashboard", "input_artifact": "request_metrics.csv",
-                                   "setting_key": "refresh_s", "setting_value": 60})
-
-    # Before the change the reader sees only `default`, so telemetry shows one copy of each column.
-    rows["query_telemetry"].append({"query_id": "q-bundle-fields", "service_name": "bundle-builder",
-                                    "principal_name": principal, "window_days": 7, "sampled_runs": 288,
-                                    "rows_returned_p50": setup["n_columns"], "artifact_entries_p50": setup["n_columns"]})
-    rows["query_telemetry"].append({"query_id": "q-request-log", "service_name": "metrics-exporter",
-                                    "principal_name": "svc_metrics", "window_days": 7, "sampled_runs": 2016,
-                                    "rows_returned_p50": 5, "artifact_entries_p50": 5})
-    for name in rows:
-        for row in rows[name]:
-            row["system_id"] = case_id
-    return rows
+def _facts_module(case_path: Path, engine: str):
+    """The engine's facts.py next to the case (private engines), else the repo engine's."""
+    for engines in (case_path.parents[1] / "engines", ROOT / "worlds" / "engines"):
+        path = engines / engine / "facts.py"
+        if path.is_file():
+            spec = importlib.util.spec_from_file_location(f"facts_{engine}_{abs(hash(str(path)))}", path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+    raise SystemExit(f"No facts.py for engine {engine!r} (case {case_path.name})")
 
 
 def _collect(cases_dir: Path) -> dict:
     tables = {name: [] for name in TABLES}
     for path in sorted(cases_dir.glob("*.json")) if cases_dir.is_dir() else []:
         case = json.loads(path.read_text(encoding="utf-8"))
-        if case.get("engine") != "e1":
-            continue
-        for name, rows in facts_for_case(path.stem, case).items():
-            tables[name].extend(rows)
+        for name, rows in _facts_module(path, case["engine"]).facts_for_case(path.stem, case).items():
+            if name not in TABLES:
+                raise SystemExit(f"{path.name}: unknown source table {name!r}")
+            for row in rows:
+                tables[name].append({**row, "system_id": path.stem})
     return tables
 
 

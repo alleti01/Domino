@@ -83,7 +83,7 @@ def run_sql(client, name: str, values: dict, dry_run: bool) -> int:
             res = client.run(sql, read_only=False, timeout_s=SQL_TIMEOUT_S, purpose=f"setup:{name}")
             print(f"  ok    {first_line}  ({res.duration_ms} ms)")
         except ZetarisError as error:
-            if "already exist" in str(error).lower():
+            if "already exist" in str(error).lower() or "already been granted" in str(error).lower():
                 print(f"  skip  {first_line}  (already exists)")
             else:
                 failures += 1

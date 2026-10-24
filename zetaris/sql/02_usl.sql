@@ -89,6 +89,39 @@ CREATE TABLE query_observation (
     source_system varchar(40),
     source_row_id varchar(40)
 );
+CREATE TABLE change_item (
+    item_id varchar(200) NOT NULL PRIMARY KEY,
+    change_id varchar(200) NOT NULL,
+    system_id varchar(40) NOT NULL,
+    item_kind varchar(40),
+    item_ref varchar(200),
+    item_detail varchar(500),
+    file_path varchar(300),
+    source_system varchar(40),
+    source_row_id varchar(40)
+);
+CREATE TABLE inventory_record (
+    record_key varchar(250) NOT NULL PRIMARY KEY,
+    system_id varchar(40) NOT NULL,
+    record_id varchar(100) NOT NULL,
+    record_kind varchar(40),
+    parent_record_id varchar(100),
+    owner varchar(100),
+    status varchar(40),
+    source_system varchar(40),
+    source_row_id varchar(40)
+);
+CREATE TABLE interface_contract (
+    contract_id varchar(250) NOT NULL PRIMARY KEY,
+    system_id varchar(40) NOT NULL,
+    component varchar(150) NOT NULL,
+    relation varchar(40),
+    target varchar(150),
+    contract_key varchar(100),
+    contract_value varchar(300),
+    source_system varchar(40),
+    source_row_id varchar(40)
+);
 CREATE TABLE dependency_edge (
     edge_id varchar(300) NOT NULL PRIMARY KEY,
     system_id varchar(40) NOT NULL,
@@ -234,6 +267,40 @@ FROM (
   FROM domino_src.query_telemetry
 ) src
 ;
+ACTIVATE USL TABLE lightning.metastore.domino.systems.change_item AS
+SELECT COALESCE(item_id, '') AS item_id,
+       COALESCE(change_id, '') AS change_id,
+       COALESCE(system_id, '') AS system_id,
+       item_kind, item_ref, item_detail, file_path, source_system, source_row_id
+FROM (
+  SELECT concat(system_id, '/change/', change_id, '#', source_row_id) AS item_id,
+         concat(system_id, '/change/', change_id) AS change_id, system_id, item_kind, item_ref, item_detail,
+         file_path, source_system, source_row_id
+  FROM domino_src.change_items
+) src
+;
+ACTIVATE USL TABLE lightning.metastore.domino.systems.inventory_record AS
+SELECT COALESCE(record_key, '') AS record_key,
+       COALESCE(system_id, '') AS system_id,
+       COALESCE(record_id, '') AS record_id,
+       record_kind, parent_record_id, owner, status, source_system, source_row_id
+FROM (
+  SELECT concat(system_id, '/record/', record_id) AS record_key, system_id, record_id, record_kind,
+         parent_record_id, owner, status, source_system, source_row_id
+  FROM domino_src.inventory_records
+) src
+;
+ACTIVATE USL TABLE lightning.metastore.domino.systems.interface_contract AS
+SELECT COALESCE(contract_id, '') AS contract_id,
+       COALESCE(system_id, '') AS system_id,
+       COALESCE(component, '') AS component,
+       relation, target, contract_key, contract_value, source_system, source_row_id
+FROM (
+  SELECT concat(system_id, '/contract/', source_row_id) AS contract_id, system_id, component, relation, target,
+         contract_key, contract_value, source_system, source_row_id
+  FROM domino_src.interface_contracts
+) src
+;
 ACTIVATE USL TABLE lightning.metastore.domino.systems.dependency_edge AS
 SELECT COALESCE(edge_id, '') AS edge_id,
        COALESCE(system_id, '') AS system_id,
@@ -331,5 +398,49 @@ FROM (
            concat(r.system_id, '/setting/', r.service_name, '.', r.setting_key), 'setting', 'configured_with', 'inferred',
            concat('runtime_config:', r.source_row_id), concat(r.setting_key, '=', r.setting_value)
     FROM domino_src.runtime_config r
+  UNION ALL
+  SELECT concat(c.system_id, '/edge/', c.source_row_id, '/targets'), c.system_id,
+         concat(c.system_id, '/change/', c.change_id), 'change',
+         concat(c.system_id, '/record/', c.item_ref), 'record', 'targets',
+         CASE WHEN r.source_row_id IS NULL THEN 'unresolved' ELSE 'observed' END,
+         concat('change_records:', c.source_row_id, CASE WHEN r.source_row_id IS NULL THEN '' ELSE concat(';inventory_registry:', r.source_row_id) END),
+         CASE WHEN r.source_row_id IS NULL THEN concat('id ', c.item_ref, ' not in inventory')
+              ELSE concat('kind=', r.record_kind, '; owner=', r.owner, '; status=', r.status) END
+  FROM domino_src.change_items c
+  LEFT JOIN domino_src.inventory_records r ON r.system_id = c.system_id AND r.record_id = c.item_ref
+  WHERE c.item_kind = 'target_id'
+  UNION ALL
+  SELECT concat(k.system_id, '/edge/', k.source_row_id, '/parent'), k.system_id,
+         concat(k.system_id, '/record/', k.parent_record_id), 'record',
+         concat(k.system_id, '/record/', k.record_id), 'record', 'parent_of',
+         CASE WHEN p.source_row_id IS NULL THEN 'unresolved' ELSE 'observed' END,
+         concat('inventory_registry:', k.source_row_id, CASE WHEN p.source_row_id IS NULL THEN '' ELSE concat(';inventory_registry:', p.source_row_id) END),
+         concat('kind=', k.record_kind, '; owner=', k.owner, '; status=', k.status)
+  FROM domino_src.inventory_records k
+  LEFT JOIN domino_src.inventory_records p ON p.system_id = k.system_id AND p.record_id = k.parent_record_id
+  WHERE k.parent_record_id IS NOT NULL AND k.parent_record_id <> ''
+  UNION ALL
+  SELECT concat(c.system_id, '/edge/', c.source_row_id, '/runs'), c.system_id,
+         concat(c.system_id, '/change/', c.change_id), 'change',
+         concat(c.system_id, '/interface/', c.item_ref), 'interface', 'runs',
+         CASE WHEN k.src IS NULL THEN 'inferred' ELSE 'observed' END,
+         concat('change_records:', c.source_row_id, CASE WHEN k.src IS NULL THEN '' ELSE concat(';service_catalog:', k.src) END),
+         c.item_detail
+  FROM domino_src.change_items c
+  LEFT JOIN (SELECT system_id, component, MIN(source_row_id) AS src FROM domino_src.interface_contracts
+             GROUP BY system_id, component) k
+    ON k.system_id = c.system_id AND k.component = c.item_ref
+  WHERE c.item_kind = 'runs_component'
+  UNION ALL
+  SELECT concat(i.system_id, '/edge/', i.source_row_id, '/contract'), i.system_id,
+         concat(i.system_id, '/interface/', i.component), 'interface',
+         concat(i.system_id, '/interface/', i.target), 'interface', i.relation,
+         CASE WHEN t.src IS NULL THEN 'inferred' ELSE 'observed' END,
+         concat('service_catalog:', i.source_row_id, CASE WHEN t.src IS NULL THEN '' ELSE concat(';service_catalog:', t.src) END),
+         concat(i.contract_key, '=', i.contract_value)
+  FROM domino_src.interface_contracts i
+  LEFT JOIN (SELECT system_id, component, MIN(source_row_id) AS src FROM domino_src.interface_contracts
+             GROUP BY system_id, component) t
+    ON t.system_id = i.system_id AND t.component = i.target
 ) src
 ;

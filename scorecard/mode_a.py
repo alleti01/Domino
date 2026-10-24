@@ -23,6 +23,7 @@ RULES = [
     ("widens_read_access", re.compile(r"^\+\s*GRANT\s+(SELECT|ALL)\b", re.IGNORECASE | re.MULTILINE)),
     ("drops_or_retypes_schema", re.compile(r"^\+\s*(DROP\s+(TABLE|COLUMN)|ALTER\s+TABLE\s+\S+\s+(DROP|ALTER))", re.IGNORECASE | re.MULTILINE)),
     ("changes_dependency_version", re.compile(r"^\+.*(==|>=|~=|\"\^?\d+\.\d+)", re.MULTILINE)),
+    ("destructive_bulk_operation", re.compile(r"^\+.*\b(permanent|purge|hard[_-]?delete|DELETE\s+FROM|TRUNCATE|rm\s+-rf|--force)\b", re.IGNORECASE | re.MULTILINE)),
     ("lowers_a_limit", re.compile(r"^\+.*(max|limit|capacity|timeout)[_a-z]*\s*[:=]\s*\d+", re.IGNORECASE | re.MULTILINE)),
 ]
 
