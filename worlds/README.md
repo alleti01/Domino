@@ -29,3 +29,6 @@ Case files for engine `e1` are generated: edit `engines/e1/make_cases.py`, then 
 - Labels live in the private folder (`$DOMINO_PRIVATE_DIR/ground_truth/`, outside the repo). Held-out worlds go in `$DOMINO_PRIVATE_DIR/worlds/cases/`, and their engines in `.../worlds/engines/`. `run_experiment` finds them there; `zetaris/build_sources.py` keeps their rows out of the repo CSVs.
 - `scorecard/leakage_check.py` must pass before any commit.
 - Synthetic data only.
+
+## Dashboard data
+`python3 worlds/demo_view.py --all` writes one JSON per released world (all three variants, by component, plus the Zetaris dependency path) to `runs/demo_views/` for the dashboard. It shows each world's outcome, so it is not an agent tool and its output stays out of tracked files. Fields: `contracts/DEMO_VIEW.md`.
