@@ -34,8 +34,9 @@ sys.path.insert(0, str(ROOT))
 
 from data_layer import config  # noqa: E402
 
+# The scorecard scripts import their neighbours, so they run without -I (isolated mode drops the script's folder).
 CHECKS = [
-    ["tests/test_data_layer.py"], ["tests/test_abuse.py"], ["contracts/make_samples.py", "--check"],
+    ["-I", "tests/test_data_layer.py"], ["-I", "tests/test_abuse.py"], ["-I", "contracts/make_samples.py", "--check"],
     ["scorecard/leakage_check.py"], ["scorecard/reference_investigator.py"],
 ]
 
@@ -96,10 +97,13 @@ def run_checks(target: Path, private: Path) -> bool:
     ok = True
     env = {**os.environ, "DOMINO_PRIVATE_DIR": str(private), "DOMINO_DATA_MODE": "sample"}
     for check in CHECKS:
-        out = subprocess.run([sys.executable, "-I", *check], cwd=target, env=env, capture_output=True,
+        out = subprocess.run([sys.executable, *check], cwd=target, env=env, capture_output=True,
                              text=True, timeout=900)
         last = (out.stdout.strip().splitlines() or [out.stderr.strip()[-300:]])[-1]
-        print(f"  {'ok  ' if out.returncode == 0 else 'FAIL'} {check[0]}: {last}")
+        name = next(c for c in check if c.endswith(".py"))
+        if name.endswith("reference_investigator.py"):
+            last = next((line.strip() for line in out.stdout.splitlines() if line.strip().startswith("correct")), last)
+        print(f"  {'ok  ' if out.returncode == 0 else 'FAIL'} {name}: {last}")
         ok &= out.returncode == 0
     return ok
 
