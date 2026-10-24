@@ -101,7 +101,7 @@ export default function App() {
         content = <ScorecardView scorecard={s.scorecard!} cases={s.cases} />
         break
       case 'under-the-hood':
-        content = <UnderTheHoodView site={s} />
+        content = <UnderTheHoodView site={s} section={route.section} />
         break
       case 'case':
         if (!caseEntry) content = s.cases.length === 0 ? <EmptyView /> : <NotFoundView what="Case" />

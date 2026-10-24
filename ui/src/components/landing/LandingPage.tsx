@@ -1,25 +1,27 @@
 import { useEffect } from 'react'
 import type { SiteState } from '../../data/useSite'
-import { DEMO_VIDEO_URL, REPO_URL } from '../../config'
+import { DEMO_VIDEO_URL } from '../../config'
 import { HEADLINE, HERO_SUB, RUN_LOCALLY } from '../../content'
 import { href } from '../../lib/router'
 import { scrollToSection } from '../../lib/scroll'
+import { flagship } from '../../lib/showcase'
 import { CommandBlock } from '../common'
-import { Icon, type IconName } from '../Icon'
+import { CaseTabs } from './CaseTabs'
+import { ChainStory } from './ChainStory'
+import { ExperimentStory } from './ExperimentStory'
+import { HowItWorks } from './HowItWorks'
+import { Limits } from './Limits'
+import { ProofCounters } from './ProofCounters'
 
-const RESOURCES: { title: string; text: string; to: string; icon: IconName; external?: boolean }[] = [
-  { title: 'Try it yourself', text: 'Pick a change and watch Domino investigate it, step by step.', to: href.try, icon: 'flask' },
-  { title: 'Dashboard', text: 'Every case, with the full report and the PR comment.', to: href.cases, icon: 'list' },
-  { title: 'Results', text: 'How Domino did across all cases, and against simpler methods.', to: href.results, icon: 'bar-chart' },
-  { title: 'Under the hood', text: 'Proof of Zetaris, Meterless and NVIDIA Nemotron at work.', to: href.underTheHood, icon: 'cpu' },
-  { title: 'Source on GitHub', text: 'Code, README and how to run it with no keys.', to: REPO_URL, icon: 'git-pr', external: true },
-]
-
-export function LandingPage({ section }: { state: SiteState; section: string | null }) {
+export function LandingPage({ state, section }: { state: SiteState; section: string | null }) {
   // ?section=demo (from the nav) scrolls to that part of the page.
   useEffect(() => {
     if (section) scrollToSection(section)
-  }, [section])
+  }, [section, state.status])
+
+  const site = state.status === 'ready' ? state.site : null
+  const show = site ? flagship(site.cases) : null
+  const placeholder = site?.isPlaceholder ?? false
 
   return (
     <div className="landing">
@@ -58,28 +60,12 @@ export function LandingPage({ section }: { state: SiteState; section: string | n
         </div>
       </section>
 
-      <section id="resources" className="landing-block" aria-labelledby="resources-title" tabIndex={-1}>
-        <p className="block-kicker">Explore</p>
-        <h2 id="resources-title" className="block-title">
-          Everything you need to check our work.
-        </h2>
-        <ul className="resource-grid">
-          {RESOURCES.map((r) => (
-            <li key={r.title}>
-              <a
-                className="resource-card"
-                href={r.to}
-                {...(r.external ? { target: '_blank', rel: 'noreferrer' } : {})}
-              >
-                <Icon name={r.icon} size={18} />
-                <span className="resource-title">{r.title}</span>
-                <span className="resource-text">{r.text}</span>
-                {r.external && <span className="visually-hidden"> (opens in a new tab)</span>}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <ChainStory show={show} placeholder={placeholder} />
+      <ExperimentStory show={show} placeholder={placeholder} />
+      <HowItWorks show={show} placeholder={placeholder} />
+      <CaseTabs cases={site?.cases ?? []} placeholder={placeholder} />
+      {site && <ProofCounters site={site} />}
+      <Limits />
 
       <section id="start" className="landing-block final-cta" aria-labelledby="start-title" tabIndex={-1}>
         <h2 id="start-title" className="final-cta-title">

@@ -1,7 +1,7 @@
 import type { ChangeSummary } from '../../types'
 import { EvidenceLink, Pending, Section } from '../common'
 
-function DiffBlock({ diff }: { diff: string }) {
+export function DiffBlock({ diff }: { diff: string }) {
   const lines = diff.replace(/\n$/, '').split('\n')
   return (
     <pre className="diff" aria-label="Diff">

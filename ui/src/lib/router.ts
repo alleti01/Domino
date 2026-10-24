@@ -10,8 +10,8 @@ export type Route =
   | { name: 'try' }
   | { name: 'cases-index' }
   | { name: 'case'; caseId: string; view: ReportView; runId: string | null; section: string | null }
-  | { name: 'results' }
-  | { name: 'under-the-hood' }
+  | { name: 'results'; section: string | null }
+  | { name: 'under-the-hood'; section: string | null }
   | { name: 'not-found'; path: string }
 
 export interface AppLocation {
@@ -34,8 +34,10 @@ export function parseHash(hash: string): AppLocation {
   if (seg.length === 0) route = { name: 'home', section: params.get('section') }
   else if (seg[0] === 'try' && seg.length === 1) route = { name: 'try' }
   else if (seg[0] === 'cases' && seg.length === 1) route = { name: 'cases-index' }
-  else if (seg[0] === 'results' && seg.length === 1) route = { name: 'results' }
-  else if (seg[0] === 'under-the-hood' && seg.length === 1) route = { name: 'under-the-hood' }
+  else if (seg[0] === 'results' && seg.length === 1) route = { name: 'results', section: params.get('section') }
+  else if (seg[0] === 'under-the-hood' && seg.length === 1) {
+    route = { name: 'under-the-hood', section: params.get('section') }
+  }
   else if (seg[0] === 'cases' && seg[1] && (seg.length === 2 || (seg.length === 3 && seg[2] === 'pr'))) {
     route = {
       name: 'case',
@@ -64,6 +66,8 @@ export const href = {
   cases: '#/cases',
   results: '#/results',
   underTheHood: '#/under-the-hood',
+  /** A section of Under the hood: nemotron, zetaris or meterless. */
+  underTheHoodAt: (section: string) => build('/under-the-hood', { section }),
   case: (
     caseId: string,
     opts: { view?: ReportView; runId?: string | null; section?: string | null; evidence?: string | null } = {},

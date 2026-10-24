@@ -1,9 +1,10 @@
+import { useEffect } from 'react'
 import type { CaseEntry, Investigation, SiteData } from '../types'
 import type { RawZetaris } from '../data/format'
 import { formatMs, isNemotron, shortModel } from '../lib/labels'
 import { href } from '../lib/router'
 import { plural } from '../lib/runs'
-import { jumpTo } from '../lib/scroll'
+import { jumpTo, scrollToSection } from '../lib/scroll'
 import { Badge, Breadcrumbs, PlaceholderNotice, Section } from './common'
 
 interface LoadedRun {
@@ -33,7 +34,11 @@ const SECTIONS = [
   ['meterless', 'Meterless memory'],
 ] as const
 
-export function UnderTheHoodView({ site }: { site: SiteData }) {
+export function UnderTheHoodView({ site, section }: { site: SiteData; section: string | null }) {
+  // ?section=nemotron (from the landing page's proof links) scrolls to that part.
+  useEffect(() => {
+    if (section) scrollToSection(section)
+  }, [section])
   const runs = loadedRuns(site)
   const totalRuns = site.cases.reduce((n, c) => n + c.runs.length, 0)
   return (

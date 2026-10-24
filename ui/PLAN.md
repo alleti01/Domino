@@ -111,6 +111,17 @@ Short and to the point, keeping our colours for now (colour pass comes in Phase 
 - [x] Below it, only what judges need: a compact resources row (Try it yourself, Dashboard, Results, Under the hood, GitHub) and the final **Try it yourself** call to action, then the footer.
 - [x] Fonts bundled with the site (works offline): Doto for the headline, Inter for text, JetBrains Mono for labels.
 
+### S3b: Landing page as a guided tour (replaces the resource cards)
+Every section shows one real piece of an investigation, built from the saved runs (placeholders until real runs land), and links to **that exact spot** in the dashboard. The nav scrolls to sections; only **Open the dashboard** and GitHub leave the page.
+
+Order: hero → demo video → the domino chain → the experiment → how it works → cases → proof → limits → final Try it yourself → footer.
+
+- [x] **L1** Nav becomes How it works · Cases · Proof · Demo · GitHub + Open the dashboard. Pick a flagship run (first case with a reproduced failure). Deep links with `?section=` work on reports, Results and Under the hood.
+- [x] **L2** "Fine on its own, broken two systems away": the flagship's causal chain as domino tiles (source system on each tile, observed vs inferred links, tips over to the verdict when scrolled into view), linking to the chain in the report. "It doesn't guess. It runs the experiment.": baseline, candidate and control values for the observation that changed, a limit line only when a cited row states the limit, linking to the experiments.
+- [x] **L3** How it works as a scrolling story: the five steps stay in place on the left while the right shows that step from the real run (diff, links, hypothesis, experiments, verdict) with its sponsor technology and a link to that report section. Stacks normally on phones.
+- [x] **L4** Case tabs (keyboard-accessible): verdict, headline, key number and links per case, including the safe change raising no alarm. Proof counters, each linking to its exact proof (Nemotron receipts, Zetaris, rule-based judge, World Model). "What Domino won't tell you": the three verdicts and the honest limits. One final Try it yourself.
+- [x] **L5** Every link checked, keyboard and screen reader pass, reduced motion, phone widths, tests for the helpers.
+
 ### S4: Try it yourself
 - [ ] Change picker, Run button, step-by-step replay driven by the saved trace (speed control, skip to end), live counters, verdict ending with links.
 - [ ] Works on placeholders now, and on real runs once they land, with no extra work.

@@ -228,3 +228,22 @@ describe('wording rules', () => {
     expect(offenders).toEqual([])
   })
 })
+
+describe('landing tour helpers', () => {
+  it('builds the domino chain from the real run, adding the limit from the graph', async () => {
+    const { chainTiles, experimentSummary, flagship } = await import('../lib/showcase')
+    const { site } = await loadSite(agentSamplesSource)
+    const show = flagship(site.cases)!
+    expect(show.inv.verdict?.verdict).toBe('reproduced_failure')
+
+    const tiles = chainTiles(show.inv)
+    expect(tiles.map((t) => t.id)).toEqual(['svc_builder', 'builder', 'items.list', 'loader', 'max_items'])
+    expect(tiles[0].link).toBeNull()
+    expect(tiles.at(-1)?.link).toMatchObject({ relation: 'bounded_by', fromGraph: true })
+
+    const exp = experimentSummary(show.inv)!
+    expect(exp).toMatchObject({ key: 'builder.query_rows', baseline: 30, candidate: 60, control: 30, candidateFailed: true })
+    // The sample doesn't state max_items' value, so none is shown.
+    expect(exp.limit).toMatchObject({ name: 'max_items', value: null })
+  })
+})

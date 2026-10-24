@@ -1,11 +1,13 @@
 import { HACKATHON, REPO_URL } from '../../config'
 import { href } from '../../lib/router'
+import { scrollToSection } from '../../lib/scroll'
 
-const NAV: { label: string; to: string; external?: boolean }[] = [
-  { label: 'Demo', to: href.landing('demo') },
-  { label: 'Try it yourself', to: href.try },
-  { label: 'Results', to: href.results },
-  { label: 'Under the hood', to: href.underTheHood },
+// Everything except GitHub scrolls within the landing page.
+const NAV: { label: string; to: string; section?: string; external?: boolean }[] = [
+  { label: 'How it works', to: href.landing('how'), section: 'how' },
+  { label: 'Cases', to: href.landing('cases'), section: 'cases' },
+  { label: 'Proof', to: href.landing('proof'), section: 'proof' },
+  { label: 'Demo', to: href.landing('demo'), section: 'demo' },
   { label: 'GitHub', to: REPO_URL, external: true },
 ]
 
@@ -51,7 +53,18 @@ export function SiteNav() {
                   <span className="visually-hidden"> (opens in a new tab)</span>
                 </a>
               ) : (
-                <a href={item.to}>{item.label}</a>
+                <a
+                  href={item.to}
+                  onClick={(e) => {
+                    // Same link clicked again: the URL won't change, so scroll ourselves.
+                    if (item.section && window.location.hash === item.to) {
+                      e.preventDefault()
+                      scrollToSection(item.section, { smooth: true })
+                    }
+                  }}
+                >
+                  {item.label}
+                </a>
               )}
             </li>
           ))}
