@@ -41,6 +41,11 @@ python3 scorecard/leakage_check.py                    # nothing the agent sees g
    data-quality rules, and grants the agent read-only access. Two UI steps are listed in `zetaris/README.md`.
 3. `python3 -m data_layer doctor`, then run the agent with `--data data_layer` (see `agent/README.md`).
 
+### Use your own database
+`python3 zetaris/seed_db.py --sql > domino_seed.sql` gives the schema and all synthetic rows as plain SQL
+(PostgreSQL, SQLite, MySQL). `--sqlite domino.db` builds a SQLite file directly. `--zetaris-sql` prints the
+statements that register your database in Zetaris.
+
 ## Where Zetaris does the work
 - **One USL over six sources**, including a live PostgreSQL database. `dependency_edge` is the cross-source join,
   built inside Zetaris, with every link labelled observed / inferred / unresolved.

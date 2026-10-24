@@ -48,6 +48,15 @@ python3 zetaris/setup.py
 6. **access** (`sql/03_access.sql`): read-only grant for the agent user (plus two UI steps, see `zetaris/README.md`)
 7. **report** (`dq_report.py`): runs every data-quality rule and saves the findings
 
+## Load it into your own database
+```bash
+python3 zetaris/seed_db.py --sql > domino_seed.sql    # portable SQL: psql "<your url>" -v ON_ERROR_STOP=1 -f domino_seed.sql
+python3 zetaris/seed_db.py --sqlite domino.db         # a SQLite file, nothing to install
+python3 zetaris/seed_db.py --zetaris-sql              # statements that point Zetaris at your database
+```
+Creates the nine tables (text columns, keyed by `source_row_id`) plus the two lookup tables the USL edge query
+reads. Safe to re-run. Tested on PostgreSQL 16 and SQLite.
+
 ## Checking it
 - `python3 -m data_layer tables` lists the USL tables, their columns and sources.
 - `python3 zetaris/dq_report.py` shows every data-quality rule's results, with invalid rows listed rather than hidden.
