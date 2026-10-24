@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import type { RunMode, RunSummary, TraceEvent } from "../../contracts/agent/types.js";
 import { DataLayerEvidence, DataLayerWorlds } from "./adapters/practice.js";
-import { investigate } from "./agent.js";
+import { DEFAULT_CRITIC, INVESTIGATOR_MODEL, investigate } from "./agent.js";
 import { StubEvidence, StubWorlds } from "./fakes/stubWorld.js";
 import { NightshiftClient, nightshiftHealth } from "./llm/nightshift.js";
 import { ReceiptLog } from "./llm/receipts.js";
@@ -34,11 +34,12 @@ const { values, positionals } = parseArgs({
     data: { type: "string" },
     repo: { type: "string", default: ".." },
     quiet: { type: "boolean", default: false },
+    "no-critic": { type: "boolean", default: false },
   },
 });
 
 const USAGE = `usage:
-  domino investigate --change <world-id> [--mode full|no_tools|no_experiments|no_usl] [--data practice|data_layer] [--repo ..] [--out runs] [--memory <dir>] [--stub]
+  domino investigate --change <world-id> [--mode full|no_tools|no_experiments|no_usl] [--data practice|data_layer] [--repo ..] [--out runs] [--memory <dir>] [--no-critic] [--stub]
   domino replay <cassette.json> [--out runs/replay]
   domino demo [--out runs/replay]
   domino report <run_dir>`;
@@ -55,10 +56,13 @@ async function runLive(): Promise<void> {
   const outDir = values.out ?? "runs";
   const dataOpts = { repoDir: values.repo!, module: source };
 
-  const recorder = new Recorder(values.change, values.mode!, source);
+  const critic = values["no-critic"] ? undefined : DEFAULT_CRITIC;
+  const recorder = new Recorder(values.change, values.mode!, source, { investigator_model: INVESTIGATOR_MODEL, ...(critic ? { critic } : {}) });
   const client = new NightshiftClient({ receiptLog: new ReceiptLog(join(outDir, "receipts.jsonl")) });
   const summary = await investigate({
     healthCheck: () => nightshiftHealth(client),
+    investigatorModel: INVESTIGATOR_MODEL,
+    ...(critic ? { critic } : {}),
     changeId: values.change,
     mode: values.mode as RunMode,
     outDir,
@@ -85,6 +89,8 @@ async function replayOne(cassettePath: string, outDir: string): Promise<{ record
     evidence: player.evidence(),
     worlds: player.worlds(),
     replay: true,
+    ...(cassette.settings?.investigator_model ? { investigatorModel: cassette.settings.investigator_model } : {}),
+    ...(cassette.settings?.critic ? { critic: cassette.settings.critic } : {}),
   });
   await writeBundle(join(outDir, replayed.run_id), replayed.cause_claim);
   if (!values.quiet) console.log(renderTrace(await readTrace(join(outDir, replayed.run_id))));

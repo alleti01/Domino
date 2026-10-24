@@ -7,14 +7,19 @@ import { join } from "node:path";
 import type { RunMode, RunSummary, Verdict } from "../../contracts/agent/types.js";
 import type { EvidenceAdapter, WorldsAdapter } from "./adapters.js";
 import { parseChange } from "./change.js";
+import { type Review, reviewExplanation, revisionRequest } from "./critic.js";
 import { type ChainLink, InvestigationWorld } from "./engines/worldModel.js";
 import { confirmationsNeeded, judge } from "./judge.js";
 import { type ChatMessage, type ChatRequest, type ChatResult, NightshiftError } from "./llm/nightshift.js";
 import { isNemotron } from "./llm/receipts.js";
 import { NO_TOOLS_PROMPT, SYSTEM_PROMPT, taskMessage } from "./prompts.js";
 import { InvestigationState } from "./state.js";
-import { type Budgets, DEFAULT_BUDGETS, ToolGateway, toolSpecs } from "./tools.js";
+import { type Budgets, DEFAULT_BUDGETS, type FinishArgs, ToolGateway, toolSpecs } from "./tools.js";
 import { TraceWriter } from "./trace.js";
+
+export const INVESTIGATOR_MODEL = process.env.DOMINO_INVESTIGATOR_MODEL ?? "nvidia/nemotron-3.5-lightning-30b-a3b";
+export const REVIEWER_MODEL = process.env.DOMINO_REVIEWER_MODEL ?? "nvidia/nemotron-3-ultra-550b-a55b";
+export const DEFAULT_CRITIC = { model: REVIEWER_MODEL, maxRounds: 2, revisionSteps: 6 };
 
 export interface ChatModel {
   chat(req: ChatRequest): Promise<ChatResult>;
@@ -32,6 +37,10 @@ export interface InvestigateOptions {
   memoryDir?: string;
   /** Mark every trace event as replayed from a recording (sample mode). */
   replay?: boolean;
+  /** Independent second-model review of the explanation (full mode only). */
+  critic?: { model: string; maxRounds: number; revisionSteps: number };
+  /** Pin the investigator to a model id (else the client default, e.g. meterless/auto). */
+  investigatorModel?: string;
   /** Checked before any model call; a failing check makes the run an outage, not a wrong answer. */
   healthCheck?: () => Promise<{ ok: boolean; detail: string }>;
 }
@@ -77,6 +86,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
   let prediction: RunSummary["model_prediction"] = null;
   let causeClaim: string | null = null;
   let headline: string | null = null;
+  const reviewNotes: string[] = [];
 
   if (opts.healthCheck) {
     const health = await opts.healthCheck();
@@ -86,7 +96,8 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     }
   }
 
-  const callModel = async (req: ChatRequest, misrouteRetries = 1): Promise<ChatResult | null> => {
+  /** Every model call goes through here: budgets, receipts in the trace, outage accounting. */
+  const callModel = async (req: ChatRequest, misrouteRetries = 1, critical = true): Promise<ChatResult | null> => {
     if (outage && modelCalls === 0 && opts.healthCheck) return null; // never started: model service down
     if (modelCalls >= budgets.max_model_calls || Date.now() - started > budgets.max_ms) return null;
     modelCalls++;
@@ -110,10 +121,10 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
       modelFailures++;
       if (e.kind === "non_nemotron" && misrouteRetries > 0) {
         await trace.emit({ type: "error", stage: "model", message: `${e.message}; retrying once`, recoverable: true });
-        return callModel(req, misrouteRetries - 1);
+        return callModel(req, misrouteRetries - 1, critical);
       }
       if (e.kind === "non_nemotron") allNemotron = false;
-      if (OUTAGE_KINDS.has(e.kind)) outage = true;
+      if (critical && OUTAGE_KINDS.has(e.kind)) outage = true; // a reviewer failure is not an investigation outage
       await trace.emit({ type: "model_call", purpose: req.purpose ?? "investigate", routed_model: null, provider_model: null, request_id: null, latency_ms: 0, attempts: 0, outcome: "failed" });
       await trace.emit({ type: "error", stage: "model", message: e.message, recoverable: false });
       return null;
@@ -146,38 +157,39 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
             : ""),
       },
     ];
-    let nudges = 0;
-    for (let step = 1; step <= budgets.max_steps && !gateway.finished; step++) {
-      const result = await callModel({ purpose: `step_${step}`, messages, tools, toolChoice: "auto" });
-      if (!result) break;
-      const msg = result.message;
-      messages.push({ role: "assistant", content: msg.content ?? null, ...(msg.tool_calls?.length ? { tool_calls: msg.tool_calls } : {}) });
+    let step = 0;
+    // The investigator: Nemotron working through the tool gateway until it calls finish.
+    const investigate_ = async (maxSteps: number) => {
+      let nudges = 0;
+      for (let i = 1; i <= maxSteps && !gateway.finished; i++) {
+        step++;
+        const result = await callModel({ purpose: `step_${step}`, messages, tools, toolChoice: "auto", ...(opts.investigatorModel ? { model: opts.investigatorModel } : {}) });
+        if (!result) break;
+        const msg = result.message;
+        messages.push({ role: "assistant", content: msg.content ?? null, ...(msg.tool_calls?.length ? { tool_calls: msg.tool_calls } : {}) });
 
-      if (!msg.tool_calls?.length) {
-        if (++nudges > MAX_NUDGES) break;
-        messages.push({ role: "user", content: "Continue by calling a tool. Call finish when you are done." });
-        continue;
+        if (!msg.tool_calls?.length) {
+          if (++nudges > MAX_NUDGES) break;
+          messages.push({ role: "user", content: "Continue by calling a tool. Call finish when you are done." });
+          continue;
+        }
+        const stepsLeft = maxSteps - i;
+        for (const call of msg.tool_calls) {
+          const output = await gateway.call(call.function.name, call.function.arguments);
+          messages.push({ role: "tool", tool_call_id: call.id, name: call.function.name, content: `${output}\n[steps left: ${stepsLeft}]` });
+          if (gateway.finished) break;
+        }
+        if (!gateway.finished && stepsLeft === 2) {
+          messages.push({ role: "user", content: "Budget almost used. Run at most one more decisive experiment, then call finish." });
+        } else if (!gateway.finished && stepsLeft === 1) {
+          messages.push({ role: "user", content: "Last step: call finish now with your best explanation and limitations." });
+        }
       }
-      const stepsLeft = budgets.max_steps - step;
-      for (const call of msg.tool_calls) {
-        const output = await gateway.call(call.function.name, call.function.arguments);
-        messages.push({ role: "tool", tool_call_id: call.id, name: call.function.name, content: `${output}\n[steps left: ${stepsLeft}]` });
-        if (gateway.finished) break;
-      }
-      if (!gateway.finished && stepsLeft === 2) {
-        messages.push({ role: "user", content: "Budget almost used. Run at most one more decisive experiment, then call finish." });
-      } else if (!gateway.finished && stepsLeft === 1) {
-        messages.push({ role: "user", content: "Last step: call finish now with your best explanation and limitations." });
-      }
-    }
-    if (gateway.finished) {
-      prediction = gateway.finished.prediction;
-      causeClaim = gateway.finished.cause_claim || null;
-      headline = gateway.finished.headline;
-    }
+    };
 
     // Harness confirmation: a model-observed failure only counts after a repeat and a control run.
-    if (opts.mode !== "no_experiments") {
+    const confirm = async () => {
+      if (opts.mode === "no_experiments") return;
       for (const need of confirmationsNeeded(state.experiments)) {
         const { observe, workload, params } = need.template.request;
         await gateway.runExperiment(
@@ -186,6 +198,62 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
           `Harness confirmation: ${need.variant} run required before the judge can call a reproduced failure.`,
         );
       }
+    };
+
+    await investigate_(budgets.max_steps);
+    await confirm();
+
+    // Independent review: a second Nemotron model checks the explanation; problems go back to the investigator.
+    if (opts.critic && opts.mode === "full" && gateway.finished && !outage) {
+      for (let round = 1; round <= opts.critic.maxRounds; round++) {
+        const current = gateway.finished;
+        if (!current) break;
+        const interim = judge(state.experiments);
+        let review: Review;
+        try {
+          const reviewerChannel: ChatModel = {
+            chat: async (req) => {
+              const r = await callModel(req, 1, false);
+              if (!r) throw new Error("reviewer model call failed");
+              return r;
+            },
+          };
+          review = await reviewExplanation(reviewerChannel, opts.critic.model, {
+            changeTitle: change.title,
+            diff: change.diff,
+            verdict: interim.verdict,
+            judgeReasons: interim.reasons,
+            finish: current,
+            state,
+          });
+        } catch (err) {
+          await trace.emit({ type: "review", round, reviewer_model: null, approved: false, issues: [], outcome: "unavailable" });
+          await trace.emit({ type: "error", stage: "review", message: (err as Error).message, recoverable: true });
+          reviewNotes.push("Independent review was unavailable for this run.");
+          break;
+        }
+        const last = round === opts.critic.maxRounds;
+        const outcome = review.approved ? "approved" : last ? "flagged" : "sent_back";
+        await trace.emit({ type: "review", round, reviewer_model: review.reviewerModel, approved: review.approved, issues: review.issues, outcome });
+        if (review.approved) break;
+        if (last) {
+          reviewNotes.push(...review.issues.map((i) => `Reviewer (${review.reviewerModel ?? "second model"}) flagged: "${i.statement}": ${i.problem}`));
+          break;
+        }
+        const previous: FinishArgs = current;
+        gateway.finished = null;
+        messages.push({ role: "user", content: revisionRequest(review) });
+        await trace.emit({ type: "revision", what_changed: `Sent back by the independent reviewer: ${review.issues.map((i) => i.problem).join(" | ").slice(0, 400)}`, hypothesis_ids: [] });
+        await investigate_(opts.critic.revisionSteps);
+        if (!gateway.finished) gateway.finished = previous; // keep the last complete explanation
+        await confirm();
+      }
+    }
+
+    if (gateway.finished) {
+      prediction = gateway.finished.prediction;
+      causeClaim = gateway.finished.cause_claim || null;
+      headline = gateway.finished.headline;
     }
   }
 
@@ -213,7 +281,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     headline: headline ?? defaultHeadline(verdict, judgement.failingAssertions),
     causal_chain,
     tested: judgement.tested,
-    limitations: [...(gateway.finished?.limitations ?? []), ...judgement.reasons.filter((r) => verdict !== "reproduced_failure" || !r.startsWith("Baseline passed")), ...(outage ? ["Model service outage during the run: this result says nothing about the change."] : []), ...(cacheHits ? [`${cacheHits} model answer(s) came from Nightshift's cache.`] : [])],
+    limitations: [...reviewNotes, ...(gateway.finished?.limitations ?? []), ...judgement.reasons.filter((r) => verdict !== "reproduced_failure" || !r.startsWith("Baseline passed")), ...(outage ? ["Model service outage during the run: this result says nothing about the change."] : []), ...(cacheHits ? [`${cacheHits} model answer(s) came from Nightshift's cache.`] : [])],
     decided_by: "deterministic_judge",
     ...(gateway.finished?.mitigation && verdict === "reproduced_failure" ? { mitigation: gateway.finished.mitigation } : {}),
   });

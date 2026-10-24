@@ -99,6 +99,16 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
       reads: memory.filter((m) => m.action === "read").length,
       updates: memory.filter((m) => m.action === "update").length,
     },
+    review: (() => {
+      const reviews = ev.filter((e) => e.type === "review");
+      const last = reviews.at(-1);
+      return {
+        reviewer_model: reviews.find((r) => r.reviewer_model)?.reviewer_model ?? null,
+        rounds: reviews.length,
+        final: !last ? "not_run" : last.outcome === "approved" ? "approved" : last.outcome === "unavailable" ? "unavailable" : "flagged",
+        issues: reviews.flatMap((r) => r.issues.map((i: any) => ({ round: r.round, statement: i.statement, problem: i.problem }))),
+      } as EvidenceBundle["review"];
+    })(),
     queries: ev.filter((e) => e.type === "usl_query").length,
     duration_ms: finished?.duration_ms ?? 0,
   };
@@ -139,6 +149,17 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
     }
   }
 
+  if (b.review.final !== "not_run") {
+    const who = b.review.reviewer_model ?? "a second model";
+    if (b.review.final === "approved") {
+      const revised = b.review.rounds > 1 ? ` after ${b.review.rounds - 1} revision${b.review.rounds > 2 ? "s" : ""} (${b.review.issues.length} issue${b.review.issues.length === 1 ? "" : "s"} fixed)` : "";
+      out.push(`\n**Independent review:** ✓ explanation checked against the evidence by ${who}${revised}.`);
+    } else if (b.review.final === "flagged") {
+      out.push(`\n**Independent review:** ⚠ ${who} still disputes part of the explanation (see limits).`);
+    } else {
+      out.push(`\n**Independent review:** unavailable for this run.`);
+    }
+  }
   if (b.verdict.mitigation) out.push(`\n**Suggested mitigation** (from Nemotron, *not verified by Domino*): ${b.verdict.mitigation.text}`);
 
   out.push(`\n**What was tested:** ${b.verdict.tested.length} runs. ${b.verdict.verdict === "no_failure_observed" ? "This is not a claim of production safety." : ""}`);

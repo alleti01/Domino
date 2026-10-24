@@ -7,7 +7,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import type { RunMode, TraceEvent } from "../../contracts/agent/types.js";
-import { investigate } from "../src/agent.js";
+import { DEFAULT_CRITIC, INVESTIGATOR_MODEL, investigate } from "../src/agent.js";
 import { DataLayerEvidence, DataLayerWorlds } from "../src/adapters/practice.js";
 import { NightshiftClient, nightshiftHealth } from "../src/llm/nightshift.js";
 import { ReceiptLog } from "../src/llm/receipts.js";
@@ -28,6 +28,7 @@ const { values } = parseArgs({
     repo: { type: "string", default: ".." },
     out: { type: "string", default: "runs/eval" },
     explain: { type: "boolean", default: false },
+    "no-critic": { type: "boolean", default: false },
   },
 });
 
@@ -46,6 +47,8 @@ for (const world of worlds) {
     mode: values.mode as RunMode,
     outDir,
     healthCheck: () => nightshiftHealth(client),
+    investigatorModel: INVESTIGATOR_MODEL,
+    ...(values["no-critic"] ? {} : { critic: DEFAULT_CRITIC }),
     model: client,
     evidence: new DataLayerEvidence(dataOpts),
     worlds: new DataLayerWorlds(dataOpts),
@@ -80,11 +83,12 @@ for (const world of worlds) {
     outage: summary.outage,
     cache_hits: summary.cache_hits,
     model_failures: summary.model_failures,
+    review: (events as any[]).filter((e) => e.type === "review").map((e) => e.outcome).join(">") || "none",
     claim: summary.cause_claim ?? verdictEvent?.headline ?? "",
     truth: truth.explanation,
   };
   rows.push(row);
-  console.log(`${row.verdict} (${row.correct ? "✓" : "✗ expected " + row.expected}) · key evidence ${row.key_evidence} · ${row.calls} calls · ${row.secs}s`);
+  console.log(`${row.verdict} (${row.correct ? "✓" : "✗ expected " + row.expected}) · key evidence ${row.key_evidence} · review ${row.review} · ${row.calls} calls · ${row.secs}s`);
 }
 
 const correct = rows.filter((r) => r.correct && !r.outage).length;

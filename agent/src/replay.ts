@@ -27,6 +27,8 @@ export interface Cassette {
   change_id: string;
   mode: string;
   data_source: string;
+  /** Agent settings the run used; replay must use the same ones to follow the recording. */
+  settings?: { investigator_model?: string; critic?: { model: string; maxRounds: number; revisionSteps: number } };
   model: ChatResult[];
   calls: Array<{ method: string; key: string; result: unknown }>;
   summary?: RunSummary;
@@ -36,8 +38,8 @@ const keyOf = (args: unknown[]) => JSON.stringify(args);
 
 export class Recorder {
   readonly cassette: Cassette;
-  constructor(changeId: string, mode: string, dataSource: string) {
-    this.cassette = { version: CASSETTE_VERSION, recorded_at: new Date().toISOString(), change_id: changeId, mode, data_source: dataSource, model: [], calls: [] };
+  constructor(changeId: string, mode: string, dataSource: string, settings: Cassette["settings"] = {}) {
+    this.cassette = { version: CASSETTE_VERSION, recorded_at: new Date().toISOString(), change_id: changeId, mode, data_source: dataSource, settings, model: [], calls: [] };
   }
 
   model(inner: ChatModel): ChatModel {

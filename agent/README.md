@@ -2,6 +2,17 @@
 
 TypeScript. Investigates a proposed change: maps it through the semantic layer, forms falsifiable hypotheses, picks discriminating experiments, revises, and hands the verdict to a deterministic judge. Every model call goes to **NVIDIA Nemotron through Meterless Nightshift**, and every receipt is logged.
 
+## NVIDIA Nemotron: which model does what
+Both models are called **through Meterless Nightshift** (the app's only AI provider); each request names its model explicitly, and every Nightshift receipt (`meterless.compute_receipt.v1`, `winning_route.model`) is logged to `runs/receipts.jsonl` and to the trace as a `model_call` event.
+
+| Role | Model | What it does in Domino |
+|---|---|---|
+| **Investigator** | `nvidia/nemotron-3.5-lightning-30b-a3b` | Plans the investigation: follows the dependency path through the semantic layer, writes SQL, forms falsifiable hypotheses, chooses which experiment discriminates between them, revises, explains, proposes a mitigation. Uses tool calling through a typed gateway. |
+| **Independent reviewer** | `nvidia/nemotron-3-ultra-550b-a55b` | A different, larger Nemotron checks every factual statement, the mechanism and the mitigation against the evidence the run actually retrieved. Problems go back to the investigator for revision (up to 2 rounds); anything still disputed is printed in the report's limits. |
+| *(not a model)* **Judge** | deterministic code | Decides the verdict from experiments: baseline pass + repeated candidate fail + control pass. Neither model can set it. |
+
+Override with `DOMINO_INVESTIGATOR_MODEL` / `DOMINO_REVIEWER_MODEL`; disable the reviewer with `--no-critic`.
+
 ## For judges: run it with no keys
 ```bash
 cd agent && npm install && npm run demo

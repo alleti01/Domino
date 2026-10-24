@@ -23,8 +23,18 @@ export class InvestigationState {
   readonly seenRows = new Map<string, { source: string; query_id: string }>();
   private nextId = 1;
 
+  /** Human-readable facts behind every retrieved row (for the independent reviewer). */
+  readonly rowFacts = new Map<string, string>();
+
   recordQuery(result: QueryResult): void {
-    for (const row of result.rows) this.seenRows.set(row.row_id, { source: row.source, query_id: result.query_id });
+    for (const row of result.rows) {
+      this.seenRows.set(row.row_id, { source: row.source, query_id: result.query_id });
+      const v = row.values;
+      this.rowFacts.set(
+        row.row_id,
+        v.subject && v.key ? `${v.subject}.${v.key} = ${v.value}` : Object.entries(v).filter(([k]) => !["source_system", "source_row_id", "scenario_id"].includes(k)).map(([k, x]) => `${k}=${x}`).join(", "),
+      );
+    }
   }
 
   addHypothesis(h: Omit<Hypothesis, "hypothesis_id" | "status">): Hypothesis {

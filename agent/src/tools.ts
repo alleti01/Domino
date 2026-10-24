@@ -280,7 +280,12 @@ export class ToolGateway {
       case "get_dependency_path": {
         const path = await evidence.dependencyPath(changeId, args.entity);
         for (const n of path.nodes) state.seenRows.set(n.row_id, { source: n.source, query_id: "path" });
-        for (const e of path.edges) for (const id of e.row_ids?.length ? e.row_ids : [e.row_id]) state.seenRows.set(id, { source: e.source, query_id: "path" });
+        for (const e of path.edges) {
+          for (const id of e.row_ids?.length ? e.row_ids : [e.row_id]) {
+            state.seenRows.set(id, { source: e.source, query_id: "path" });
+            if (!state.rowFacts.has(id)) state.rowFacts.set(id, e.detail ?? `${e.from} ${e.relation} ${e.to}`);
+          }
+        }
         await trace.emit({ type: "dependency_path", path });
         await world.recordPath(path);
         await trace.emit({ type: "memory", engine: "world_model", action: "write", detail: `Recorded ${path.nodes.length} components and ${path.edges.length} provenance-carrying links around ${args.entity}`, ref: args.entity });

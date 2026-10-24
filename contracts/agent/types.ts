@@ -137,6 +137,14 @@ export type TraceEvent = TraceBase &
         decided_by: "deterministic_judge"; // the model never sets the verdict
         mitigation?: string; // suggested by the model, never verified by Domino
       }
+    | {
+        type: "review"; // independent second-model check of the explanation (never of the verdict)
+        round: number;
+        reviewer_model: string | null;
+        approved: boolean;
+        issues: Array<{ statement: string; problem: string; refs: string[] }>;
+        outcome: "approved" | "sent_back" | "flagged" | "unavailable";
+      }
     | { type: "error"; stage: string; message: string; recoverable: boolean }
     | { type: "run_finished"; duration_ms: number; model_calls: number; experiments: number }
   );
@@ -212,6 +220,12 @@ export interface EvidenceBundle {
     provider: "Meterless Nightshift";
   };
   world_model: { writes: number; reads: number; updates: number };
+  review: {
+    reviewer_model: string | null;
+    rounds: number;
+    final: "approved" | "flagged" | "unavailable" | "not_run";
+    issues: Array<{ round: number; statement: string; problem: string }>;
+  };
   queries: number;
   duration_ms: number;
 }
