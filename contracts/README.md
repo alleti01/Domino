@@ -1,4 +1,4 @@
-# Data-layer interface contract — v0.1 (DRAFT, needs Abhi's sign-off)
+# Data-layer interface contract — v0.2 (DRAFT, needs Abhi's sign-off)
 
 How Abhi's agent calls Anish's data layer. Three calls, one Python import:
 
@@ -16,7 +16,36 @@ python3 -m data_layer run <world_id> candidate
 
 Each call returns one JSON-serializable dict. **It never raises for an expected failure,
 such as a timeout, Zetaris being down or an unknown world.** Check `status` instead.
-Fake samples of every shape live in [`samples/`](samples/).
+**Every result of a call has the same fields whatever its status.** Failures leave them empty (`[]`, `{}`, `0`
+or `null`), so you never need to check whether a key exists.
+
+## Samples (fake mode)
+[`samples/`](samples/) holds **real outputs** of every call, captured from world `w-k7m2` and relabelled `fake-w0`.
+`DOMINO_DATA_MODE=fake` returns them, whatever you ask, so you can build the loop before Zetaris is involved.
+
+| Sample | Status | Use it to test |
+|---|---|---|
+| `lookup.json` | `ok` | parsing rows, `source_system` / `source_row_id`, `row_ids` |
+| `lookup_error.json` | `error` | a refused statement (only reads are allowed) |
+| `lookup_unavailable.json` | `unavailable` | Zetaris down. Retry later; this is **not** an agent mistake. |
+| `lookup_not_in_sample.json` | `not_in_sample` | sample mode has no recording of this exact query |
+| `dependency_path.json` | `ok` | walking paths, `edge_status`, evidence, the two-source rule |
+| `describe_world.json` | `ok` | reading the change (`change.diff`, `change.entity_id`) and the component list |
+| `run_experiment_baseline/candidate/control.json` | `ok` | `passed`, assertions, metrics, artifact hashes |
+| `run_experiment_timeout.json` | `timeout` | a world that didn't finish |
+
+`python3 contracts/make_samples.py` regenerates them. `--check` fails if a sample no longer matches the real
+output shape; the offline tests run that check.
+For real data without Zetaris, use `DOMINO_DATA_MODE=sample`. It replays recorded Zetaris results, and worlds always run for real.
+
+**Changes since v0.1:**
+- every call has a fixed field set
+- `dependency_path` hops add `from_type`, `to_type` and `detail`
+- paths add `source_systems` and `meets_two_source_rule`
+- `edges_considered` is new
+- `describe_world` change adds `entity_id`
+- failed queries keep their `query_id`
+- a `control` sample and four error samples were added
 
 ## Guarantees
 
@@ -39,7 +68,7 @@ Runs one SQL statement against the USL and returns the rows. Every USL table car
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "call": "lookup",
   "mode": "live",
   "status": "ok",
@@ -65,7 +94,7 @@ downstream chain **as joined by the Zetaris USL**. The join itself runs in Zetar
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "call": "dependency_path",
   "mode": "live",
   "status": "ok",
@@ -109,7 +138,7 @@ and what it can observe.
 
 ```json
 {
-  "contract_version": "0.1",
+  "contract_version": "0.2",
   "call": "run_experiment",
   "mode": "live",
   "status": "ok",

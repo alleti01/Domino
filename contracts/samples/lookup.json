@@ -1,43 +1,46 @@
 {
-  "contract_version": "0.1",
-  "call": "lookup",
-  "mode": "fake",
-  "status": "ok",
-  "_note": "FAKE SAMPLE for building against the contract. Not a real world; the scorecard rejects mode=fake.",
-  "query_id": "q-fake-0001",
-  "sql": "SELECT setting_id, component_id, key, value, source_system, source_row_id FROM fake_usl.setting WHERE component_id = 'fake-thermostat'",
+  "query_id": "q-141a532d1ebb4603",
+  "sql": "SELECT job_id, service_name, principal_id, query_id, output_mode, source_system, source_row_id FROM lightning.metastore.domino.systems.job WHERE system_id = 'fake-w0' ORDER BY job_id",
   "columns": [
-    "setting_id",
-    "component_id",
-    "key",
-    "value",
+    "job_id",
+    "service_name",
+    "principal_id",
+    "query_id",
+    "output_mode",
     "source_system",
     "source_row_id"
   ],
   "rows": [
     {
-      "setting_id": "st-1",
-      "component_id": "fake-thermostat",
-      "key": "setpoint_unit",
-      "value": "C",
-      "source_system": "fake_config_repo",
-      "source_row_id": "cfg-0007"
+      "job_id": "fake-w0/service/bundle-builder",
+      "service_name": "bundle-builder",
+      "principal_id": "fake-w0/principal/svc_bundle_reader",
+      "query_id": "fake-w0/query/q-bundle-fields",
+      "output_mode": "as_returned",
+      "source_system": "pipeline_repo",
+      "source_row_id": "jd-0005"
     },
     {
-      "setting_id": "st-2",
-      "component_id": "fake-thermostat",
-      "key": "setpoint",
-      "value": "21",
-      "source_system": "fake_config_repo",
-      "source_row_id": "cfg-0008"
+      "job_id": "fake-w0/service/metrics-exporter",
+      "service_name": "metrics-exporter",
+      "principal_id": "fake-w0/principal/svc_metrics",
+      "query_id": "fake-w0/query/q-request-log",
+      "output_mode": "as_returned",
+      "source_system": "pipeline_repo",
+      "source_row_id": "jd-0006"
     }
   ],
   "row_count": 2,
   "row_ids": [
-    "fake_config_repo:cfg-0007",
-    "fake_config_repo:cfg-0008"
+    "pipeline_repo:jd-0005",
+    "pipeline_repo:jd-0006"
   ],
   "truncated": false,
-  "duration_ms": 640,
-  "error": null
+  "duration_ms": 847,
+  "error": null,
+  "contract_version": "0.2",
+  "call": "lookup",
+  "mode": "fake",
+  "status": "ok",
+  "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
 }

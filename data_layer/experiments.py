@@ -27,6 +27,13 @@ VARIANTS = ("baseline", "candidate", "control")
 _WORLD_ID = re.compile(r"^[a-z0-9][a-z0-9-]{1,40}$")
 
 
+# Every result carries all of these fields whatever its status; failures leave them empty.
+RUN_FIELDS = {"passed": None, "assertions": [], "metrics": {}, "artifacts": [], "logs": [], "reproduce": None,
+              "duration_ms": None, "error": None}
+DESCRIBE_FIELDS = {"title": None, "components": [], "change": None, "variants": {}, "params": {}, "metrics": [],
+                   "error": None}
+
+
 def _envelope(call: str, mode: str) -> Dict[str, Any]:
     return {"contract_version": CONTRACT_VERSION, "call": call, "mode": mode}
 
@@ -61,10 +68,10 @@ def describe_world(world: str) -> Dict[str, Any]:
     path = _case_path(world)
     if path:
         body = json.loads(path.read_text(encoding="utf-8"))["describe"]
-        return {**_envelope("describe_world", "live"), "status": "ok", "world": world, **body, "error": None}
+        return {**_envelope("describe_world", "live"), "status": "ok", "world": world, **DESCRIBE_FIELDS, **body}
     if config.mode() == "fake":
         return _fake("describe_world.json")
-    return {**_envelope("describe_world", config.mode()), "status": "error", "world": world,
+    return {**_envelope("describe_world", config.mode()), "status": "error", "world": world, **DESCRIBE_FIELDS,
             "error": f"Unknown world {world!r}. Known: {list_worlds()}"}
 
 
@@ -72,14 +79,14 @@ def run_experiment(world: str, variant: str, params: Optional[Dict[str, Any]] = 
                    timeout_s: float = 60) -> Dict[str, Any]:
     params = params or {}
     base = {**_envelope("run_experiment", "live"), "experiment_id": "x-" + uuid.uuid4().hex[:16],
-            "world": world, "variant": variant, "params": params}
+            "world": world, "variant": variant, "params": params, **RUN_FIELDS}
     if variant not in VARIANTS:
-        return {**base, "status": "error", "passed": None, "error": f"variant must be one of {VARIANTS}"}
+        return {**base, "status": "error", "error": f"variant must be one of {VARIANTS}"}
     path = _case_path(world)
     if not path:
         if config.mode() == "fake":
-            return _fake(f"run_experiment_{'candidate' if variant == 'candidate' else 'baseline'}.json")
-        return {**base, "status": "error", "passed": None, "error": f"Unknown world {world!r}. Known: {list_worlds()}"}
+            return _fake(f"run_experiment_{variant}.json")
+        return {**base, "status": "error", "error": f"Unknown world {world!r}. Known: {list_worlds()}"}
 
     engine = json.loads(path.read_text(encoding="utf-8"))["engine"]
     command = [sys.executable, "-I", str(_engine_path(path, engine)),
@@ -88,16 +95,16 @@ def run_experiment(world: str, variant: str, params: Optional[Dict[str, Any]] = 
     try:
         proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout_s)
     except subprocess.TimeoutExpired:
-        return {**base, "status": "timeout", "passed": None, "duration_ms": int(timeout_s * 1000),
+        return {**base, "status": "timeout", "duration_ms": int(timeout_s * 1000),
                 "error": f"World did not finish within {timeout_s}s"}
     duration_ms = int((time.monotonic() - started) * 1000)
     try:
         body = json.loads(proc.stdout.strip().splitlines()[-1])
     except (IndexError, json.JSONDecodeError):
-        return {**base, "status": "error", "passed": None, "duration_ms": duration_ms,
+        return {**base, "status": "error", "duration_ms": duration_ms,
                 "error": "World printed no JSON result.", "logs": (proc.stderr or "").splitlines()[-20:]}
     if body.get("error"):
-        return {**base, "status": "error", "passed": None, "duration_ms": duration_ms, "error": body["error"]}
+        return {**base, "status": "error", "duration_ms": duration_ms, "error": body["error"]}
     reproduce = {"command": f"python3 -m data_layer run {world} {variant}"
                             + (f" --params '{json.dumps(params, sort_keys=True)}'" if params else ""),
                  "input_sha256": body.pop("input_sha256", None)}

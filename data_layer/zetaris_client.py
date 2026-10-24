@@ -217,6 +217,9 @@ class ZetarisClient:
             return result
         except ZetarisError as error:
             entry.update(status=error.status, error=str(error))
+            # Failed queries keep their ID and timing too, so a failure can be cited like a result.
+            error.query_id = query_id
+            error.duration_ms = int((time.monotonic() - started) * 1000)
             raise
         finally:
             entry.update(attempts=attempts, duration_ms=int((time.monotonic() - started) * 1000))

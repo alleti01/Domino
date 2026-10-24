@@ -142,6 +142,17 @@ check("held-out snapshot saved privately", any((S / "private" / "zetaris" / "sna
       len(list((S / "snaps2").rglob("*.json"))) == 1)
 os.environ["DOMINO_DATA_MODE"] = "sample"
 check("sample mode reads private snapshots", lookups.lookup("x")["status"] == "ok")
+
+# Contract: fake samples match real output shapes, and every result of a call has the same fields
+import subprocess
+chk = subprocess.run([sys.executable, "-I", str(pathlib.Path(__file__).resolve().parents[1] / "contracts" / "make_samples.py"), "--check"],
+                     capture_output=True, text=True, timeout=120, env={**os.environ, "DOMINO_DATA_MODE": "fake"})
+check("fake samples match real output shapes", chk.returncode == 0)
+samples = [json.loads(p.read_text()) for p in (pathlib.Path(__file__).resolve().parents[1] / "contracts" / "samples").glob("*.json")]
+by_call = {}
+for smp in samples:
+    by_call.setdefault(smp["call"], []).append(set(smp) - {"_note"})
+check("same fields for every status of a call", all(len({frozenset(k) for k in v}) == 1 for v in by_call.values()))
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)
