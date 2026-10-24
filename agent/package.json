@@ -1,0 +1,21 @@
+{
+  "name": "@domino/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Domino investigation agent: Nemotron via Meterless Nightshift.",
+  "scripts": {
+    "smoke": "tsx scripts/smoke.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "investigate": "tsx src/cli.ts investigate",
+    "conformance:world-model": "WORLD_MODEL_IMPL=\"$PWD/vendor/meterless-world-model/src/index.ts\" tsx vendor/meterless-world-model/conformance/runner.ts",
+    "eval": "tsx scripts/practice-eval.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.0"
+  }
+}
