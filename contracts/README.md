@@ -171,6 +171,32 @@ contains **no hints** about what might break.
 
 ---
 
+## Time budget (measured 24 Oct 2026, Anish's laptop, live Zetaris)
+
+| Call | Median | Worst seen | Note |
+|---|---|---|---|
+| `describe_world` | ~0 s | ~0 s | local file read |
+| `lookup` | 0.9 s | 2.8 s | filtered single-table reads are ~0.2 s warm; scans and aggregates take 1–3 s |
+| `dependency_path` | 1.9 s | 2.3 s | one query; replaces the 6–8 lookups you'd need to rebuild the chain yourself |
+| `run_experiment` | 0.25 s | 0.26 s | runs locally; deterministic, so never run the same variant twice |
+| Nightshift model call | 20–90 s | — | reported by other teams on HackOS, not yet measured by us |
+
+The first query after Zetaris restarts can take 5–7 s.
+
+**Reference run (no model):** `describe_world` + 1 `dependency_path` + 2–3 `run_experiment` = **2.5 s per case**, with 5/5 correct.
+The data layer is cheap; **model calls are almost all of the time.**
+
+**Suggested budget per case** (target ≤ 5 min, hard stop at 8 min, then return `inconclusive`):
+- **model calls:** ≤ 4–6 (≈ 1.5–9 min at the reported latency)
+- **data calls:**
+  - `describe_world` once
+  - `dependency_path` 1–2 times, **before** any `lookup`
+  - ≤ 6 `lookup`s
+  - ≤ 4 `run_experiment`s (≈ 15 s in total)
+- **Don't save time by skipping `dependency_path`:** it's the cheapest way to get the cross-source chain.
+
+**What that means for the scorecard:** at about 5 min per case, 15 cases come to roughly 75 min for one pass of full Domino (mode D). Mode A has no model calls, and modes B and C have 1–2 each. Plan for at most 2 concurrent model calls (HackOS guidance) and repeats only where they matter (D and E).
+
 ## Open questions for Abhi
 1. Do you want `lookup` to take raw SQL, or a small set of named queries? Raw SQL gives the agent more freedom, and Zetaris enforces read-only.
 2. Should `dependency_path` also go **upstream** (who feeds this entity)?
