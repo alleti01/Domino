@@ -14,7 +14,8 @@ folder samples/demo_views/, which the agent never reads. Unreleased worlds are n
 Output (every world has the same fields):
   world, title, synthetic        the world and its change title; synthetic is always true
   change                         entity_id, title, description, files, diff (what the PR changes)
-  components[]                   name, role, plus per variant: metrics (short names) and log lines
+  components[]                   name, role, plus per variant: metrics (short names), log lines and status
+                                 ("failed": non-zero exit_code; "changed": numbers differ from baseline; "ok")
   variants[]                     variant, label, passed, failed_checks[], checks[] (name/passed/observed/expected),
                                  other_logs[] (log lines that name no component)
   changed_metrics[]              component, metric, baseline, candidate, control: only metrics that differ
@@ -87,6 +88,16 @@ def build(world: str) -> dict:
                 by_name[comp]["by_variant"][variant]["logs"].append(text)
             else:
                 other_logs.setdefault(variant, []).append(line)
+
+    # Each service's status per run, from its own numbers only: "failed" when it reports a non-zero
+    # exit_code, "changed" when any of its numbers differ from the baseline, otherwise "ok".
+    for c in components:
+        base = c["by_variant"]["baseline"]["metrics"]
+        for variant in VARIANTS:
+            m = c["by_variant"][variant]["metrics"]
+            exit_code = m.get("exit_code")
+            failed = isinstance(exit_code, (int, float)) and not isinstance(exit_code, bool) and exit_code != 0
+            c["by_variant"][variant]["status"] = "failed" if failed else "changed" if m != base else "ok"
 
     changed = []
     for metric in described["metrics"]:

@@ -19,11 +19,15 @@ that aren't released yet are left out of `--all`; World 3 appears after it is pu
 |---|---|---|
 | `world`, `title`, `synthetic` | world id, the change's title, always `true` | header + "synthetic" badge |
 | `change` | `entity_id`, `title`, `description`, `files`, `diff` (unified diff text) | the PR card |
-| `components[]` | `name`, `role`, and `by_variant.<variant>` = `metrics` (short names) + `logs` | one panel per service |
+| `components[]` | `name`, `role`, and `by_variant.<variant>` = `metrics` (short names) + `logs` + `status` | one panel per service |
 | `variants[]` | `variant`, `label`, `passed`, `failed_checks[]`, `checks[]`, `other_logs[]` | before / with change / reverted tabs |
 | `changed_metrics[]` | `component`, `metric`, `baseline`, `candidate`, `control` (only metrics that differ) | the "what moved" table |
 | `dependency` | `nodes[]` (`id`, `type`), `edges[]` (`from`, `to`, `relation`, `edge_status`, `detail`, `evidence[]`), `unresolved[]`; or `status: "not_available"` | the path graph from Zetaris |
 | `reproduce` | the command for each variant | "run it yourself" |
+
+`status` per service and run: `failed` when the service reports a non-zero `exit_code`, `changed` when any of
+its numbers differ from the baseline run, otherwise `ok`. It is computed from the numbers alone, the same way
+for every world.
 
 Variants: `baseline` = system without the change, `candidate` = with it, `control` = change applied then
 reverted. `edge_status` is `observed` (two sources agree), `inferred` or `unresolved`. `evidence[]` lists
