@@ -1,0 +1,24 @@
+{
+  "run_id": "run-20261024101547-e9f814",
+  "change_id": "w-r1z5/change/0291",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The rule-0291 specifies criteria only for f02 and f21, but the system handles this correctly: template-registry declares field_count=21 for T7, rule-validator.validate checks_against template:T7 with field_count=21, and content-interpreter.load_rules evaluates with inputs_supplied=21. Experiments show the new rule passes validation (0 rejections) and the interpreter runs without errors (exit_code 0) even with the partial criteria.",
+  "model_prediction": "safe",
+  "evidence_refs": [
+    "hash:6e366b9d2b6f25a2",
+    "hash:0caae67d3ed9c6e1",
+    "hash:c0fbf007bda94678",
+    "hash:e942ee0c15f6a30a",
+    "x-1078a5c291094f18",
+    "x-693a1295f342478c",
+    "x-ef97a280158b4fea"
+  ],
+  "model_calls": 19,
+  "experiments": 3,
+  "duration_ms": 115927,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0
+}

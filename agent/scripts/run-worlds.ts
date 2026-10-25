@@ -65,7 +65,7 @@ while (queue.length) {
   const client = new NightshiftClient({ receiptLog: new ReceiptLog(join(outDir, "receipts.jsonl")) });
   if (!(await waitForModel(new NightshiftClient()))) {
     console.log("model service unreachable for 5 min; skipping (outage)");
-    rows.push({ world, verdict: "inconclusive", outage: true, error: "model service unreachable before start" });
+    rows.push({ world, mode: values.mode, run_id: null, verdict: "inconclusive", outage: true, cache_hits: 0, model_failures: 0, error: "model service unreachable before start" });
     continue;
   }
   const recorder = new Recorder(world, values.mode!, values.module!, { investigator_model: INVESTIGATOR_MODEL, ...(critic ? { critic } : {}) });
@@ -86,6 +86,7 @@ while (queue.length) {
     const bundle = await writeBundle(runDir, summary.cause_claim);
     const row = {
       world,
+      mode: summary.mode,
       verdict: summary.verdict,
       prediction: summary.model_prediction,
       review: bundle.review.final,
@@ -94,6 +95,8 @@ while (queue.length) {
       secs: Math.round(summary.duration_ms / 1000),
       outage: summary.outage,
       nemotron: summary.all_calls_nemotron,
+      cache_hits: summary.cache_hits,
+      model_failures: summary.model_failures,
       headline: bundle.verdict.headline,
       cause: summary.cause_claim,
       run_id: summary.run_id,
@@ -107,7 +110,7 @@ while (queue.length) {
     rows.push(row);
     console.log(`${row.verdict.padEnd(20)} review ${String(row.review).padEnd(11)} ${row.experiments} exps · ${row.calls} calls · ${row.secs}s${row.outage ? " · OUTAGE" : ""}`);
   } catch (err) {
-    rows.push({ world, verdict: "error", error: (err as Error).message });
+    rows.push({ world, mode: values.mode, run_id: null, verdict: "error", cache_hits: 0, model_failures: 0, error: (err as Error).message });
     console.log(`ERROR ${(err as Error).message.slice(0, 160)}`);
   }
   writeFileSync(join(outDir, "results.json"), JSON.stringify(rows, null, 2));

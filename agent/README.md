@@ -17,7 +17,7 @@ Override with `DOMINO_INVESTIGATOR_MODEL` / `DOMINO_REVIEWER_MODEL`; disable the
 ```bash
 cd agent && npm install && npm run demo
 ```
-`demo/` holds recordings of real investigations (Nemotron via Nightshift on the practice data layer). `npm run demo` **re-runs the real agent code** against each recording: the tool gateway, Meterless World Model, harness confirmation and deterministic judge all execute again and must reach the recorded verdict. No Nightshift, no Zetaris, no Python, no keys. Every event in a replayed trace is marked `replay: true`, and the recorded Nemotron receipts are shown as recorded, never as live calls.
+`demo/` holds recordings of real investigations (Nemotron via Nightshift): two practice cases plus three live-Zetaris runs covering both world families (w-k7m2 and the near-miss w-h9c5 from World 1, w-g4k8 from World 2). `npm run demo` **re-runs the real agent code** against each recording: the tool gateway, Meterless World Model, harness confirmation and deterministic judge all execute again and must reach the recorded verdict. No Nightshift, no Zetaris, no Python, no keys. Every event in a replayed trace is marked `replay: true`, and the recorded Nemotron receipts are shown as recorded, never as live calls.
 
 ## Setup
 ```bash
@@ -64,3 +64,8 @@ Outputs go to `runs/<run_id>/`: `trace.jsonl` (for the dashboard), `summary.json
 - The agent never reads `practice/answers.json`; only `scripts/practice-eval.ts` does, after a run.
 - Dev set `p01 p03 p05 p06 p08` is used for tuning; `p02 p04 p07 p09 p10` are held out.
 - No secrets in the repo: the Nightshift token is read at runtime, and the NVIDIA key lives in Nightshift.
+- The agent only calls the data layer's CLI. It never reads `ground_truth/`, `~/domino-private`, `worlds/demo_view.py`, `runs/demo_views/` or `runs/site_data/` (they show outcomes directly).
+- `agent/runs/` is never committed (it can hold held-out world ids).
+
+## Batch runs for the scorecard
+`npx tsx scripts/run-worlds.ts --repo <anishalleti checkout> --mode <full|no_tools|no_experiments|no_usl> [--worlds a,b]` writes `runs/worlds/<mode>-<stamp>/results.json`. Each row has `world, mode, run_id, verdict, prediction, review, experiments, calls, secs, outage, nemotron, cache_hits, model_failures`. Anish grades with `run_scorecard.py --import <folder>`. The World 3 plan is in [docs/world3-run-plan.md](docs/world3-run-plan.md).
