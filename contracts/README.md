@@ -96,6 +96,8 @@ Values arrive as **strings** (Zetaris returns every value as a string). Numeric 
 
 `row_ids` are `source_system:source_row_id`. If your query selects `source_row_id` but not `source_system`, the system is worked out from the row-ID prefix (`jd-0005` → `pipeline_repo`), so citations never read `unknown`. Rows with no `source_row_id` (aggregates, `dependency_edge`) get a content hash.
 
+**Table-name hint.** Use full USL names (`lightning.metastore.domino.systems.<table>`; `list_tables` gives them all). If Zetaris rejects a short, misspelt or raw source table name, `error` ends with `Hint: use the full USL table name: access_grant -> lightning.metastore.domino.systems.access_grant`, so the model can fix it in one step. Same fields as before; the hint is built from the table list only and is the same for every world.
+
 ## 0. `list_tables()`
 
 The USL tables the agent may query, read from the USL definition (works in every mode, no Zetaris call):

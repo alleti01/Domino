@@ -242,6 +242,24 @@ imp = S / "imp" / "no_experiments-20261024-0900"; imp.mkdir(parents=True)
 letter, by_world = rs.imported(str(imp))
 check("imported folder: mode from folder name, outage and error kept apart", letter == "C" and by_world["w1"][0]["verdict"] == "no_failure_observed"
       and by_world["w2"][0]["status"] == "error" and by_world["w3"][0]["status"] == "unavailable")
+# Lookup hints: an unknown or raw table name gets the full USL name, the same for every world
+from data_layer.lookups import _table_hint
+not_found = "HTTP 400: [TABLE_OR_VIEW_NOT_FOUND] The table or view `access_grant` cannot be found."
+check("hint: short name -> full USL name", "access_grant -> lightning.metastore.domino.systems.access_grant" in _table_hint("SELECT * FROM access_grant", not_found))
+check("hint: wrong prefix -> full USL name", "-> lightning.metastore.domino.systems.principal" in _table_hint("SELECT * FROM db_catalog.systems.principal", "[REQUIRES_SINGLE_PART_NAMESPACE]"))
+check("hint: raw source table -> its USL table", "domino_src.access_grants -> lightning.metastore.domino.systems.access_grant"
+      in _table_hint("SELECT * FROM domino_src.access_grants", "User 'X' does not have privileges to execute 'SELECT'"))
+check("hint: correct full names are not flagged", "domino.systems.job ->" not in _table_hint(
+      "SELECT * FROM access_grant a JOIN lightning.metastore.domino.systems.job j ON 1=1", not_found))
+check("hint: other errors get no hint", _table_hint("SELECT * FROM access_grant", "timed out after 30 s") == "")
+
+# Scorecard repeats: only provably independent runs count
+runs = [{"status": "ok", "run_id": "a", "cache_hits": 0}, {"status": "ok", "run_id": "b", "cache_hits": 0},
+        {"status": "ok", "run_id": "c", "cache_hits": 3}, {"status": "ok", "run_id": "b", "cache_hits": 0},
+        {"status": "ok", "run_id": "d"}]
+n = rs.mark_independent(runs)
+check("repeats: fresh runs count; cached, reused or unknown repeats don't", n == 2 and [r["counted"] for r in runs] == [True, True, False, False, False])
+
 srv.shutdown()
 failed = [n for n, ok in checks if not ok]
 print(f"\n{len(checks) - len(failed)}/{len(checks)} checks passed"); sys.exit(1 if failed else 0)

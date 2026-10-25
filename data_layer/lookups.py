@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import difflib
 import hashlib
 import json
 import re
@@ -98,6 +99,35 @@ def _number_problem(name: str, value: Any, low: float, high: float, integer: boo
     return None
 
 
+_TABLE_REF = re.compile(r"\b(?:FROM|JOIN)\s+([`\"\w.]+)", re.IGNORECASE)
+# Unknown names, and raw source tables the read-only agent user may not read (it reads the USL only).
+_NAME_ERRORS = ("TABLE_OR_VIEW_NOT_FOUND", "REQUIRES_SINGLE_PART_NAMESPACE", "SCHEMA_NOT_FOUND",
+                "does not have privileges")
+
+
+def _table_hint(sql: str, error: str) -> str:
+    """When Zetaris can't find a table, the full USL name each short or raw name most likely means.
+    Built only from the USL table list, so it is the same for every world and reveals no data."""
+    if not any(code in error for code in _NAME_ERRORS):
+        return ""
+    usl_tables = list(sources.USL_TABLES)
+    from_raw = {raw: name for name, (raw, _desc) in sources.USL_TABLES.items() if raw}
+    hints = []
+    for ref in _TABLE_REF.findall(sql):
+        name = ref.replace("`", "").replace('"', "")
+        last = name.split(".")[-1].lower()
+        if name.lower() == f"{sources.USL}.{last}".lower() and last in usl_tables:
+            continue  # already a correct full name; not the one Zetaris rejected
+        target = (last if last in usl_tables else from_raw.get(last)
+                  or next(iter(difflib.get_close_matches(last, usl_tables, n=1, cutoff=0.6)), None))
+        if target and f"{name} -> {sources.USL}.{target}" not in hints:
+            hints.append(f"{name} -> {sources.USL}.{target}")
+    listing = "list_tables (CLI: python3 -m data_layer tables) lists every USL table and its columns."
+    if hints:
+        return " Hint: use the full USL table name: " + "; ".join(hints) + ". " + listing
+    return f" Hint: query USL tables by full name, e.g. {sources.USL}.access_grant. " + listing
+
+
 def lookup(sql: str, limit: Optional[int] = None, timeout_s: float = 30) -> Dict[str, Any]:
     """Run one read-only SQL statement against the USL; rows keep their source_system / source_row_id."""
     mode = config.mode()
@@ -120,7 +150,7 @@ def lookup(sql: str, limit: Optional[int] = None, timeout_s: float = 30) -> Dict
         res = _client().run(sql, limit=limit, timeout_s=timeout_s, purpose="lookup")
     except ZetarisError as error:
         return _result("lookup", mode, error.status, sql=sql, query_id=getattr(error, "query_id", None),
-                       duration_ms=getattr(error, "duration_ms", None), error=str(error))
+                       duration_ms=getattr(error, "duration_ms", None), error=str(error) + _table_hint(sql, str(error)))
     result = _result("lookup", mode, "ok", query_id=res.query_id, sql=res.sql, columns=res.columns, rows=res.rows,
                      row_count=len(res.rows), row_ids=query_log.row_ids(res.rows), truncated=res.truncated,
                      duration_ms=res.duration_ms)
