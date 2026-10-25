@@ -1,0 +1,16 @@
+{
+  "contract_version": "0.3",
+  "call": "lookup",
+  "mode": "fake",
+  "status": "not_in_sample",
+  "query_id": null,
+  "sql": "SELECT 1 AS not_recorded",
+  "columns": [],
+  "rows": [],
+  "row_count": 0,
+  "row_ids": [],
+  "truncated": false,
+  "duration_ms": null,
+  "error": "No saved snapshot for this lookup request; sample mode only replays recorded queries.",
+  "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
+}
