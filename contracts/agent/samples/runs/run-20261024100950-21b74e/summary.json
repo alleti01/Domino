@@ -1,0 +1,19 @@
+{
+  "run_id": "run-20261024100950-21b74e",
+  "change_id": "w-h9c5/change/0042",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The change adds GRANT SELECT ON r0.* to svc_bundle_reader, which causes the bundle-builder to read both default.bundle_fields (99 rows) and r0.bundle_fields (99 rows), doubling the bundle from 99 to 198 entries (3118→6187 bytes). However, worker-runtime exits with code 0 in both baseline and candidate, showing the increased bundle size does not violate any runtime limits.",
+  "model_prediction": "safe",
+  "evidence_refs": [
+    "x-311801189aae44f9",
+    "x-ede6ef4efe6e4749"
+  ],
+  "model_calls": 20,
+  "experiments": 2,
+  "duration_ms": 151181,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0
+}

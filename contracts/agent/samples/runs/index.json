@@ -1,0 +1,30 @@
+[
+  {
+    "run_id": "run-20261024101222-3bf45b",
+    "world": "w-k7m2",
+    "verdict": "reproduced_failure",
+    "review": "approved",
+    "headline": "Explicit shard grants for svc_bundle_reader breaks worker-runtime - restrict grant to bundle_fields only"
+  },
+  {
+    "run_id": "run-20261024100950-21b74e",
+    "world": "w-h9c5",
+    "verdict": "no_failure_observed",
+    "review": "approved",
+    "headline": "Explicit shard grants for svc_bundle_reader are safe: bundle size doubles but worker-runtime handles it"
+  },
+  {
+    "run_id": "run-20261024100451-072a8c",
+    "world": "w-g4k8",
+    "verdict": "reproduced_failure",
+    "review": "flagged",
+    "headline": "rule-0291 for template T4 causes content-interpreter to exit with code 3 - rule defines only f01/f13 criteria but interpreter needs all input slots supplied"
+  },
+  {
+    "run_id": "run-20261024101547-e9f814",
+    "world": "w-r1z5",
+    "verdict": "no_failure_observed",
+    "review": "approved",
+    "headline": "Rule 0291 for template T7: safe to deploy - partial criteria compatible with 21-field template"
+  }
+]
