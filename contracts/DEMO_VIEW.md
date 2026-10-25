@@ -6,12 +6,12 @@ works for all of them. Made by Anish's `worlds/demo_view.py`; Python 3.9, no ins
 ```bash
 DOMINO_DATA_MODE=sample python3 worlds/demo_view.py --all              # -> runs/demo_views/<world>.json
 DOMINO_DATA_MODE=sample python3 worlds/demo_view.py w-k7m2             # print one world
-python3 worlds/demo_view.py --all --out ../dashboard-data              # write outside the repo instead
+python3 worlds/demo_view.py --all --out samples/demo_views             # the dashboard's bundled data
 ```
 
 **Not for the agent.** A view runs all three versions of the system, so it shows each world's outcome.
-Keep the files out of tracked repo folders (the script refuses to write there, except `runs/`, which is
-git-ignored) and never give them to the agent. Bundle them into the dashboard's own build output. Worlds
+The script writes only to `runs/demo_views/` (git-ignored) or the dashboard's `samples/demo_views/`, which
+the dashboard bundles and the agent never reads. Worlds
 that aren't released yet are left out of `--all`; World 3 appears after it is published at the freeze.
 
 ## Fields

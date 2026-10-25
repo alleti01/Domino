@@ -3,10 +3,12 @@
 It runs all three variants (baseline, candidate, control) and lays the results out by component, so a
 screen can show the system before the change, with it, and with it reverted. Because that shows each
 world's outcome directly, it must never be exposed to the agent: it is not in the data_layer package,
-and by default it writes to runs/demo_views/ (git-ignored), never into tracked files.
+and it writes only to runs/demo_views/ (git-ignored, the default) or to the dashboard's bundled data
+folder samples/demo_views/, which the agent never reads. Unreleased worlds are never written.
 
     python3 worlds/demo_view.py w-k7m2                 print one world
     python3 worlds/demo_view.py --all                  write every released world to runs/demo_views/<world>.json
+    python3 worlds/demo_view.py --all --out samples/demo_views   the dashboard's bundled data
     python3 worlds/demo_view.py --all --out DIR        write them somewhere else (outside this repo)
 
 Output (every world has the same fields):
@@ -119,10 +121,10 @@ def main() -> int:
         return 0
 
     out = Path(args.out).expanduser().resolve()
-    tracked_area = ROOT in out.parents or out == ROOT
-    if tracked_area and DEFAULT_OUT.resolve() not in (out, *out.parents):
-        raise SystemExit(f"Refusing to write inside the repo outside runs/: {out}. These files show each world's "
-                         "outcome, so they stay out of tracked files.")
+    allowed = (DEFAULT_OUT.resolve(), (ROOT / "samples" / "demo_views").resolve())
+    if (ROOT in out.parents or out == ROOT) and not any(a in (out, *out.parents) for a in allowed):
+        raise SystemExit(f"Refusing to write inside the repo outside runs/ or samples/demo_views/: {out}. These files "
+                         "show each world's outcome, so they go only where the agent never reads.")
     held_out = set(config.private_world_ids())
     worlds = [w for w in list_worlds() if w not in held_out]  # unreleased worlds are never written out
     out.mkdir(parents=True, exist_ok=True)
