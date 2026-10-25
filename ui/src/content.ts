@@ -75,21 +75,4 @@ export const VERDICT_MEANING: [Verdict, string][] = [
   ['inconclusive', 'The evidence or test environment wasn’t enough to decide either way.'],
 ]
 
-/** Real incidents whose mechanisms the cases recreate. Sources are the companies' own postmortems. */
-export const INCIDENTS = [
-  {
-    name: 'Cloudflare, November 2025',
-    mechanism:
-      'A database permissions change made a metadata query return duplicate rows. A generated file doubled in size and crossed a limit in the service that loads it.',
-    source: 'https://blog.cloudflare.com/18-november-2025-outage/',
-  },
-  {
-    name: 'CrowdStrike, July 2024',
-    mechanism:
-      'A content update supplied 21 input fields to a component that expected 20, causing an out-of-bounds read and widespread Windows crashes.',
-    source:
-      'https://www.crowdstrike.com/wp-content/uploads/2024/08/Executive-Summary_Root-Cause-Analysis_Channel-File-291.pdf',
-  },
-]
-
 export const RUN_LOCALLY = [`git clone ${REPO_URL}.git`, 'cd Domino/ui', 'npm install', 'npm run dev']

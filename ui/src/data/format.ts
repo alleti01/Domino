@@ -164,12 +164,21 @@ export interface VerdictEvent extends TraceBase {
   type: 'verdict'
   verdict: VerdictValue
   headline: string
-  causal_chain: { edge: string; status: 'observed' | 'inferred'; refs: string[] }[]
+  causal_chain: { edge: string; status: 'observed' | 'inferred'; refs: string[]; detail?: string }[]
   tested: string[]
   limitations: string[]
   decided_by: string
   /** Suggested by the model, never verified by Domino. */
   mitigation?: string
+}
+/** A second model checks the explanation against the evidence. Never the verdict. */
+export interface ReviewEvent extends TraceBase {
+  type: 'review'
+  round: number
+  reviewer_model: string | null
+  approved: boolean
+  issues: { statement: string; problem: string; refs: string[] }[]
+  outcome: 'approved' | 'sent_back' | 'flagged' | 'unavailable'
 }
 export interface ErrorEvent extends TraceBase {
   type: 'error'
@@ -196,6 +205,7 @@ export type TraceEvent =
   | MemoryEvent
   | ModelCallEvent
   | VerdictEvent
+  | ReviewEvent
   | ErrorEvent
   | RunFinishedEvent
 

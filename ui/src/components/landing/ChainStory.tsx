@@ -1,16 +1,28 @@
-import type { CSSProperties } from 'react'
+import { Fragment, type CSSProperties } from 'react'
 import type { Showcase } from '../../lib/showcase'
 import { chainTiles } from '../../lib/showcase'
 import { VERDICT } from '../../lib/labels'
 import { href } from '../../lib/router'
 import { useInView } from '../../hooks/useInView'
-import { Icon } from '../Icon'
-import { HoloSwirl } from './Shapes'
 import { TourSection } from './Tour'
 
-/** The core idea as a row of dominoes: each tile is a component, each from a different system. */
+/** Identifiers wrap after _ . - / rather than mid-word. */
+function breakable(text: string) {
+  return text.split(/(?<=[_./-])/).map((part, i) => (
+    <Fragment key={i}>
+      {i > 0 && <wbr />}
+      {part}
+    </Fragment>
+  ))
+}
+
+/**
+ * The core idea: one change, a chain of components spread across separate
+ * systems. Each column is a component from the real run; the domino above it
+ * falls in turn when the chain scrolls into view.
+ */
 export function ChainStory({ show, placeholder }: { show: Showcase | null; placeholder: boolean }) {
-  const [ref, inView] = useInView<HTMLOListElement>()
+  const [ref, inView] = useInView<HTMLOListElement>(0.3)
   const tiles = show ? chainTiles(show.inv) : []
   const sources = new Set(tiles.flatMap((t) => t.sources))
   const verdict = show?.inv.verdict ? VERDICT[show.inv.verdict.verdict] : null
@@ -18,10 +30,10 @@ export function ChainStory({ show, placeholder }: { show: Showcase | null; place
   return (
     <TourSection
       id="idea"
-      className="tour-center"
-      decoration={<HoloSwirl />}
+      number="01"
       kicker="The idea"
-      title="A change can be fine on its own and still break something two systems away."
+      title="A change can be fine on its own"
+      titleTail="and still break something two systems away."
       lede={
         <>
           No single system holds this chain. Domino joins {sources.size > 0 ? sources.size : 'several'} independent
@@ -34,41 +46,45 @@ export function ChainStory({ show, placeholder }: { show: Showcase | null; place
       {tiles.length === 0 ? (
         <p className="tour-empty">The chain appears here once a run has traced one.</p>
       ) : (
-        <ol ref={ref} className={`domino-row${inView ? ' in-view' : ''}`} aria-label={`Causal chain in the ${show!.caseEntry.label} case`}>
-          {tiles.map((t, i) => (
-            <li key={t.id} className="domino-step" style={{ '--i': i } as CSSProperties}>
-              {t.link && (
-                <span className={`domino-link ${t.link.status}`}>
-                  <span className="domino-link-line" aria-hidden="true" />
-                  <span className="domino-link-text">
-                    {t.link.relation.replace(/_/g, ' ')}
-                    <span className="domino-link-status">
-                      {t.link.status}
-                      {t.link.fromGraph && ', from the graph'}
-                    </span>
-                  </span>
-                </span>
-              )}
-              <span className="domino-tile">
-                <span className="domino-kind">{t.kind}</span>
-                <span className="domino-label">{t.label}</span>
-                <span className="domino-sources">{t.sources.join(' · ') || 'no source row'}</span>
-              </span>
-            </li>
-          ))}
-          {verdict && (
-            <li className="domino-step" style={{ '--i': tiles.length } as CSSProperties}>
-              <span className="domino-link observed">
-                <span className="domino-link-line" aria-hidden="true" />
-                <span className="domino-link-text">tested</span>
-              </span>
-              <span className={`domino-tile domino-verdict tone-${verdict.tone}`}>
-                <Icon name={verdict.icon} size={18} />
-                <span className="domino-label">{verdict.label}</span>
-              </span>
-            </li>
-          )}
-        </ol>
+        <>
+          <p className="chain-source">
+            From a live run: <a href={href.case(show!.caseEntry.id)}>{show!.caseEntry.label}</a>
+          </p>
+          <ol ref={ref} className={`chain-cols${inView ? ' in-view' : ''}`} aria-label={`Causal chain in the ${show!.caseEntry.label} case`}>
+            {tiles.map((t, i) => (
+              <li key={t.id} className="chain-col" style={{ '--i': i } as CSSProperties}>
+                <span className="domino" aria-hidden="true" />
+                <p className="chain-col-link">
+                  {t.link ? (
+                    <>
+                      <span className="chain-col-relation">{t.link.relation.replace(/_/g, ' ')}</span>
+                      <span className={`chain-col-status ${t.link.status}`}>
+                        {t.link.status}
+                        {t.link.fromGraph && ' · from the graph'}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="chain-col-relation">the change</span>
+                  )}
+                </p>
+                <p className="chain-col-kind">{t.kind}</p>
+                <p className="chain-col-label">{breakable(t.label)}</p>
+                <p className="chain-col-source">{t.sources.join(' · ') || 'no source row'}</p>
+              </li>
+            ))}
+            {verdict && (
+              <li className={`chain-col chain-col-verdict tone-${verdict.tone}`} style={{ '--i': tiles.length } as CSSProperties}>
+                <span className="domino" aria-hidden="true" />
+                <p className="chain-col-link">
+                  <span className="chain-col-relation">tested</span>
+                </p>
+                <p className="chain-col-kind">verdict</p>
+                <p className="chain-col-label">{verdict.label}</p>
+                <p className="chain-col-source">decided by the judge</p>
+              </li>
+            )}
+          </ol>
+        </>
       )}
     </TourSection>
   )

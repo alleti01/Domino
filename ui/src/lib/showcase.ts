@@ -22,6 +22,15 @@ export function flagship(cases: CaseEntry[]): Showcase | null {
   return all.find((s) => s.inv.verdict?.verdict === 'reproduced_failure') ?? all[0] ?? null
 }
 
+// How the data layer links a component to the limit it runs into.
+const LIMIT_RELATION = /bound|limit|configured_with/i
+const LIMIT_NAME = /max|limit|cap|threshold|quota/i
+type NodeIndex = Map<string, { kind: string; label: string }>
+const isLimitNode = (nodes: NodeIndex, id: string) => {
+  const n = nodes.get(id)
+  return !!n && (n.kind === 'limit' || (n.kind === 'setting' && LIMIT_NAME.test(n.label)))
+}
+
 export interface ChainTile {
   id: string
   kind: string
@@ -48,7 +57,7 @@ export function chainTiles(inv: Investigation): ChainTile[] {
   for (const e of edges) tiles.push(tile(e.to, { relation: e.relation, status: e.status, fromGraph: false }))
 
   const last = tiles[tiles.length - 1].id
-  const bound = inv.chain.edges.find((e) => e.from === last && /bound|limit/i.test(e.relation))
+  const bound = inv.chain.edges.find((e) => e.from === last && LIMIT_RELATION.test(e.relation) && isLimitNode(nodes, e.to))
   if (bound && !tiles.some((t) => t.id === bound.to)) {
     tiles.push(tile(bound.to, { relation: bound.relation, status: bound.status, fromGraph: true }))
   }
@@ -66,24 +75,37 @@ export interface ExperimentSummary {
   limit: { name: string; value: number | null; evidenceId: string | null } | null
 }
 
-const firstNumber = (text: string) => {
-  const m = text.match(/=\s*(-?\d+(?:\.\d+)?)\b/) ?? text.match(/(-?\d+(?:\.\d+)?)\s*$/)
+/** "max_entries=200" or "max_items = 50" → 200 / 50. */
+const statedNumber = (text: string | null | undefined) => {
+  const m = text?.match(/=\s*(-?\d+(?:\.\d+)?)\b/)
   return m ? Number(m[1]) : null
 }
 
-/** The limit the chain runs into, with its value only if a cited row states it. */
+/**
+ * The limit the chain runs into, with its value only if the data states it:
+ * on the link to the limit (e.g. detail "max_entries=200") or in a cited row's facts.
+ */
 function findLimit(inv: Investigation): ExperimentSummary['limit'] {
-  const node = inv.chain.nodes.find((n) => n.kind === 'limit' && inv.chain.edges.some((e) => e.to === n.id && /bound|limit/i.test(e.relation)))
-  if (!node) return null
-  for (const id of node.refs.flatMap((r) => r.ids)) {
+  const nodes: NodeIndex = new Map(inv.chain.nodes.map((n) => [n.id, n]))
+  const links = [
+    ...inv.chain.causal.flatMap((l) => (l.edge ? [{ to: l.edge.to, relation: l.edge.relation, detail: l.detail ?? l.edge.detail, refs: l.refs }] : [])),
+    ...inv.chain.edges.map((e) => ({ to: e.to, relation: e.relation, detail: e.detail, refs: e.refs })),
+  ].filter((l) => LIMIT_RELATION.test(l.relation) && isLimitNode(nodes, l.to))
+  if (links.length === 0) return null
+  const name = nodes.get(links[0].to)?.label ?? links[0].to
+  for (const l of links) {
+    const value = statedNumber(l.detail)
+    if (value != null) return { name, value, evidenceId: l.refs[0]?.ids[0] ?? null }
+  }
+  const node = inv.chain.nodes.find((n) => n.id === links[0].to)
+  for (const id of node?.refs.flatMap((r) => r.ids) ?? []) {
     const item: EvidenceItem | undefined = inv.evidence.get(id)
     for (const fact of item?.facts ?? []) {
-      if (!fact.toLowerCase().includes(node.label.toLowerCase())) continue
-      const value = firstNumber(fact)
-      if (value != null) return { name: node.label, value, evidenceId: id }
+      const value = fact.toLowerCase().includes(name.toLowerCase()) ? statedNumber(fact) : null
+      if (value != null) return { name, value, evidenceId: id }
     }
   }
-  return { name: node.label, value: null, evidenceId: node.refs[0]?.ids[0] ?? null }
+  return { name, value: null, evidenceId: node?.refs[0]?.ids[0] ?? null }
 }
 
 /** Baseline vs candidate vs control for the observation that changed most visibly. */

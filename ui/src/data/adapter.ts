@@ -98,6 +98,8 @@ function eventTitle(e: TraceEvent): string {
       return `${purposeLabel(e.purpose)}${e.outcome === 'failed' ? ' (failed)' : ''}`
     case 'verdict':
       return 'Verdict decided'
+    case 'review':
+      return `Review round ${e.round}: ${e.outcome.replace('_', ' ')}${e.issues.length ? `, ${e.issues.length} issue${e.issues.length > 1 ? 's' : ''}` : ''}`
     case 'error':
       return `Error in ${e.stage}: ${e.message}`
     case 'run_finished':
@@ -227,9 +229,17 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
     detail: e.detail ?? null,
     refs: refs(e.row_ids ?? [e.row_id]),
   }))
-  const edgeByText = new Map(edges.map((e) => [`${e.from} ${e.relation} ${e.to}`, e]))
+  // The verdict names components by label ("bundle-builder"), the graph by ID
+  // ("w-k7m2/service/bundle-builder"), so index edges both ways.
+  const labelOf = new Map((path?.nodes ?? []).map((n) => [n.id, n.label]))
+  const edgeByText = new Map<string, GraphEdge>()
+  for (const e of edges) {
+    edgeByText.set(`${e.from} ${e.relation} ${e.to}`, e)
+    edgeByText.set(`${labelOf.get(e.from) ?? e.from} ${e.relation} ${labelOf.get(e.to) ?? e.to}`, e)
+  }
   const causal: CausalLink[] = (verdict?.causal_chain ?? []).map((c) => ({
     text: c.edge,
+    detail: c.detail ?? null,
     status: c.status,
     refs: refs(c.refs),
     edge: edgeByText.get(c.edge) ?? null,
@@ -309,6 +319,19 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
     }
   })
 
+  // ----- Second-model review of the explanation -----
+  const reviews = of('review')
+  const review = reviews.length
+    ? {
+        reviewerModel: reviews.find((r) => r.reviewer_model)?.reviewer_model ?? null,
+        rounds: reviews.length,
+        outcome: reviews[reviews.length - 1].outcome,
+        issues: reviews.flatMap((r) =>
+          r.issues.map((i) => ({ round: r.round, statement: i.statement, problem: i.problem, refs: refs(i.refs), stepId: stepId(r) })),
+        ),
+      }
+    : null
+
   // ----- Status -----
   const errors = of('error').map((e) => ({ stepId: stepId(e), stage: e.stage, message: e.message, recoverable: e.recoverable }))
   let status: RunStatus = finished ? 'complete' : 'running'
@@ -320,6 +343,12 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
   const trace: TraceStep[] = events.map((e) => {
     if (e.type === 'model_call') model = e.routed_model
     const ts = Date.parse(e.ts)
+    const shownModel =
+      e.type === 'review'
+        ? e.reviewer_model
+        : e.type === 'model_call' || e.type === 'hypothesis' || e.type === 'experiment_requested' || e.type === 'revision'
+          ? model
+          : null
     return {
       id: stepId(e),
       seq: e.seq,
@@ -327,10 +356,7 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
       type: e.type,
       title: eventTitle(e),
       // Steps that act on a model's answer show which model gave it.
-      model:
-        e.type === 'model_call' || e.type === 'hypothesis' || e.type === 'experiment_requested' || e.type === 'revision'
-          ? model
-          : null,
+      model: shownModel,
     }
   })
 
@@ -388,6 +414,7 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
           wordingNote: wordingNote(verdict.headline, cause),
         }
       : null,
+    review,
     receipts,
     memory: of('memory').map((m) => ({ stepId: stepId(m), engine: m.engine, action: m.action, detail: m.detail, ref: m.ref ?? null })),
     errors,

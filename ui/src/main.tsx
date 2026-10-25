@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Fonts are bundled with the site so it looks the same offline.
-import '@fontsource-variable/doto'
-import '@fontsource-variable/inter'
+import '@fontsource-variable/instrument-sans'
+import '@fontsource/instrument-serif/400-italic.css'
 import '@fontsource-variable/jetbrains-mono'
 import './index.css'
 import './landing.css'

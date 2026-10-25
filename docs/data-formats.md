@@ -25,7 +25,7 @@ Before committing anything to `samples/`, run `npm --prefix ui run check:secrets
 The shapes are defined in `contracts/agent/types.ts` (`CONTRACT_VERSION` 0.1.0) on Abhi's branch; see also `contracts/agent/README.md`. The dashboard's copy of those types is `ui/src/data/format.ts`. In short:
 
 - **`trace.jsonl`:** one `TraceEvent` per line, ordered by `seq`. Every event carries `run_id`, `seq`, `ts`, `mode` and `replay`.
-- **Event types:** `run_started`, `change_parsed`, `usl_query`, `dependency_path`, `hypothesis`, `experiment_requested`, `experiment_result`, `revision`, `memory`, `model_call`, `verdict`, `error`, `run_finished`.
+- **Event types:** `run_started`, `change_parsed`, `usl_query`, `dependency_path`, `hypothesis`, `experiment_requested`, `experiment_result`, `revision`, `memory`, `model_call`, `verdict`, `review`, `error`, `run_finished`.
 
 How the dashboard reads them:
 
@@ -37,6 +37,8 @@ How the dashboard reads them:
 | `verdict.causal_chain` edges are text, e.g. `"builder produces items.list"` | Matched to `dependency_path` edges (`from relation to`) to draw the chain. The full graph is shown separately. |
 | `verdict.limitations` may hold `"- a\n- b"` | Split into one bullet per line. |
 | `replay: true` | The report and PR view say "Replayed from a recording". |
+| `review` events (a second model checks the explanation, never the verdict) | Shown under the verdict: approved, sent back or flagged, with every unsupported claim and the reviewer model. A flagged review is also noted on the verdict banner and PR view. |
+| `verdict.causal_chain[].detail` and labels vs graph IDs | Chain links show their detail (e.g. `max_entries=200`). Links are matched to the graph by ID or by label. A limit's value is shown only when a link or cited row states it. |
 | `mode` other than `full` | Shown as a comparison run (reduced mode), listed after full Domino runs and not counted in "match the expected verdict". |
 | `summary.outage: true` | Shown as an outage, excluded from scoring. |
 | `verdict.decided_by` isn't `deterministic_judge` | Shown as a warning. |

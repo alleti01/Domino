@@ -59,7 +59,9 @@ Checkpoint: the whole site renders end to end on placeholder data.
 Checkpoint: the UI renders real traces from Abhi's agent.
 
 - [x] Point the loader at real trace files and fix the conversion step where the real format differs.
-- [ ] Load Anish's real scorecard and Zetaris outputs. *(Waiting: his scorecard only prints a table so far and Zetaris has no structured output yet; formats are in docs/data-formats.md.)*
+- [x] Real runs: Abhi's four live runs (live Zetaris + Nemotron via Nightshift) are in `samples/runs/` with a neutral `samples/manifest.json`. Review events and causal-link details are supported.
+- [ ] Load Anish's real scorecard and Zetaris outputs. *(He has `scorecard/export_site.py`; it needs his private results, so he runs `python3 scorecard/export_site.py --out samples` and the files drop in.)*
+- [ ] Per-world "system screens" from Anish's `worlds/demo_view.py` (components and metrics by variant). Generated output must stay out of tracked folders until the freeze.
 - [x] **Honesty check:** every claim on screen comes from a trace field. No hard-coded results. Verdict wording comes only from the label file.
 - [x] Placeholder banners disappear automatically for real runs and stay for anything still a placeholder.
 - [x] Handle gaps in real data (a missing receipt, a failed run, an empty experiment) with the existing pending and empty states.

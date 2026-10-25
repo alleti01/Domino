@@ -1790,3 +1790,39 @@ a.button {
   display: flex;
   gap: 14px;
 }
+
+/* ---------- Second-model review ---------- */
+.review {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.review h3 {
+  font-size: 14px;
+}
+
+.review-issues {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-issues li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--warn-border);
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.chain-detail {
+  color: var(--text-2);
+  font-size: 12.5px;
+}

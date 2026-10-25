@@ -109,6 +109,7 @@ const REQUIRED: Record<TraceEventType, [string, Kind][]> = {
   memory: [['engine', 'string'], ['action', 'string'], ['detail', 'string']],
   model_call: [['purpose', 'string'], ['latency_ms', 'number'], ['outcome', 'string']],
   verdict: [['verdict', 'string'], ['headline', 'string'], ['causal_chain', 'array'], ['tested', 'array'], ['limitations', 'array'], ['decided_by', 'string']],
+  review: [['round', 'number'], ['approved', 'boolean'], ['issues', 'array'], ['outcome', 'string']],
   error: [['stage', 'string'], ['message', 'string']],
   run_finished: [['duration_ms', 'number']],
 }

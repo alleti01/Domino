@@ -1,7 +1,7 @@
-import type { RunError, RunStatus, VerdictReport } from '../../types'
-import { VERDICT } from '../../lib/labels'
+import type { ReviewSummary, RunError, RunStatus, VerdictReport } from '../../types'
+import { REVIEW_OUTCOME, VERDICT, shortModel } from '../../lib/labels'
 import { Icon } from '../Icon'
-import { EvidenceLink, Pending, Section } from '../common'
+import { Badge, EvidenceLink, Pending, Refs, Section } from '../common'
 
 const NO_VERDICT: Record<RunStatus, { tone: string; title: string; text: string }> = {
   running: { tone: 'muted', title: 'Investigation in progress', text: 'No verdict yet. Results appear as the agent finishes each step.' },
@@ -15,7 +15,17 @@ const NO_VERDICT: Record<RunStatus, { tone: string; title: string; text: string 
 }
 
 /** Verdict shown at the top of the investigation page. */
-export function VerdictBanner({ report, status, errors }: { report: VerdictReport | null; status: RunStatus; errors: RunError[] }) {
+export function VerdictBanner({
+  report,
+  status,
+  errors,
+  review,
+}: {
+  report: VerdictReport | null
+  status: RunStatus
+  errors: RunError[]
+  review: ReviewSummary | null
+}) {
   if (!report) {
     const s = NO_VERDICT[status]
     const fatal = errors.find((e) => !e.recoverable)
@@ -55,12 +65,59 @@ export function VerdictBanner({ report, status, errors }: { report: VerdictRepor
             <Icon name="info" size={14} /> {report.wordingNote}
           </p>
         )}
+        {review && review.outcome !== 'approved' && (
+          <p className="wording-note small">
+            <Icon name={REVIEW_OUTCOME[review.outcome].icon} size={14} /> {REVIEW_OUTCOME[review.outcome].label}:{' '}
+            {REVIEW_OUTCOME[review.outcome].text}
+          </p>
+        )}
       </div>
     </div>
   )
 }
 
-export function VerdictSection({ report }: { report: VerdictReport | null }) {
+/** The second model's check of the explanation: outcome, and every claim it couldn't find evidence for. */
+function ReviewBlock({ review }: { review: ReviewSummary }) {
+  const o = REVIEW_OUTCOME[review.outcome]
+  return (
+    <div className="review">
+      <h3>Second-model review of the explanation</h3>
+      <p>
+        <Badge tone={o.tone} icon={o.icon}>
+          {o.label}
+        </Badge>{' '}
+        <span className="small muted">
+          {review.rounds} {review.rounds === 1 ? 'round' : 'rounds'}
+          {review.reviewerModel && (
+            <>
+              {' '}
+              · reviewed by <code>{shortModel(review.reviewerModel)}</code>
+            </>
+          )}
+        </span>
+      </p>
+      <p className="small muted">{o.text}</p>
+      {review.issues.length > 0 && (
+        <ul className="review-issues">
+          {review.issues.map((i, n) => (
+            <li key={n}>
+              <p>
+                <span className="small muted">
+                  <EvidenceLink id={i.stepId}>Round {i.round}</EvidenceLink> · claim:
+                </span>{' '}
+                “{i.statement}”
+              </p>
+              <p className="small">{i.problem}</p>
+              <Refs refs={i.refs} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+export function VerdictSection({ report, review }: { report: VerdictReport | null; review: ReviewSummary | null }) {
   return (
     <Section id="verdict" title="Verdict and limits" icon="flag" lede="What was tested, what this result does not show, and who decided it.">
       {!report ? (
@@ -92,6 +149,7 @@ export function VerdictSection({ report }: { report: VerdictReport | null }) {
               <p className="small muted">Suggested by the model. Domino has not tested or verified it.</p>
             </div>
           )}
+          {review && <ReviewBlock review={review} />}
           <p className="small">
             Decided by{' '}
             {report.decidedBy === 'deterministic_judge' ? (

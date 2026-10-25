@@ -1,5 +1,5 @@
 import type { Investigation } from '../types'
-import { ARM_OUTCOME, ARM_ROLE, LINK_STATUS, VERDICT, isNemotron, shortModel } from '../lib/labels'
+import { ARM_OUTCOME, ARM_ROLE, LINK_STATUS, REVIEW_OUTCOME, VERDICT, isNemotron, shortModel } from '../lib/labels'
 import { href } from '../lib/router'
 import { plural } from '../lib/runs'
 import { Badge } from './common'
@@ -59,6 +59,17 @@ export function PrCheckView({ inv, runParam }: { inv: Investigation; runParam: s
                 <strong>{inv.change?.title}</strong>: {inv.verdict.headline}
               </p>
               {inv.verdict.wordingNote && <p className="wording-note small">{inv.verdict.wordingNote}</p>}
+              {inv.review && (
+                <p className="small">
+                  <Badge tone={REVIEW_OUTCOME[inv.review.outcome].tone} icon={REVIEW_OUTCOME[inv.review.outcome].icon}>
+                    {REVIEW_OUTCOME[inv.review.outcome].label}
+                  </Badge>{' '}
+                  <span className="muted">
+                    by a second model
+                    {inv.review.issues.length > 0 && `: ${inv.review.issues.length} unsupported claim${inv.review.issues.length > 1 ? 's' : ''} in the explanation`}
+                  </span>
+                </p>
+              )}
 
               {inv.chain.causal.length > 0 && (
                 <>

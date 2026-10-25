@@ -7,6 +7,7 @@ import { scrollToSection } from '../../lib/scroll'
 import { Badge } from '../common'
 import { Icon } from '../Icon'
 import { DiffBlock } from '../investigation/ChangeSection'
+import { ArrowLink } from './Motion'
 import { TourSection } from './Tour'
 
 /** What each step looks like in the flagship run. */
@@ -122,8 +123,10 @@ export function HowItWorks({ show, placeholder }: { show: Showcase | null; place
   return (
     <TourSection
       id="how"
+      number="03"
       kicker="How it works"
-      title="Five steps, one investigation."
+      title="Five steps,"
+      titleTail="one investigation."
       lede="Scroll through a real run. Each step names the technology behind it and links to that part of the report."
       placeholder={placeholder}
     >
@@ -171,9 +174,9 @@ export function HowItWorks({ show, placeholder }: { show: Showcase | null; place
                 <div className="how-body">
                   <StepBody step={s} show={show} />
                 </div>
-                <a className="tour-link" href={href.case(show.caseEntry.id, { section: s.section })}>
-                  See this step in the report <span aria-hidden="true">→</span>
-                </a>
+                <ArrowLink className="how-link" href={href.case(show.caseEntry.id, { section: s.section })}>
+                  See this step in the report
+                </ArrowLink>
               </article>
             ))}
           </div>

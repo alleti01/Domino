@@ -71,6 +71,8 @@ export interface GraphEdge {
 /** One link of the verdict's causal chain, matched to the graph when possible. */
 export interface CausalLink {
   text: string
+  /** What the data layer states about the link, e.g. "GRANT SELECT ON r0.*". */
+  detail: string | null
   status: 'observed' | 'inferred'
   refs: SourceRef[]
   edge: GraphEdge | null
@@ -154,6 +156,17 @@ export interface ModelReceipt {
   phaseModels: string[]
 }
 
+export type ReviewOutcome = 'approved' | 'sent_back' | 'flagged' | 'unavailable'
+
+/** The second model's check of the explanation, across rounds. */
+export interface ReviewSummary {
+  reviewerModel: string | null
+  rounds: number
+  /** Outcome of the last round. */
+  outcome: ReviewOutcome
+  issues: { round: number; statement: string; problem: string; refs: SourceRef[]; stepId: string }[]
+}
+
 export interface MemoryOp {
   stepId: string
   engine: string
@@ -196,6 +209,7 @@ export interface Investigation {
   hypotheses: Hypothesis[]
   experiments: ExperimentRun[]
   verdict: VerdictReport | null
+  review: ReviewSummary | null
   receipts: ModelReceipt[]
   memory: MemoryOp[]
   errors: RunError[]

@@ -62,6 +62,7 @@ export function DependencyChainSection({ chain, hasVerdict }: { chain: Dependenc
                     <span className="chain-edge-line" aria-hidden="true" />
                     <div className="chain-edge-body">
                       <span className="chain-relation">{link.edge ? link.edge.relation.replace(/_/g, ' ') : link.text}</span>
+                      {link.detail && <code className="chain-detail">{link.detail}</code>}
                       <Badge tone={status.tone}>{status.label}</Badge>
                       <Refs refs={link.refs} empty={<span className="small muted">No rows cited</span>} />
                     </div>

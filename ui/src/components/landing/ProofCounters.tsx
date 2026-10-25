@@ -1,9 +1,10 @@
 import type { SiteData } from '../../types'
 import { isNemotron } from '../../lib/labels'
 import { href } from '../../lib/router'
+import { Arrow, CountUp } from './Motion'
 import { TourSection } from './Tour'
 
-/** Numbers computed from the saved runs, each linking to the exact proof behind it. */
+/** Figures counted from the saved runs, each linking to the exact evidence behind it. */
 export function ProofCounters({ site }: { site: SiteData }) {
   const invs = site.cases.flatMap((c) => c.runs.flatMap((r) => (r.load.ok ? [r.load.investigation] : [])))
   const calls = invs.flatMap((i) => i.receipts)
@@ -14,53 +15,34 @@ export function ProofCounters({ site }: { site: SiteData }) {
   const memory = invs.reduce((n, i) => n + i.memory.length, 0)
 
   const items = [
-    {
-      value: `${nemotron}/${calls.length}`,
-      label: 'model calls answered by NVIDIA Nemotron',
-      tech: 'via Meterless Nightshift',
-      to: href.underTheHoodAt('nemotron'),
-      cta: 'Receipt log',
-    },
-    {
-      value: String(sources.size),
-      label: 'independent data sources joined',
-      tech: 'Zetaris semantic layer',
-      to: href.underTheHoodAt('zetaris'),
-      cta: 'Sources and data quality',
-    },
-    {
-      value: `${judged}/${verdicts}`,
-      label: 'verdicts decided by a rule-based judge, not the AI',
-      tech: 'Deterministic judge',
-      to: href.results,
-      cta: 'Results',
-    },
-    {
-      value: String(memory),
-      label: 'memory reads and writes across runs',
-      tech: 'Meterless World Model',
-      to: href.underTheHoodAt('meterless'),
-      cta: 'World Model activity',
-    },
+    { value: `${nemotron}/${calls.length}`, label: 'model calls answered by NVIDIA Nemotron', tech: 'Meterless Nightshift', to: href.underTheHoodAt('nemotron'), cta: 'Receipt log' },
+    { value: String(sources.size), label: 'independent data sources joined', tech: 'Zetaris semantic layer', to: href.underTheHoodAt('zetaris'), cta: 'Sources' },
+    { value: `${judged}/${verdicts}`, label: 'verdicts decided by a rule-based judge, not the AI', tech: 'Deterministic judge', to: href.results, cta: 'Results' },
+    { value: String(memory), label: 'memory reads and writes across runs', tech: 'Meterless World Model', to: href.underTheHoodAt('meterless'), cta: 'Activity' },
   ]
 
   return (
     <TourSection
       id="proof"
+      number="05"
       kicker="Proof"
-      title="Proof, not promises."
-      lede="Every number here is counted from the saved runs. Each one opens the evidence behind it."
+      title="Proof,"
+      titleTail="not promises."
+      lede="Every figure here is counted from the saved runs. Each one opens the evidence behind it."
       placeholder={site.isPlaceholder}
     >
-      <ul className="proof-grid">
+      <ul className="proof-row">
         {items.map((i) => (
           <li key={i.label}>
-            <a className="proof-card" href={i.to}>
-              <span className="proof-value">{i.value}</span>
+            <a className="proof-item" href={i.to}>
+              <span className="proof-value">
+                <CountUp value={i.value} />
+              </span>
               <span className="proof-label">{i.label}</span>
               <span className="proof-tech">{i.tech}</span>
               <span className="proof-cta">
-                {i.cta} <span aria-hidden="true">→</span>
+                {i.cta}
+                <Arrow />
               </span>
             </a>
           </li>

@@ -247,3 +247,49 @@ describe('landing tour helpers', () => {
     expect(exp.limit).toMatchObject({ name: 'max_items', value: null })
   })
 })
+
+describe('real live runs in samples/', () => {
+  it('load cleanly, with the reviewer outcome from each run', async () => {
+    const { samplesSource } = await import('./sources')
+    const { site } = await loadSite(samplesSource)
+    expect(site.isPlaceholder).toBe(false)
+    expect(site.cases.map((c) => c.id)).toEqual(['w-k7m2', 'w-h9c5', 'w-g4k8', 'w-r1z5'])
+    const invs = site.cases.map((c) => {
+      const r = c.runs[0]
+      if (!r.load.ok) throw new Error(r.load.error)
+      return r.load.investigation
+    })
+    for (const inv of invs) {
+      expect(inv.replay).toBe(false)
+      expect(inv.verdict?.decidedBy).toBe('deterministic_judge')
+      expect(inv.receipts.length).toBeGreaterThan(0)
+    }
+    const byCase = Object.fromEntries(invs.map((i) => [i.caseId, i]))
+    expect(byCase['w-g4k8'].review?.outcome).toBe('flagged')
+    expect(byCase['w-g4k8'].review?.issues.length).toBeGreaterThan(0)
+    expect(byCase['w-k7m2'].review?.outcome).toBe('approved')
+    // Print anything odd in the real data so it's visible in test output.
+    for (const inv of invs) if (inv.warnings.length) console.log(inv.caseId, inv.warnings)
+  })
+})
+
+describe('landing tour on the real flagship run', () => {
+  it('draws the chain from labels and reads the stated limit', async () => {
+    const { samplesSource } = await import('./sources')
+    const { chainTiles, experimentSummary, flagship } = await import('../lib/showcase')
+    const { site } = await loadSite(samplesSource)
+    const show = flagship(site.cases)!
+    expect(show.caseEntry.id).toBe('w-k7m2')
+    expect(chainTiles(show.inv).map((t) => t.label)).toEqual([
+      '0042',
+      'svc_bundle_reader',
+      'bundle-builder',
+      'bundle.json',
+      'worker-runtime',
+      'worker-runtime.max_entries',
+    ])
+    const exp = experimentSummary(show.inv)!
+    expect(exp).toMatchObject({ baseline: 140, candidate: 280, control: 140 })
+    expect(exp.limit).toEqual({ name: 'worker-runtime.max_entries', value: 200, evidenceId: 'runtime_config:rc-0007' })
+  })
+})

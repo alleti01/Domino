@@ -2,6 +2,7 @@ import { HACKATHON, REPO_URL } from '../../config'
 import { href } from '../../lib/router'
 import { scrollToSection } from '../../lib/scroll'
 import { useNavState } from '../../hooks/useNavState'
+import { Arrow, ArrowLink } from './Motion'
 
 // Everything except GitHub scrolls within the landing page.
 const NAV: { label: string; to: string; section?: string; external?: boolean }[] = [
@@ -12,10 +13,10 @@ const NAV: { label: string; to: string; section?: string; external?: boolean }[]
   { label: 'GitHub', to: REPO_URL, external: true },
 ]
 
-function Logo() {
+function Wordmark() {
   return (
-    <a className="brand site-brand" href={href.home} aria-label="Domino home page">
-      <span className="brand-mark" aria-hidden="true">
+    <a className="wordmark" href={href.home} aria-label="Domino home page">
+      <span className="wordmark-tiles" aria-hidden="true">
         <span />
         <span />
       </span>
@@ -32,20 +33,20 @@ export function AnnouncementBar() {
         <span className="announce-label">Hackathon 2026</span>
         <span>Domino is our entry for Track 1: Solving Fragmented Intelligence.</span>
       </p>
-      <a className="announce-button" href={`${REPO_URL}#readme`} target="_blank" rel="noreferrer">
-        Read the README<span className="visually-hidden"> (opens in a new tab)</span>
-      </a>
+      <ArrowLink className="announce-link" href={`${REPO_URL}#readme`} external>
+        Read the README
+      </ArrowLink>
     </div>
   )
 }
 
-/** Floating pill navigation for the landing and Try it yourself pages. */
+/** Transparent nav: hides on the way down, returns on the way up, inverts over dark sections. */
 export function SiteNav() {
-  const { hidden, theme } = useNavState()
+  const { hidden, scrolled, theme } = useNavState()
   return (
-    <header className={`site-nav-wrap${hidden ? ' is-hidden' : ''} nav-${theme}`}>
-      <nav className="site-nav" aria-label="Main">
-        <Logo />
+    <header className={`site-nav${hidden ? ' is-hidden' : ''}${scrolled ? ' is-scrolled' : ''} on-${theme}`}>
+      <nav className="site-nav-inner" aria-label="Main">
+        <Wordmark />
         <ul className="site-nav-links">
           {NAV.map((item) => (
             <li key={item.label}>
@@ -71,8 +72,9 @@ export function SiteNav() {
             </li>
           ))}
         </ul>
-        <a className="btn btn-light site-nav-cta" href={href.cases}>
+        <a className="btn btn-ink btn-sm site-nav-cta" href={href.cases}>
           Open the dashboard
+          <Arrow />
         </a>
       </nav>
     </header>
@@ -83,9 +85,11 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
-        <Logo />
-        <p className="small">{HACKATHON}</p>
-        <ul className="site-footer-links small">
+        <div className="site-footer-brand">
+          <Wordmark />
+          <p>{HACKATHON}</p>
+        </div>
+        <ul className="site-footer-links">
           <li>
             <a href={href.try}>Try it yourself</a>
           </li>
@@ -104,9 +108,9 @@ export function SiteFooter() {
             </a>
           </li>
         </ul>
-        <p className="small site-footer-note">
-          Incidents named on this site are public postmortems. Domino recreates their mechanisms in isolated simulations; it
-          does not claim it would have prevented them.
+        <p className="site-footer-note">
+          All cases are synthetic worlds that recreate failure mechanisms from public incidents in isolated simulations.
+          Domino does not claim it would have prevented those incidents.
         </p>
       </div>
     </footer>

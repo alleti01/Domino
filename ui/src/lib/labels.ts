@@ -32,6 +32,17 @@ export const RUN_STATUS: Record<RunStatus, { label: string; tone: Tone; icon: Ic
   outage: { label: 'Outage: excluded from scoring', tone: 'warn', icon: 'alert' },
 }
 
+// The reviewer checks the model's explanation against the evidence; it never touches the verdict.
+export const REVIEW_OUTCOME: Record<
+  'approved' | 'sent_back' | 'flagged' | 'unavailable',
+  { label: string; tone: Tone; icon: IconName; text: string }
+> = {
+  approved: { label: 'Explanation approved', tone: 'ok', icon: 'check-circle', text: 'Every claim in the explanation is backed by evidence in the run.' },
+  sent_back: { label: 'Sent back for revision', tone: 'warn', icon: 'help-circle', text: 'The reviewer asked for changes and the run ended before another round.' },
+  flagged: { label: 'Explanation flagged', tone: 'warn', icon: 'alert', text: 'Some claims in the explanation are not supported by the evidence. The verdict still stands: it comes from the experiments, not the explanation.' },
+  unavailable: { label: 'Review unavailable', tone: 'muted', icon: 'minus-circle', text: 'The reviewer model could not be reached.' },
+}
+
 export const LINK_STATUS: Record<LinkStatus, { label: string; tone: Tone }> = {
   observed: { label: 'Observed', tone: 'accent' },
   inferred: { label: 'Inferred', tone: 'warn' },
@@ -69,6 +80,7 @@ const TRACE_KINDS: Record<string, { label: string; icon: IconName }> = {
   experiment_result: { label: 'Result', icon: 'flask' },
   revision: { label: 'Revision', icon: 'list' },
   verdict: { label: 'Verdict', icon: 'flag' },
+  review: { label: 'Review', icon: 'help-circle' },
   error: { label: 'Error', icon: 'alert' },
   run_finished: { label: 'Finish', icon: 'flag' },
 }

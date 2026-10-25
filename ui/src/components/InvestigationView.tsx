@@ -167,7 +167,7 @@ function Report({ inv }: { inv: Investigation }) {
   const running = inv.status === 'running'
   return (
     <>
-      <VerdictBanner report={inv.verdict} status={inv.status} errors={inv.errors} />
+      <VerdictBanner report={inv.verdict} status={inv.status} errors={inv.errors} review={inv.review} />
       {inv.warnings.length > 0 && (
         <details className="warnings">
           <summary>
@@ -191,7 +191,7 @@ function Report({ inv }: { inv: Investigation }) {
       <DependencyChainSection chain={inv.chain} hasVerdict={inv.verdict != null} />
       <HypothesesSection hypotheses={inv.hypotheses} />
       <ExperimentsSection experiments={inv.experiments} running={running} />
-      <VerdictSection report={inv.verdict} />
+      <VerdictSection report={inv.verdict} review={inv.review} />
       <ReceiptsSection receipts={inv.receipts} />
       <TraceSection trace={inv.trace} running={running} />
     </>
