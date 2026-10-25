@@ -97,7 +97,10 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
   }
 
   /** Every model call goes through here: budgets, receipts in the trace, outage accounting. */
+  let lastFailure: string | null = null;
+  let recoverEmpty = false; // set by the investigator loop while it can still retry an empty reply
   const callModel = async (req: ChatRequest, misrouteRetries = 1, critical = true): Promise<ChatResult | null> => {
+    lastFailure = null;
     if (outage && modelCalls === 0 && opts.healthCheck) return null; // never started: model service down
     if (modelCalls >= budgets.max_model_calls || Date.now() - started > budgets.max_ms) return null;
     modelCalls++;
@@ -124,7 +127,9 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
         return callModel(req, misrouteRetries - 1, critical);
       }
       if (e.kind === "non_nemotron") allNemotron = false;
-      if (critical && OUTAGE_KINDS.has(e.kind)) outage = true; // a reviewer failure is not an investigation outage
+      lastFailure = e.kind;
+      // An empty completion is recoverable inside the loop; only a real outage ends the run.
+      if (critical && OUTAGE_KINDS.has(e.kind) && !(e.kind === "bad_response" && recoverEmpty)) outage = true; // a reviewer failure is not an investigation outage
       await trace.emit({ type: "model_call", purpose: req.purpose ?? "investigate", routed_model: null, provider_model: null, request_id: null, latency_ms: 0, attempts: 0, outcome: "failed" });
       await trace.emit({ type: "error", stage: "model", message: e.message, recoverable: false });
       return null;
@@ -161,10 +166,26 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     // The investigator: Nemotron working through the tool gateway until it calls finish.
     const investigate_ = async (maxSteps: number) => {
       let nudges = 0;
+      let emptyRecoveries = 0;
+      let forceTool = false;
       for (let i = 1; i <= maxSteps && !gateway.finished; i++) {
         step++;
-        const result = await callModel({ purpose: `step_${step}`, messages, tools, toolChoice: "auto", ...(opts.investigatorModel ? { model: opts.investigatorModel } : {}) });
-        if (!result) break;
+        recoverEmpty = emptyRecoveries < 2;
+        const result = await callModel({ purpose: `step_${step}`, messages, tools, toolChoice: forceTool ? "required" : "auto", ...(opts.investigatorModel ? { model: opts.investigatorModel } : {}) });
+        recoverEmpty = false;
+        forceTool = false;
+        if (!result) {
+          // Nemotron sometimes returns an empty completion mid-run; ask again with a tool call required.
+          if (lastFailure === "bad_response" && emptyRecoveries < 2 && !outage) {
+            emptyRecoveries++;
+            forceTool = true;
+            messages.push({ role: "user", content: "Your previous reply was empty. Continue the investigation by calling one of the tools." });
+            await trace.emit({ type: "error", stage: "model", message: `Empty completion; retrying the step with a tool call required (${emptyRecoveries}/2)`, recoverable: true });
+            continue;
+          }
+          if (lastFailure === "bad_response") outage = true;
+          break;
+        }
         const msg = result.message;
         messages.push({ role: "assistant", content: msg.content ?? null, ...(msg.tool_calls?.length ? { tool_calls: msg.tool_calls } : {}) });
 

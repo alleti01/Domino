@@ -116,4 +116,18 @@ describe("reliability", () => {
     const trace = await (await import("node:fs/promises")).readFile(join(out, summary.run_id, "trace.jsonl"), "utf8");
     expect(trace).toContain("predicted a failure, but the experiments showed none");
   });
+
+  it("recovers from an empty completion mid-run instead of calling it an outage", async () => {
+    let calls = 0;
+    const seenChoice: string[] = [];
+    const summary = await run({
+      chat: async (req) => {
+        seenChoice.push(String(req.toolChoice));
+        if (++calls === 2) throw new NightshiftError("Nightshift returned an empty completion", "bad_response");
+        return finish();
+      },
+    });
+    expect(summary.outage).toBe(false);
+    expect(seenChoice[2]).toBe("required"); // the step after the empty reply forces a tool call
+  });
 });
