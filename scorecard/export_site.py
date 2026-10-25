@@ -121,9 +121,9 @@ def _metric_strings(s: dict) -> dict:
             "cause_score": pct(s["cause_failing"])}
 
 
-def _combined(summary: dict) -> dict:
-    """Practice and held-out groups added together (cause score averaged over failing cases by count)."""
-    groups = list(summary.values())
+def _combined(summary: dict, groups_used: list = None) -> dict:
+    """The chosen groups added together (cause score averaged over failing cases by count)."""
+    groups = [g for name, g in summary.items() if groups_used is None or name in groups_used]
     out = {k: sum(g[k] for g in groups) for k in ("correct", "scored", "caught", "failing", "false_alarms", "safe",
                                                   "backed", "warnings")}
     weighted = [(g["cause_failing"], g["failing"]) for g in groups if g["cause_failing"] is not None and g["failing"]]
@@ -144,9 +144,12 @@ def scorecard_json(results: dict, include_answers: bool) -> dict:
     held_out = set(config.private_world_ids())
     modes = results.get("modes", {})
     domino = modes.get(DOMINO_MODE)
+    # Every mode is totalled over the same case groups: those where Domino has scored runs (until the
+    # official held-out run exists, that is the practice worlds only), so the rows compare like for like.
+    groups_used = [g for g, sm in domino["summary"].items() if sm["scored"]] if domino else None
     metrics = []
     if domino:
-        s = _combined(domino["summary"])
+        s = _combined(domino["summary"], groups_used)
         for key, label, parts, definition in METRIC_DEFS:
             a, b = parts(s)
             metrics.append({"key": key, "label": label, "value": (a / b) if b else None,
@@ -180,11 +183,12 @@ def scorecard_json(results: dict, include_answers: bool) -> dict:
             per_case = {r["world"]: r.get("verdict") for r in modes[letter]["rows"]
                         if r["world"] not in held_out and r.get("counted", True) and r["repeat"] == 0}
         baselines.append({"key": key, "label": label, "per_case": per_case,
-                          "metrics": _metric_strings(_combined(modes[letter]["summary"]))})
+                          "metrics": _metric_strings(_combined(modes[letter]["summary"], groups_used))})
     return {"schema_version": "0.1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S", time.strptime(results["generated_at"], "%Y%m%d-%H%M%S")),
             "runs_included": runs_included, "metrics": metrics, "cases": cases, "baselines": baselines,
-            "data_mode": results.get("data_mode"), "includes_per_case_answers": include_answers}
+            "data_mode": results.get("data_mode"), "case_groups": groups_used or "all",
+            "includes_per_case_answers": include_answers}
 
 
 def latest_results() -> Path:
