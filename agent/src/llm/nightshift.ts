@@ -82,6 +82,10 @@ export interface NightshiftOptions {
   maxConcurrency?: number;
   retries?: number;
   backoffMs?: number[];
+  /** Minimum gap between model calls (default 2500 ms, env DOMINO_MIN_CALL_INTERVAL_MS). */
+  minIntervalMs?: number;
+  /** Waits after a 429 (default 20 s, 45 s, 90 s). */
+  rateLimitBackoffMs?: number[];
   receiptLog?: ReceiptLog;
   fetchImpl?: typeof fetch;
 }
@@ -136,6 +140,15 @@ class Semaphore {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** One pace for every client in the process: NVIDIA's free tier rate-limits by calls per minute. */
+let lastCallAt = 0;
+async function pace(minIntervalMs: number): Promise<void> {
+  const wait = lastCallAt + minIntervalMs - Date.now();
+  lastCallAt = Math.max(Date.now(), lastCallAt + minIntervalMs);
+  if (wait > 0) await sleep(wait);
+}
+const RATE_LIMIT_BACKOFF_MS = [20_000, 45_000, 90_000];
+
 export class NightshiftClient {
   readonly baseUrl: string;
   readonly model: string;
@@ -144,6 +157,8 @@ export class NightshiftClient {
   private readonly timeoutMs: number;
   private readonly retries: number;
   private readonly backoffMs: number[];
+  private readonly minIntervalMs: number;
+  private readonly rateLimitBackoffMs: number[];
   private readonly gate: Semaphore;
   private readonly receiptLog: ReceiptLog | undefined;
   private readonly fetchImpl: typeof fetch;
@@ -156,6 +171,8 @@ export class NightshiftClient {
     this.timeoutMs = opts.timeoutMs ?? 180_000;
     this.retries = opts.retries ?? 3;
     this.backoffMs = opts.backoffMs ?? [2_000, 4_000, 8_000];
+    this.minIntervalMs = opts.minIntervalMs ?? Number(process.env.DOMINO_MIN_CALL_INTERVAL_MS ?? 2_500);
+    this.rateLimitBackoffMs = opts.rateLimitBackoffMs ?? RATE_LIMIT_BACKOFF_MS;
     this.gate = new Semaphore(opts.maxConcurrency ?? 2);
     this.receiptLog = opts.receiptLog;
     this.fetchImpl = opts.fetchImpl ?? fetch;
@@ -222,8 +239,12 @@ export class NightshiftClient {
 
     const started = Date.now();
     let lastError: NightshiftError | undefined;
+    let rateLimited = false;
+    let retryAfterMs = 0;
     for (let attempt = 1; attempt <= this.retries + 1; attempt++) {
+      rateLimited = false;
       try {
+        await pace(this.minIntervalMs);
         const res = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
           method: "POST",
           headers: this.headers(token, true),
@@ -236,6 +257,10 @@ export class NightshiftClient {
         if (!res.ok) {
           const text = await res.text().catch(() => "");
           const retryable = res.status === 429 || res.status >= 500;
+          // NVIDIA's 429 arrives directly or wrapped in Nightshift's 502 ("nvidia_429").
+          rateLimited = res.status === 429 || /\b429\b|Too Many Requests/i.test(text);
+          const header = Number(res.headers.get("retry-after"));
+          retryAfterMs = Number.isFinite(header) && header > 0 ? header * 1000 : 0;
           lastError = new NightshiftError(`Nightshift ${res.status}: ${text.slice(0, 300)}`, "upstream", res.status);
           if (!retryable) throw lastError;
         } else {
@@ -279,7 +304,12 @@ export class NightshiftClient {
           lastError = new NightshiftError(`Nightshift unreachable: ${(err as Error)?.message}`, "offline");
         }
       }
-      if (attempt <= this.retries) await sleep(this.backoffMs[attempt - 1] ?? this.backoffMs.at(-1) ?? 2_000);
+      if (attempt <= this.retries) {
+        const backoff = rateLimited
+          ? Math.max(retryAfterMs, this.rateLimitBackoffMs[attempt - 1] ?? this.rateLimitBackoffMs.at(-1) ?? 60_000)
+          : (this.backoffMs[attempt - 1] ?? this.backoffMs.at(-1) ?? 2_000);
+        await sleep(backoff);
+      }
     }
     throw lastError ?? new NightshiftError("Nightshift call failed", "offline");
   }

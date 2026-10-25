@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { NightshiftClient, NightshiftError, normalizeBaseUrl, parseConnectLink } from "../src/llm/nightshift.js";
+
+process.env.DOMINO_MIN_CALL_INTERVAL_MS = "0";
 import { isNemotron } from "../src/llm/receipts.js";
 
 type Handler = (req: { url: string; headers: Record<string, string | string[] | undefined>; body: any }) => {
@@ -188,5 +190,19 @@ describe("chat", () => {
     const client = new NightshiftClient({ baseUrl, token: "t", fetchImpl: slowFetch });
     await Promise.all(Array.from({ length: 6 }, () => client.chat({ messages: [{ role: "user", content: "hi" }] })));
     expect(peak).toBeLessThanOrEqual(2);
+  });
+
+  it("backs off much longer after a rate limit (429) than after a 502", async () => {
+    let calls = 0;
+    const baseUrl = await mockRuntime(() =>
+      ++calls < 2 ? { status: 502, body: { error: { message: '429: {"status":429,"title":"Too Many Requests"}' } } } : { status: 200, body: completion("nvidia/nemotron-3.5-lightning-30b-a3b") },
+    );
+    const waits: number[] = [];
+    const client = new NightshiftClient({ baseUrl, token: "t", backoffMs: [1], rateLimitBackoffMs: [30] });
+    const started = Date.now();
+    const result = await client.chat({ messages: [{ role: "user", content: "hi" }] });
+    waits.push(Date.now() - started);
+    expect(result.attempts).toBe(2);
+    expect(waits[0]).toBeGreaterThanOrEqual(25); // used the rate-limit backoff, not the 1 ms one
   });
 });
