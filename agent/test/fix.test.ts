@@ -108,3 +108,26 @@ describe("finish robustness (seen live with Nemotron)", () => {
     expect(s.fix).toBe("verified");
   });
 });
+
+describe("last-chance finish (seen live: 2 of 30 runs ended with no explanation)", () => {
+  it("reads a finish call the model wrote as text", async () => {
+    const { toolCallsFromText } = await import("../src/tools.js");
+    const text = 'Here you go: [{"name": "finish", "parameters": {"headline": "h", "prediction": "breaks", "cause_claim": "60 > 50", "evidence": ["x2"]}}]';
+    const calls = toolCallsFromText(text, ["finish"]);
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0]!.function.arguments).cause_claim).toBe("60 > 50");
+    expect(toolCallsFromText('{"name": "query_usl", "arguments": {"sql": "x"}}', ["finish"])).toEqual([]);
+    expect(toolCallsFromText("no json here", ["finish"])).toEqual([]);
+  });
+
+  it("accepts an explanation without a mitigation on the last attempt, rather than none", async () => {
+    const experiment = [{ name: "run_experiment", args: { variant: "candidate", observe: ["consumer_status"], hypothesis_ids: [], rationale: "t" } }];
+    const noMitigation = [{ name: "finish", args: { headline: "Loader rejects", prediction: "breaks", cause_claim: "60 entries exceed 50", evidence: ["x2"], supported_hypothesis_ids: [], limitations: [] } }];
+    const idle = Array.from({ length: 19 }, () => [{ name: "inspect_world_model", args: {} }]);
+    const out = await mkdtemp(join(tmpdir(), "domino-last-"));
+    const s = await investigate({ changeId: "stub-chg-1", mode: "full", outDir: out, model: scripted([experiment, ...idle, noMitigation, noMitigation]), evidence: new StubEvidence(), worlds: new StubWorlds() });
+    expect(s.cause_claim).toBe("60 entries exceed 50");
+    const events = (await readFile(join(out, s.run_id, "trace.jsonl"), "utf8")).trim().split("\n").map((l) => JSON.parse(l));
+    expect(events.find((e) => e.type === "verdict").limitations).toContain("No mitigation was proposed.");
+  });
+});

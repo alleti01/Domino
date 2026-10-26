@@ -15,7 +15,7 @@ import { type ChatMessage, type ChatRequest, type ChatResult, NightshiftError } 
 import { isNemotron } from "./llm/receipts.js";
 import { NO_TOOLS_PROMPT, SYSTEM_PROMPT, taskMessage } from "./prompts.js";
 import { InvestigationState } from "./state.js";
-import { type Budgets, DEFAULT_BUDGETS, type FinishArgs, ToolGateway, toolSpecs, toolsFor } from "./tools.js";
+import { type Budgets, DEFAULT_BUDGETS, type FinishArgs, ToolGateway, toolCallsFromText, toolSpecs, toolsFor } from "./tools.js";
 import { TraceWriter } from "./trace.js";
 
 export const INVESTIGATOR_MODEL = process.env.DOMINO_INVESTIGATOR_MODEL ?? "nvidia/nemotron-3.5-lightning-30b-a3b";
@@ -194,6 +194,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
           break;
         }
         const msg = result.message;
+        if (!msg.tool_calls?.length) msg.tool_calls = toolCallsFromText(msg.content, tools.map((t) => t.function.name));
         messages.push({ role: "assistant", content: msg.content ?? null, ...(msg.tool_calls?.length ? { tool_calls: msg.tool_calls } : {}) });
 
         if (!msg.tool_calls?.length) {
@@ -262,11 +263,14 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
         const result = await callModel({ purpose: `step_${step}_finish`, messages, tools: toolSpecs(opts.mode, ["finish"]), toolChoice: "required", ...(opts.investigatorModel ? { model: opts.investigatorModel } : {}) });
         if (!result) return;
         const msg = result.message;
+        if (!msg.tool_calls?.length) msg.tool_calls = toolCallsFromText(msg.content, ["finish"]);
+        gateway.lastResort = attempt === 1;
         messages.push({ role: "assistant", content: msg.content ?? null, ...(msg.tool_calls?.length ? { tool_calls: msg.tool_calls } : {}) });
         for (const call of msg.tool_calls ?? []) {
           const output = await gateway.call(call.function.name, call.function.arguments);
           messages.push({ role: "tool", tool_call_id: call.id, name: call.function.name, content: output });
         }
+        gateway.lastResort = false;
       }
     };
 

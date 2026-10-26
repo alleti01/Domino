@@ -256,6 +256,25 @@ export function measuredNumbers(experiments: ExperimentResult[]): Set<number> {
   return out;
 }
 
+/** Tool calls a model wrote as text ('[{"name": "finish", "parameters": {...}}]') instead of calling the tool. */
+export function toolCallsFromText(content: string | null | undefined, allowed: string[]): Array<{ id: string; type: "function"; function: { name: string; arguments: string } }> {
+  if (!content) return [];
+  const starts = [...content.matchAll(/[[{]/g)].map((m) => m.index!);
+  for (const start of starts) {
+    for (let end = content.length; end > start; end--) {
+      if (content[end - 1] !== "]" && content[end - 1] !== "}") continue;
+      try {
+        const parsed = JSON.parse(content.slice(start, end));
+        const items = (Array.isArray(parsed) ? parsed : [parsed]).filter((x) => x && allowed.includes(x.name) && typeof (x.parameters ?? x.arguments) === "object");
+        if (items.length) return items.map((x, i) => ({ id: `text-call-${i}`, type: "function" as const, function: { name: x.name, arguments: JSON.stringify(x.parameters ?? x.arguments) } }));
+      } catch {
+        /* keep looking */
+      }
+    }
+  }
+  return [];
+}
+
 export class ToolGateway {
   queries = 0;
   experimentsRun = 0;
@@ -263,6 +282,8 @@ export class ToolGateway {
   dataOutages = 0;
   /** Set by the harness once it has run the minimum test itself. */
   allowFinishUntested = false;
+  /** The final forced-finish attempt: accept any cited explanation rather than end the run without one. */
+  lastResort = false;
   private catalogCache: ExperimentCatalog | null = null;
   private lastMitigation: string | null = null;
   private sourcesCache: Awaited<ReturnType<EvidenceAdapter["describe"]>> | null = null;
@@ -448,10 +469,12 @@ export class ToolGateway {
         }
         if (args.mitigation) this.lastMitigation = args.mitigation;
         else if (args.prediction === "breaks" && this.lastMitigation) args.mitigation = this.lastMitigation; // proposed in an earlier, rejected finish
-        if (args.prediction === "breaks" && !args.mitigation) {
+        if (args.prediction === "breaks" && !args.mitigation && this.lastResort) {
+          args.limitations = [...(args.limitations ?? []), "No mitigation was proposed."]; // an explanation without a fix beats none
+        } else if (args.prediction === "breaks" && !args.mitigation) {
           throw new ToolError("prediction is breaks, so propose a mitigation: the smallest change that would avoid the failure. Call finish again with it.");
         }
-        if (args.prediction === "breaks" && !this.chainPushed) {
+        if (args.prediction === "breaks" && !this.chainPushed && !this.lastResort) {
           const measured = measuredNumbers(state.experiments);
           if (measured.size && !quantities(`${args.cause_claim ?? ""} ${args.headline ?? ""}`).some((n) => measured.has(n))) {
             this.chainPushed = true;
@@ -462,7 +485,7 @@ export class ToolGateway {
         }
         const text = `${args.headline ?? ""} ${args.cause_claim ?? ""} ${args.mitigation ?? ""}`;
         const repeated = this.flagged.filter((f) => (/^\d+(\.\d+)?$/.test(f) ? new RegExp(`(?<![\\w.-])${f.replace(".", "\\.")}(?![\\w-]|\\.\\d)`).test(text) : f.length >= 12 && text.includes(f)));
-        if (repeated.length && !this.revisionPushed) {
+        if (repeated.length && !this.revisionPushed && !this.lastResort) {
           this.revisionPushed = true;
           throw new ToolError(`Your revision still contains what the reviewer flagged: ${repeated.map((r) => `"${r}"`).join(", ")}. Correct or remove exactly those statements (keep the rest), then call finish again.`);
         }
