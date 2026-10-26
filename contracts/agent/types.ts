@@ -60,6 +60,19 @@ export interface ExperimentCatalog {
   params: Array<{ name: string; type: "number" | "string" | "boolean"; description: string; default: string | number | boolean }>; // default = normal operation
   observables: Array<{ name: string; description: string }>; // e.g. "row_count", "artifact_entries", "consumer_exit"
   workloads: Array<{ name: string; description: string }>;
+  /** Configuration the world lets an experiment override (params.overrides = { target: value }). The system's
+   *  own config surface, same ids as the semantic layer; no hints. Empty when the world takes no overrides. */
+  overridable?: Array<{ target: string; current: string | number | boolean; type: "number" | "string" | "boolean"; description?: string }>;
+}
+
+/** Result of applying the investigator's proposed fix inside the world and re-running (decided by code). */
+export interface FixVerification {
+  status: "verified" | "failed" | "untested" | "not_applicable";
+  overrides: Record<string, string | number | boolean>;
+  /** candidate + fix runs and baseline + fix runs, by experiment id */
+  experiments: string[];
+  reasons: string[];
+  rounds: number;
 }
 
 export interface ExperimentRequest {
@@ -67,7 +80,7 @@ export interface ExperimentRequest {
   change_id: string;
   variant: "baseline" | "candidate" | "control";
   workload?: string;
-  params?: Record<string, string | number | boolean>;
+  params?: Record<string, string | number | boolean | Record<string, string | number | boolean>>; // params.overrides = { target: value } applies a fix
   observe: string[]; // subset of ExperimentCatalog.observables
   repeat?: number; // default 1
 }
@@ -135,7 +148,8 @@ export type TraceEvent = TraceBase &
         tested: string[]; // exactly what was tested
         limitations: string[];
         decided_by: "deterministic_judge"; // the model never sets the verdict
-        mitigation?: string; // suggested by the model, never verified by Domino
+        mitigation?: string; // suggested by the model
+        fix_verification?: FixVerification; // whether that fix, applied in the world, actually held
       }
     | {
         type: "review"; // independent second-model check of the explanation (never of the verdict)
@@ -176,6 +190,7 @@ export interface RunSummary {
   all_calls_nemotron: boolean;
   model_failures: number; // calls that failed after the client's retries
   cache_hits: number; // calls Nightshift answered from cache (should be 0 for independent runs)
+  fix?: FixVerification["status"] | null; // verified-fix outcome; null when not attempted
 }
 
 // ───────────────────────────── 4. Evidence bundle (agent → Adhvik, README, PR comment) ─────────────────────────────
@@ -194,13 +209,15 @@ export interface EvidenceBundle {
     decided_by: "deterministic_judge";
     tested: string[];
     limitations: string[];
-    mitigation: { text: string; verified: false } | null;
+    mitigation: { text: string; verified: boolean } | null; // verified only when fix_verification.status is "verified"
+    fix_verification: FixVerification | null;
   };
   causal_chain: Array<{ edge: string; status: "observed" | "inferred"; detail: string | null; evidence: Array<{ row_id: string; facts: string }> }>;
   experiments: Array<{
     experiment_id: string;
     variant: "baseline" | "candidate" | "control";
     requested_by: "agent" | "harness";
+    fix_overrides: Record<string, string | number | boolean> | null; // set on fix-verification runs
     rationale: string;
     observations: Record<string, string | number | boolean>;
     failed_assertions: Array<{ name: string; detail: string }>;

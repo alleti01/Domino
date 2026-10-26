@@ -154,6 +154,10 @@ export class StubWorlds implements WorldsAdapter {
         { name: "consumer_status", description: "Whether each consumer loaded its input" },
       ],
       workloads: [{ name: "standard", description: "One normal build-and-load cycle for every service" }],
+      overridable: [
+        { target: "loader.max_items", current: 50, type: "number", description: "loader setting" },
+        { target: "builder.schema_filter", current: "none", type: "string", description: "builder query setting" },
+      ],
     };
   }
 
@@ -161,12 +165,18 @@ export class StubWorlds implements WorldsAdapter {
     const started = Date.now();
     const change = await this.getChange(req.change_id);
     const base = Number(req.params?.base_items ?? 30);
+    const overrides = (req.params?.overrides ?? {}) as Record<string, string | number | boolean>;
+    const unknown = Object.keys(overrides).filter((k) => !["loader.max_items", "builder.schema_filter"].includes(k));
+    if (unknown.length) {
+      return { experiment_id: `x${++this.n}`, request: req, completed: false, observations: {}, assertions: [], logs_tail: `unsupported override: ${unknown.join(", ")}`, artifacts: [], duration_ms: 0 };
+    }
     const mirrorGrantedTo = req.variant === "candidate" && change.change_id === "stub-chg-1" ? "svc_builder" : req.variant === "candidate" ? "svc_reports" : null;
     // builder's query does not filter by schema: visibility of a second schema duplicates names.
-    const builderRows = mirrorGrantedTo === "svc_builder" ? base * 2 : base;
+    const schemaFiltered = overrides["builder.schema_filter"] === "main";
+    const builderRows = mirrorGrantedTo === "svc_builder" && !schemaFiltered ? base * 2 : base;
     const builderDistinct = base;
     const reportsRows = mirrorGrantedTo === "svc_reports" ? 1200 * 2 : 1200;
-    const loaderLimit = 50;
+    const loaderLimit = Number(overrides["loader.max_items"] ?? 50);
     const loaderOk = builderRows <= loaderLimit;
     const observations: ExperimentResult["observations"] = {
       "builder.query_rows": builderRows,

@@ -116,7 +116,7 @@ export class DataLayerWorlds implements WorldsAdapter {
     return {
       world_id: worldId,
       variants: ["baseline", "candidate", "control"],
-      params: Object.entries(d.params ?? {}).map(([name, spec]: [string, any]) => ({
+      params: Object.entries(d.params ?? {}).filter(([name]) => name !== "overrides").map(([name, spec]: [string, any]) => ({
         name,
         type: typeof spec?.default === "number" ? "number" : typeof spec?.default === "boolean" ? "boolean" : "string",
         description: spec?.description ?? name,
@@ -124,6 +124,12 @@ export class DataLayerWorlds implements WorldsAdapter {
       })),
       observables: (d.metrics ?? []).map((m: string) => ({ name: m, description: "metric reported by the world" })),
       workloads: [{ name: "default", description: "the world's standard workload" }],
+      overridable: (d.overridable ?? d.params?.overrides?.targets ?? []).map((t: any) => ({
+        target: String(t.target ?? t.id ?? t.name),
+        current: t.current ?? t.value ?? "",
+        type: (["number", "string", "boolean"].includes(t.type) ? t.type : typeof (t.current ?? t.value) === "number" ? "number" : "string") as "number" | "string" | "boolean",
+        ...(t.description ? { description: String(t.description) } : {}),
+      })),
     };
   }
 

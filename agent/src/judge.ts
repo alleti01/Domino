@@ -98,3 +98,23 @@ export function confirmationsNeeded(results: ExperimentResult[]): Array<{ templa
   }
   return needed;
 }
+
+/**
+ * Fix verification, decided by code: the proposed fix holds only if the candidate passes with it
+ * applied on every repeat AND the baseline still passes with it (the fix does not break normal operation).
+ */
+export function judgeFix(candidateWithFix: ExperimentResult[], baselineWithFix: ExperimentResult[]): { status: "verified" | "failed" | "untested"; reasons: string[] } {
+  const all = [...candidateWithFix, ...baselineWithFix];
+  if (!candidateWithFix.length || !baselineWithFix.length || all.some((r) => !r.completed)) {
+    return { status: "untested", reasons: ["The fix could not be applied and run in the world."] };
+  }
+  const candFail = candidateWithFix.filter((r) => !passes(r));
+  const baseFail = baselineWithFix.filter((r) => !passes(r));
+  if (!candFail.length && !baseFail.length) {
+    return { status: "verified", reasons: [`With the fix applied, the candidate passed ${candidateWithFix.length}× and the baseline still passed ${baselineWithFix.length}×.`] };
+  }
+  const reasons: string[] = [];
+  if (candFail.length) reasons.push(`With the fix applied, the candidate still failed ${candFail.length}/${candidateWithFix.length}× (${failed(candFail[0]!).join(", ")}).`);
+  if (baseFail.length) reasons.push(`The fix breaks normal operation: the baseline failed ${baseFail.length}/${baselineWithFix.length}× with it (${failed(baseFail[0]!).join(", ")}).`);
+  return { status: "failed", reasons };
+}

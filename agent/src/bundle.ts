@@ -43,7 +43,8 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
       experiments.push({
         experiment_id: r.experiment_id,
         variant: r.request.variant,
-        requested_by: pending?.rationale?.startsWith("Harness confirmation") || pending?.rationale?.startsWith("Paired baseline") ? "harness" : "agent",
+        requested_by: /^(Harness confirmation|Paired baseline|Fix verification)/.test(pending?.rationale ?? "") ? "harness" : "agent",
+        fix_overrides: (r.request.params as any)?.overrides && Object.keys((r.request.params as any).overrides).length ? (r.request.params as any).overrides : null,
         rationale: pending?.rationale ?? "",
         observations: r.observations,
         failed_assertions: failed.map((a) => ({ name: a.name, detail: a.detail })),
@@ -79,7 +80,8 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
       decided_by: verdict.decided_by,
       tested: verdict.tested,
       limitations: verdict.limitations,
-      mitigation: verdict.mitigation ? { text: verdict.mitigation, verified: false } : null,
+      mitigation: verdict.mitigation ? { text: verdict.mitigation, verified: verdict.fix_verification?.status === "verified" } : null,
+      fix_verification: verdict.fix_verification ?? null,
     },
     causal_chain: verdict.causal_chain.map((c: any) => ({ edge: c.edge, status: c.status, detail: c.detail ?? null, evidence: c.refs.map((id: string) => ({ row_id: id, facts: factOf(id) })) })),
     experiments,
@@ -144,7 +146,7 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
     out.push(`\n**Experiments** (same workload; only the change differs)`);
     out.push(`| Variant | ${keys.map(cell).join(" | ")} | Result |`, `|---|${keys.map(() => "---|").join("")}---|`);
     for (const x of b.experiments) {
-      const label = `${x.variant}${x.variant === "control" ? " (change reverted)" : ""}${x.requested_by === "harness" ? " ·harness" : ""}`;
+      const label = `${x.variant}${x.variant === "control" ? " (change reverted)" : ""}${x.fix_overrides ? " + fix" : ""}${x.requested_by === "harness" ? " ·harness" : ""}`;
       out.push(`| ${label} | ${keys.map((k) => cell(x.observations[k] ?? "")).join(" | ")} | ${x.passed ? "✅ pass" : `❌ ${x.failed_assertions.map((a) => cell(a.name)).join(", ")}`} |`);
     }
   }
@@ -160,7 +162,13 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
       out.push(`\n**Independent review:** unavailable for this run.`);
     }
   }
-  if (b.verdict.mitigation) out.push(`\n**Suggested mitigation** (from Nemotron, *not verified by Domino*): ${b.verdict.mitigation.text}`);
+  const fv = b.verdict.fix_verification;
+  if (b.verdict.mitigation) {
+    const overrides = fv && Object.keys(fv.overrides).length ? ` <sub>(applied as ${Object.entries(fv.overrides).map(([k, v]) => `\`${k}=${v}\``).join(", ")})</sub>` : "";
+    if (fv?.status === "verified") out.push(`\n**✅ Verified fix:** ${b.verdict.mitigation.text}${overrides}\n${fv.reasons.join(" ")} Domino re-ran the world with the fix applied${fv.rounds > 1 ? ` (found on attempt ${fv.rounds})` : ""}.`);
+    else if (fv?.status === "failed") out.push(`\n**⚠ Suggested fix did not hold:** ${b.verdict.mitigation.text}${overrides}\n${fv.reasons.join(" ")}`);
+    else out.push(`\n**Suggested mitigation** (from Nemotron, *not verified by Domino*${fv?.status === "untested" ? `: ${fv.reasons.join(" ")}` : ""}): ${b.verdict.mitigation.text}`);
+  }
 
   out.push(`\n**What was tested:** ${b.verdict.tested.length} runs. ${b.verdict.verdict === "no_failure_observed" ? "This is not a claim of production safety." : ""}`);
   if (b.verdict.limitations.length) out.push(`**Limits:** ${b.verdict.limitations.map((l) => l.replace(/\n/g, " ")).join(" · ")}`);

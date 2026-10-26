@@ -65,7 +65,7 @@ describe("investigation loop", () => {
       [{ name: "run_experiment", args: { variant: "baseline", observe: ["artifact_entries", "consumer_status"], hypothesis_ids: ["h1"], rationale: "reference" } }],
       [{ name: "run_experiment", args: { variant: "candidate", observe: ["artifact_entries", "consumer_status"], hypothesis_ids: ["h1"], rationale: "test" } }],
       [{ name: "update_hypothesis", args: { hypothesis_id: "h1", status: "supported", note: "candidate failed" } }],
-      [{ name: "finish", args: { headline: "Loader rejects the build output", prediction: "breaks", cause_claim: "duplicated read", mitigation: "filter by schema", evidence: ["l1"], supported_hypothesis_ids: ["h1"], limitations: [] } }],
+      [{ name: "finish", args: { headline: "Loader rejects the build output", prediction: "breaks", cause_claim: "the grant duplicates the read: 30 → 60 rows, past max_items 50", mitigation: "filter by schema", evidence: ["l1"], supported_hypothesis_ids: ["h1"], limitations: [] } }],
     ]);
 
     const summary = await investigate({ changeId: "stub-chg-1", mode: "full", outDir: out, model, evidence: new StubEvidence(), worlds: new StubWorlds() });

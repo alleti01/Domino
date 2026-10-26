@@ -71,7 +71,8 @@ function evidencePack(state: InvestigationState): string {
   const experiments = state.experiments.map((x: ExperimentResult) => {
     const obs = Object.entries(x.observations).map(([k, v]) => `${k}=${v}`).join(", ");
     const failed = x.assertions.filter((a) => !a.passed).map((a) => `${a.name} (${a.detail})`);
-    return `[${x.experiment_id}] ${x.request.variant}: ${obs}; ${failed.length ? `FAILED ${failed.join("; ")}` : "all assertions passed"}`;
+    const fix = (x.request.params as any)?.overrides;
+    return `[${x.experiment_id}] ${x.request.variant}${fix ? ` + fix ${JSON.stringify(fix)}` : ""}: ${obs}; ${failed.length ? `FAILED ${failed.join("; ")}${x.logs_tail ? `; log: ${x.logs_tail.slice(0, 400)}` : ""}` : "all assertions passed"}`;
   });
   return [`Retrieved facts:`, ...(rows.length ? rows : ["(none)"]), ``, `Experiments:`, ...(experiments.length ? experiments : ["(none)"])].join("\n");
 }
@@ -136,7 +137,7 @@ export async function reviewExplanation(
     }
   }
   // Deterministic number check: every quantity in the explanation must come from the evidence.
-  const evidenceText = [ctx.diff, ...ctx.state.rowFacts.values(), ...ctx.state.experiments.map((x) => JSON.stringify(x.observations) + x.assertions.map((s2) => s2.detail).join(" "))].join(" ");
+  const evidenceText = [ctx.diff, ...ctx.state.rowFacts.values(), ...ctx.state.experiments.map((x) => `${JSON.stringify(x.observations)} ${x.assertions.map((s2) => s2.detail).join(" ")} ${x.logs_tail ?? ""}`)].join(" ");
   for (const n of unsupportedNumbers(`${ctx.finish.headline} ${ctx.finish.cause_claim ?? ""}`, evidenceText)) {
     issues.push({ statement: String(n), problem: `the number ${n} does not appear in the evidence and does not follow from it (deterministic check)`, refs: [] });
   }
@@ -149,7 +150,7 @@ export function revisionRequest(review: Review): string {
   return [
     `An independent reviewer (${review.reviewerModel ?? "a second model"}) checked your explanation against the evidence and found problems:`,
     ...review.issues.map((i, n) => `${n + 1}. "${i.statement}": ${i.problem}${i.refs.length ? ` [${i.refs.join(", ")}]` : ""}`),
-    `Fix them: retrieve or test what you need, correct the explanation and mitigation so every statement is backed by evidence, then call finish again.`,
+    `Fix exactly these points: for each one, correct or remove the quoted statement (retrieve or test what you need to back it), and keep the parts that were not flagged. Then call finish again.`,
   ].join("\n");
 }
 

@@ -4,11 +4,12 @@
 
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import type { RunMode, RunSummary, Verdict } from "../../contracts/agent/types.js";
+import type { FixVerification, RunMode, RunSummary, Verdict } from "../../contracts/agent/types.js";
 import type { EvidenceAdapter, WorldsAdapter } from "./adapters.js";
 import { parseChange } from "./change.js";
 import { type Review, reviewExplanation, revisionRequest } from "./critic.js";
 import { type ChainLink, InvestigationWorld } from "./engines/worldModel.js";
+import { verifyFix } from "./fix.js";
 import { confirmationsNeeded, judge } from "./judge.js";
 import { type ChatMessage, type ChatRequest, type ChatResult, NightshiftError } from "./llm/nightshift.js";
 import { isNemotron } from "./llm/receipts.js";
@@ -87,6 +88,8 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
   let causeClaim: string | null = null;
   let headline: string | null = null;
   const reviewNotes: string[] = [];
+  let fixVerification: FixVerification | null = null;
+  const fixRuns = new Set<string>(); // fix-verification runs never count toward the main verdict
 
   if (opts.healthCheck) {
     const health = await opts.healthCheck();
@@ -150,13 +153,17 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     headline = typeof answer?.headline === "string" ? answer.headline : null;
   } else {
     const tools = toolSpecs(opts.mode);
+    for (const id of [change.change_id, ...parsed.entities.map((e) => e.id)]) if (id.includes("/")) gateway.entities.add(id);
+    // Give the full table names up front so the model does not guess short ones.
+    const usl = toolsFor(opts.mode).some((t) => t.name === "query_usl");
+    const sources = usl ? await gateway.sources().catch(() => []) : [];
     const messages: ChatMessage[] = [
       { role: "system", content: SYSTEM_PROMPT },
       {
         role: "user",
         content:
           `Investigation ${runId}.\n` +
-          taskMessage(change, parsed, budgets, opts.mode) +
+          taskMessage(change, parsed, budgets, opts.mode, sources) +
           (rememberedComponents > 0
             ? `\n\nThe shared world model already holds ${rememberedComponents} components verified by earlier investigations of this system. Use inspect_world_model before re-querying what is already known.`
             : ""),
@@ -307,11 +314,40 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
         const previous: FinishArgs = current;
         gateway.finished = null;
         messages.push({ role: "user", content: revisionRequest(review) });
+        gateway.setFlagged(review.issues.map((i) => i.statement));
         await trace.emit({ type: "revision", what_changed: `Sent back by the independent reviewer: ${review.issues.map((i) => i.problem).join(" | ").slice(0, 400)}`, hypothesis_ids: [] });
         await investigate_(opts.critic.revisionSteps);
         await forceFinish("Your revision budget is used up.");
         if (!gateway.finished) gateway.finished = previous; // keep the last complete explanation
         await confirm();
+      }
+    }
+
+    // Verified fix: re-run the world with the investigator's mitigation applied (full mode, reproduced failures,
+    // worlds that expose overridable settings). Runs after the review so it tests the final mitigation.
+    if (opts.mode === "full" && gateway.finished?.mitigation && !outage && judge(state.experiments).verdict === "reproduced_failure") {
+      const targets = (await gateway.catalog().catch(() => null))?.overridable ?? [];
+      const failing = [...state.experiments].reverse().find((x) => x.request.variant === "candidate" && x.completed && x.assertions.some((a) => !a.passed));
+      if (targets.length && failing) {
+        const fix = await verifyFix({
+          targets,
+          failing,
+          mitigation: gateway.finished.mitigation,
+          messages,
+          callModel: (req) => callModel(req, 1, false),
+          gateway,
+          ...(opts.investigatorModel ? { investigatorModel: opts.investigatorModel } : {}),
+          onDataOutage: () => gateway.dataOutages++,
+        });
+        fixVerification = fix.verification;
+        for (const id of fix.experimentIds) fixRuns.add(id);
+        gateway.finished = { ...gateway.finished, mitigation: fix.mitigation };
+        if (fix.verification.status === "verified") {
+          // The fix was tested directly; an experiment outranks the reviewer's opinion of it.
+          for (let i = reviewNotes.length - 1; i >= 0; i--) if (reviewNotes[i]!.includes("mitigation would not avoid the failure")) reviewNotes.splice(i, 1);
+        } else {
+          reviewNotes.push(`Suggested fix ${fix.verification.status === "failed" ? "did not hold" : "was not tested"}: ${fix.verification.reasons.join(" ")}`);
+        }
       }
     }
 
@@ -323,7 +359,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
   }
 
   if (gateway.dataOutages > 0) outage = true; // Zetaris/data layer down at some point: not an agent mistake
-  const judgement = judge(state.experiments);
+  const judgement = judge(state.experiments.filter((x) => !fixRuns.has(x.experiment_id)));
   const verdict: Verdict = outage && judgement.verdict !== "reproduced_failure" ? "inconclusive" : judgement.verdict;
   // Deterministic consistency check: the model's prediction must agree with what the experiments showed.
   if (prediction === "breaks" && verdict === "no_failure_observed") {
@@ -356,6 +392,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     limitations: [...reviewNotes, ...(gateway.finished?.limitations ?? []), ...judgement.reasons.filter((r) => verdict !== "reproduced_failure" || !r.startsWith("Baseline passed")), ...(outage ? ["Model service outage during the run: this result says nothing about the change."] : []), ...(cacheHits ? [`${cacheHits} model answer(s) came from Nightshift's cache.`] : [])],
     decided_by: "deterministic_judge",
     ...(gateway.finished?.mitigation && verdict === "reproduced_failure" ? { mitigation: gateway.finished.mitigation } : {}),
+    ...(fixVerification && verdict === "reproduced_failure" ? { fix_verification: fixVerification } : {}),
   });
   await trace.emit({ type: "run_finished", duration_ms: Date.now() - started, model_calls: modelCalls, experiments: state.experiments.length });
 
@@ -374,6 +411,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     all_calls_nemotron: allNemotron && modelCalls > 0,
     model_failures: modelFailures,
     cache_hits: cacheHits,
+    fix: fixVerification && verdict === "reproduced_failure" ? fixVerification.status : null,
   };
   await trace.writeSummary(summary);
   return summary;

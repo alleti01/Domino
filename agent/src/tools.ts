@@ -2,12 +2,13 @@
 // every argument is validated, SQL is read-only, citations must point at evidence it has
 // actually retrieved, and every call counts against the run budget.
 
-import type { ExperimentRequest, RunMode } from "../../contracts/agent/types.js";
+import type { ExperimentCatalog, ExperimentRequest, ExperimentResult, RunMode } from "../../contracts/agent/types.js";
 import type { EvidenceAdapter, WorldsAdapter } from "./adapters.js";
 import type { ToolSpec } from "./llm/nightshift.js";
 import type { InvestigationWorld } from "./engines/worldModel.js";
 import type { InvestigationState } from "./state.js";
 import type { TraceWriter } from "./trace.js";
+import { quantities } from "./numbers.js";
 
 export interface Budgets {
   max_steps: number;
@@ -111,7 +112,12 @@ const TOOLS: ToolDef[] = [
     args: {
       headline: { type: "string", description: "One line for the pull-request comment", required: true },
       prediction: { type: "string", description: "breaks | safe | unsure", required: true, enum: ["breaks", "safe", "unsure"] },
-      cause_claim: { type: "string", description: "The mechanism you believe; if safe, why it is safe (the facts that keep it within limits)", required: true },
+      cause_claim: {
+        type: "string",
+        description:
+          "Walk the chain with the measured numbers: what the change does → which value changes (baseline → candidate, from the experiments) → which limit or contract it meets (value and the row that states it) → which check failed. If safe: the numbers that keep it within limits.",
+        required: true,
+      },
       evidence: {
         type: "string[]",
         description: "row_ids / experiment_ids behind your explanation, for a breaking AND a safe verdict: the specific facts (values, limits, settings) your reasoning depends on",
@@ -214,6 +220,42 @@ export interface FinishArgs {
   limitations: string[];
 }
 
+/** "access_grant" or "db_catalog.access_grant" → the one full table name ending that way. */
+export function qualifyTables(sql: string, tables: string[]): string {
+  if (!tables.some((t) => t.includes("."))) return sql;
+  return sql.replace(/\b(from|join)(\s+)([A-Za-z_][\w.]*)/gi, (whole, kw, sp, name: string) => {
+    if (tables.includes(name)) return whole;
+    const last = name.split(".").pop()!.toLowerCase();
+    const matches = tables.filter((t) => t.split(".").pop()!.toLowerCase() === last);
+    return matches.length === 1 ? `${kw}${sp}${matches[0]}` : whole;
+  });
+}
+
+/** What changed between a baseline and another variant run, in one line the model can quote. */
+export function describeDifferences(baseline: ExperimentResult, other: ExperimentResult): string {
+  const keys = [...new Set([...Object.keys(baseline.observations), ...Object.keys(other.observations)])];
+  const changed = keys.filter((k) => String(baseline.observations[k]) !== String(other.observations[k])).map((k) => `${k} ${baseline.observations[k] ?? "—"} → ${other.observations[k] ?? "—"}`);
+  const failed = other.assertions.filter((a) => !a.passed).map((a) => `${a.name} failed (${a.detail})`);
+  return [
+    `baseline → ${other.request.variant}: ${changed.length ? changed.join("; ") : "no observation changed"}`,
+    failed.length ? `${failed.join("; ")}${other.logs_tail ? `; log: ${other.logs_tail.slice(0, 300)}` : ""}` : `all assertions passed`,
+  ].join(". ");
+}
+
+/** Numbers the experiments actually measured as different, or stated in a failing check. */
+export function measuredNumbers(experiments: ExperimentResult[]): Set<number> {
+  const out = new Set<number>();
+  const failing = experiments.filter((x) => x.completed && x.assertions.some((a) => !a.passed));
+  for (const x of failing) {
+    const base = experiments.find((b) => b.request.variant === "baseline" && b.completed && JSON.stringify(b.request.params ?? {}) === JSON.stringify(x.request.params ?? {}));
+    for (const [k, v] of Object.entries(x.observations)) if (!base || String(base.observations[k]) !== String(v)) for (const n of quantities(String(v))) out.add(n);
+    if (base) for (const [k, v] of Object.entries(base.observations)) if (String(x.observations[k]) !== String(v)) for (const n of quantities(String(v))) out.add(n);
+    for (const a of x.assertions.filter((a) => !a.passed)) for (const n of quantities(a.detail)) out.add(n);
+    for (const n of quantities(x.logs_tail ?? "")) out.add(n);
+  }
+  return out;
+}
+
 export class ToolGateway {
   queries = 0;
   experimentsRun = 0;
@@ -221,6 +263,15 @@ export class ToolGateway {
   dataOutages = 0;
   /** Set by the harness once it has run the minimum test itself. */
   allowFinishUntested = false;
+  private catalogCache: ExperimentCatalog | null = null;
+  private lastMitigation: string | null = null;
+  private sourcesCache: Awaited<ReturnType<EvidenceAdapter["describe"]>> | null = null;
+  /** Full entity ids this run has seen, for resolving short names the model uses. */
+  readonly entities = new Set<string>();
+  /** Statements the independent reviewer flagged; a revision must not repeat them. */
+  flagged: string[] = [];
+  private chainPushed = false;
+  private revisionPushed = false;
   private readonly sqlSeen = new Map<string, string>();
 
   constructor(
@@ -262,23 +313,36 @@ export class ToolGateway {
   }
 
   private citations(refs: string[]): { known: string[]; unknown: string[] } {
-    return { known: refs.filter((r) => this.ctx.state.isKnownRef(r)), unknown: refs.filter((r) => !this.ctx.state.isKnownRef(r)) };
+    const known = new Set<string>();
+    const unknown: string[] = [];
+    for (const ref of refs) {
+      if (this.ctx.state.isKnownRef(ref)) {
+        known.add(ref);
+        continue;
+      }
+      // Models sometimes send a mangled list ('["x1": baseline …, "x2": …]'): rescue the real ids inside it.
+      const inside = (ref.match(/[A-Za-z0-9_./-]+/g) ?? []).filter((t) => this.ctx.state.isKnownRef(t));
+      if (inside.length) for (const t of inside) known.add(t);
+      else unknown.push(ref);
+    }
+    return { known: [...known], unknown };
   }
 
   private async dispatch(name: string, args: Record<string, any>): Promise<string> {
     const { evidence, worlds, state, world, trace, budgets, changeId, worldId } = this.ctx;
     switch (name) {
       case "describe_sources":
-        return compact(await evidence.describe());
+        return compact(await this.sources());
 
       case "query_usl": {
         if (this.queries >= budgets.max_queries) throw new ToolError("Query budget exhausted; reason with what you have or run an experiment.");
-        const sql = checkReadOnlySql(args.sql);
+        const sql = qualifyTables(checkReadOnlySql(args.sql), (await this.sources().catch(() => [])).map((v) => v.view));
         const previous = this.sqlSeen.get(sql.replace(/\s+/g, " ").toLowerCase());
         if (previous) return `You already ran this exact query as ${previous}; use that result instead of repeating it.`;
         this.queries++;
         const result = await evidence.query(sql);
         state.recordQuery(result);
+        for (const r of result.rows) for (const v of Object.values(r.values)) if (typeof v === "string" && v.startsWith(`${worldId}/`)) this.entities.add(v);
         this.sqlSeen.set(sql.replace(/\s+/g, " ").toLowerCase(), result.query_id);
         await trace.emit({ type: "usl_query", purpose: args.purpose, result });
         if (result.error) return `ERROR from semantic layer: ${result.error}`;
@@ -286,8 +350,11 @@ export class ToolGateway {
       }
 
       case "get_dependency_path": {
-        const path = await evidence.dependencyPath(changeId, args.entity);
-        for (const n of path.nodes) state.seenRows.set(n.row_id, { source: n.source, query_id: "path" });
+        const path = await evidence.dependencyPath(changeId, this.resolveEntity(args.entity));
+        for (const n of path.nodes) {
+          state.seenRows.set(n.row_id, { source: n.source, query_id: "path" });
+          this.entities.add(n.id);
+        }
         for (const e of path.edges) {
           for (const id of e.row_ids?.length ? e.row_ids : [e.row_id]) {
             state.seenRows.set(id, { source: e.source, query_id: "path" });
@@ -302,7 +369,7 @@ export class ToolGateway {
       }
 
       case "describe_experiments":
-        return compact(await worlds.catalog(worldId));
+        return compact(await this.catalog());
 
       case "run_experiment": {
         if (this.experimentsRun >= budgets.max_experiments) throw new ToolError("Experiment budget exhausted; finish with what you have.");
@@ -326,7 +393,8 @@ export class ToolGateway {
           baseline && baseline.assertions.some((a) => !a.passed)
             ? "NOTE: the baseline itself fails under these params, so they do not represent normal operation and cannot isolate the change. Re-run with default params unless you are deliberately testing a range."
             : undefined;
-        return compact({ ...paired, ...(note ? { note } : {}) });
+        const differences = baseline && request.variant !== "baseline" ? describeDifferences(baseline, result) : undefined;
+        return compact({ ...(differences ? { differences } : {}), ...paired, ...(note ? { note } : {}) });
       }
 
       case "inspect_world_model": {
@@ -378,8 +446,25 @@ export class ToolGateway {
         if (canTest && !this.allowFinishUntested && !state.experiments.some((x) => x.request.variant === "candidate" && x.completed)) {
           throw new ToolError("Test before concluding: run_experiment with variant candidate (a baseline is paired automatically) so the judge has evidence, then call finish.");
         }
+        if (args.mitigation) this.lastMitigation = args.mitigation;
+        else if (args.prediction === "breaks" && this.lastMitigation) args.mitigation = this.lastMitigation; // proposed in an earlier, rejected finish
         if (args.prediction === "breaks" && !args.mitigation) {
           throw new ToolError("prediction is breaks, so propose a mitigation: the smallest change that would avoid the failure. Call finish again with it.");
+        }
+        if (args.prediction === "breaks" && !this.chainPushed) {
+          const measured = measuredNumbers(state.experiments);
+          if (measured.size && !quantities(`${args.cause_claim ?? ""} ${args.headline ?? ""}`).some((n) => measured.has(n))) {
+            this.chainPushed = true;
+            throw new ToolError(
+              `Walk the chain in cause_claim with the numbers the experiments measured (${[...measured].slice(0, 8).join(", ")}): what the change does → which value changes (baseline → candidate) → which limit or contract it meets (with the row that states it) → which check failed. Call finish again.`,
+            );
+          }
+        }
+        const text = `${args.headline ?? ""} ${args.cause_claim ?? ""} ${args.mitigation ?? ""}`;
+        const repeated = this.flagged.filter((f) => (/^\d+(\.\d+)?$/.test(f) ? new RegExp(`(?<![\\w.-])${f.replace(".", "\\.")}(?![\\w-]|\\.\\d)`).test(text) : f.length >= 12 && text.includes(f)));
+        if (repeated.length && !this.revisionPushed) {
+          this.revisionPushed = true;
+          throw new ToolError(`Your revision still contains what the reviewer flagged: ${repeated.map((r) => `"${r}"`).join(", ")}. Correct or remove exactly those statements (keep the rest), then call finish again.`);
         }
         const refs = this.citations(args.evidence);
         if (!refs.known.length) {
@@ -392,6 +477,31 @@ export class ToolGateway {
       }
     }
     throw new ToolError(`Unhandled tool ${name}`);
+  }
+
+  /** Semantic-layer tables with their full names, fetched once per run. */
+  async sources() {
+    this.sourcesCache ??= await this.ctx.evidence.describe();
+    return this.sourcesCache;
+  }
+
+  /** Called after the reviewer sends an explanation back. */
+  setFlagged(statements: string[]) {
+    this.flagged = statements.map((x) => x.trim()).filter(Boolean);
+    this.revisionPushed = false;
+  }
+
+  /** "worker-runtime" → "w-k7m2/service/worker-runtime" when exactly one seen id ends that way. */
+  resolveEntity(entity: string): string {
+    if (entity.includes("/") || this.entities.has(entity)) return entity;
+    const matches = [...this.entities].filter((id) => id.split("/").pop()?.toLowerCase() === entity.toLowerCase());
+    return matches.length === 1 ? matches[0]! : entity;
+  }
+
+  /** The world's experiment catalog, fetched once per run (replays serve the recorded one). */
+  async catalog(): Promise<ExperimentCatalog> {
+    this.catalogCache ??= await this.ctx.worlds.catalog(this.ctx.worldId);
+    return this.catalogCache;
   }
 
   private hasBaseline(req: ExperimentRequest): boolean {

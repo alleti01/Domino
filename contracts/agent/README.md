@@ -40,5 +40,25 @@ Mode A (static checks) is Anish's own baseline. `outage: true` runs are excluded
 
 ## 4. Evidence bundle: agent → Adhvik / README / PR comment
 Every run (live or replay) writes `bundle.json` (`EvidenceBundle` in [`types.ts`](types.ts)) and `report.md` (a ready-to-paste PR comment) next to its trace.
-It has: the change, the verdict (decided by the deterministic judge), the model's explanation, the causal chain with the facts behind every cited row, every experiment (baseline / candidate / control, who asked for it, reproduce command, artifact hashes), hypotheses, Nemotron call summary, World Model activity, and a **suggested mitigation, always marked unverified**.
+It has: the change, the verdict (decided by the deterministic judge), the model's explanation, the causal chain with the facts behind every cited row, every experiment (baseline / candidate / control, who asked for it, reproduce command, artifact hashes), hypotheses, Nemotron call summary, World Model activity, and a **mitigation** that is marked verified only when Domino tested it (section 5).
 Samples: [`samples/*.bundle.json`](samples/) and [`samples/*.report.md`](samples/).
+
+## 5. Verified fixes (agent ↔ Anish, agent → Adhvik)
+After a reproduced failure, the investigator writes its mitigation as **setting overrides**. The harness then re-runs the world with them applied: candidate + fix twice and baseline + fix once. Code decides the outcome (`judgeFix`):
+- **verified**: the candidate passes every time with the fix, and the baseline still passes.
+- **failed**: either one fails. The investigator gets one more attempt (`rounds` ≤ 2).
+- **untested**: the fix could not be applied or run.
+
+Fix runs never feed the main verdict.
+
+**Anish (worlds):** no world exposes this yet. Until one does, Domino skips the step and the mitigation stays "unverified". To turn it on for a world:
+1. `describe <world>` lists what can be changed. Use the same ids the semantic layer uses, and give no hints about the bug:
+   `"overridable": [{"target": "loader.max_items", "current": 200, "type": "number", "description": "loader setting"}]`
+   It may also be nested as `params.overrides.targets`; the agent reads either.
+2. `run` accepts `--params '{"overrides": {"loader.max_items": 300}}'` and applies the override to that system's config before the run. If the target is unknown, return `completed: false` with the reason in `logs_tail`. Never fake a pass.
+
+**Adhvik (UI):**
+- `bundle.verdict.fix_verification` is `{status, overrides, experiments, reasons, rounds}`, or `null` when the step did not run.
+- `verdict.mitigation.verified` is `true` only when the status is `verified`.
+- Each experiment has `fix_overrides`, which is non-null for the fix runs (`requested_by: harness`). The report labels those rows "candidate + fix".
+- Render **verified** as a green "Verified fix: …", **failed** as "Suggested fix did not hold", and anything else as "Suggested (unverified)".

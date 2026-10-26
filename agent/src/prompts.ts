@@ -14,7 +14,7 @@ Method
 2. Hypothesize. Record each concrete, testable consequence with record_hypothesis. Cite the row_ids you retrieved. Say which experiment result would falsify it.
 3. Test. Look at the available experiments, then compare baseline (without the change) and candidate (with the change) under the same workload and params, observing what discriminates between your hypotheses. Keep params at realistic values from the data unless you are deliberately testing a range; the baseline should represent normal operation.
 4. Revise. Update hypotheses with what you observed. If evidence is missing, retrieve more or run another experiment.
-5. Finish. Call finish with your best explanation and cite the exact rows and experiments it rests on. If the change looks safe, explain why with the facts that keep it within limits. A deterministic judge, not you, decides the verdict from the experiment results.
+5. Finish. Call finish with your best explanation and cite the exact rows and experiments it rests on. Walk the whole chain with the measured numbers: what the change does, which value it changes (baseline → candidate), which limit or contract that value meets and where it is stated, and which check failed. If the change looks safe, explain why with the numbers that keep it within limits. A deterministic judge, not you, decides the verdict from the experiment results.
 
 Rules
 - Cite only row_ids and experiment_ids you have actually seen. Never invent data or results.
@@ -28,7 +28,7 @@ export const NO_TOOLS_PROMPT = `You are Domino, a pre-deployment reviewer. You h
 Decide whether the change is likely to break something downstream once deployed.
 Reply with ONLY a JSON object: {"prediction": "breaks" | "safe" | "unsure", "cause_claim": string, "headline": string}`;
 
-export function taskMessage(change: ChangeRequest, parsed: ParsedChange, budgets: Budgets, mode: RunMode): string {
+export function taskMessage(change: ChangeRequest, parsed: ParsedChange, budgets: Budgets, mode: RunMode, sources: Array<{ view: string; columns: string[] }> = []): string {
   const access =
     mode === "full"
       ? "You can query the semantic layer and run experiments."
@@ -53,6 +53,7 @@ export function taskMessage(change: ChangeRequest, parsed: ParsedChange, budgets
     "```",
     ``,
     access,
+    sources.length ? `Semantic-layer tables (use these exact full names in SQL):\n${sources.map((v) => `- ${v.view} (${v.columns.join(", ")})`).join("\n")}` : "",
     `Budget: at most ${budgets.max_steps} steps, ${budgets.max_queries} queries, ${budgets.max_experiments} experiments.`,
   ].join("\n");
 }
