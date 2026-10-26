@@ -2,7 +2,7 @@
 // screen is illustrative; every name, kind, source and link comes from the run.
 
 import type { ArmOutcome, HypothesisStatus, LinkStatus, ReviewOutcome, Variant, Verdict } from '../../../types'
-import { isNemotron } from '../../../lib/labels'
+import { VERDICT_RULE, isNemotron } from '../../../lib/labels'
 import { chainTiles, experimentSummary, type ExperimentSummary, type Showcase } from '../../../lib/showcase'
 
 export interface StoryNode {
@@ -48,6 +48,8 @@ export interface StoryData {
   experiment: ExperimentSummary | null
   /** Every sandbox run, in order, with its value on the measured key. */
   runs: { id: string; variant: Variant; outcome: ArmOutcome; failed: string | null; value: string | number | boolean | null }[]
+  /** The three runs the landing page compares: baseline, the (first failing) candidate, control. Repeats stay in the report. */
+  trio: StoryData['runs']
   /** Index into `path` of the component that broke in the candidate run, if one did. */
   breaks: number
   verdict: { verdict: Verdict; decidedBy: string } | null
@@ -120,6 +122,11 @@ export function storyData(show: Showcase): StoryData | null {
       : null,
     experiment,
     runs,
+    trio: [
+      runs.find((r) => r.variant === 'baseline'),
+      runs.find((r) => r.variant === 'candidate' && r.outcome !== 'pass') ?? runs.find((r) => r.variant === 'candidate'),
+      runs.find((r) => r.variant === 'control'),
+    ].filter((r): r is StoryData['runs'][number] => !!r),
     breaks,
     verdict: inv.verdict ? { verdict: inv.verdict.verdict, decidedBy: inv.verdict.decidedBy } : null,
     review: inv.review?.outcome ?? null,
@@ -157,11 +164,7 @@ export function shortName(n: StoryNode) {
 }
 
 /** How the judge reached each verdict, in plain words. */
-export const JUDGE_RULE: Record<Verdict, string> = {
-  reproduced_failure: 'The baseline passed, the candidate failed, and the control passed again once the change was undone.',
-  no_failure_observed: 'The candidate passed the same checks as the baseline, under the conditions that were tested.',
-  inconclusive: 'The runs did not give the judge enough to decide either way.',
-}
+export const JUDGE_RULE = VERDICT_RULE
 
 /** Story time at which each sandbox run plays (DominoScene uses the same schedule). */
 export const runTime = (i: number, count: number) => 2.78 + (i * 0.4) / Math.max(1, count)
@@ -169,3 +172,9 @@ export const runTime = (i: number, count: number) => 2.78 + (i * 0.4) / Math.max
 /** Reduced motion: each chapter holds its finished state instead of animating between them. */
 const HELD = [0, 1.2, 2.1, 3.24, 4]
 export const heldState = (s: number) => HELD[Math.min(HELD.length - 1, Math.max(0, Math.round(s)))]
+
+/** A measurement key as plain words: "meta-store.rows_visible_to_builder" → "Rows visible to builder". */
+export function measureLabel(key: string) {
+  const words = (key.split('.').pop() ?? key).replace(/[_-]+/g, ' ').trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}

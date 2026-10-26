@@ -7,7 +7,7 @@ import { CasesView } from './components/CasesView'
 import { EvidencePanel } from './components/EvidencePanel'
 import { InvestigationView } from './components/InvestigationView'
 import { ScorecardView } from './components/ScorecardView'
-import { Sidebar } from './components/Sidebar'
+import { Shell } from './components/Shell'
 import { EmptyView, ErrorView, LoadingView, NotFoundView } from './components/StateViews'
 import { UnderTheHoodView } from './components/UnderTheHoodView'
 import { LandingPage } from './components/landing/LandingPage'
@@ -29,11 +29,11 @@ function pageTitle(route: Route, caseEntry?: CaseEntry) {
     case 'try':
       return 'Try it yourself · Domino'
     case 'cases-index':
-      return 'Cases · Domino'
+      return 'Investigations · Domino'
     case 'results':
       return 'Results · Domino'
     case 'under-the-hood':
-      return 'Under the hood · Domino'
+      return 'System proof · Domino'
     case 'case':
       return caseEntry ? `${caseEntry.label} · Domino` : 'Domino'
     default:
@@ -107,7 +107,7 @@ export default function App() {
         content = s.cases.length === 0 ? <EmptyView /> : <CasesView site={s} />
         break
       case 'results':
-        content = <ScorecardView scorecard={s.scorecard!} cases={s.cases} />
+        content = <ScorecardView scorecard={s.scorecard!} cases={s.cases} section={route.section} />
         break
       case 'under-the-hood':
         content = <UnderTheHoodView site={s} section={route.section} />
@@ -115,7 +115,7 @@ export default function App() {
       case 'case':
         if (!caseEntry) content = s.cases.length === 0 ? <EmptyView /> : <NotFoundView what="Case" />
         else if (!run) content = caseEntry.runs.length === 0 ? <EmptyView /> : <NotFoundView what="Run" />
-        else content = <InvestigationView caseEntry={caseEntry} run={run} view={route.view} section={route.section} />
+        else content = <InvestigationView cases={s.cases} caseEntry={caseEntry} run={run} view={route.view} section={route.section} />
         break
       default:
         content = <NotFoundView what="Page" />
@@ -125,13 +125,13 @@ export default function App() {
   const inv = run?.load.ok ? run.load.investigation : null
 
   return (
-    <div className={`app${loc.evidenceId ? ' has-panel' : ''}`}>
+    <div className={`app${site && loc.evidenceId ? ' has-inspector' : ''}`}>
       {skipLink}
-      <Sidebar cases={site?.cases ?? []} route={route} preview={preview} onPreview={setPreview} />
-      <main id="main" ref={mainRef} tabIndex={-1}>
+      <Shell route={route} preview={preview} onPreview={setPreview} />
+      <main id="main" ref={mainRef} tabIndex={-1} className="app-main">
         {content}
       </main>
-      {site && loc.evidenceId && <EvidencePanel id={loc.evidenceId} inv={inv} />}
+      {site && loc.evidenceId && <EvidencePanel key={`${route.name === 'case' ? route.caseId : ''}:${run?.runId ?? ''}`} id={loc.evidenceId} inv={inv} />}
     </div>
   )
 }

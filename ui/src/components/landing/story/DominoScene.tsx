@@ -255,7 +255,7 @@ function useAssets(data: StoryData) {
         ring: glass(AMBER, 0),
         boxFill: glass(WIRE, 0),
         boxEdge: new THREE.LineBasicMaterial({ color: WIRE, transparent: true, opacity: 0, toneMapped: false }),
-        columns: data.runs.slice(0, 4).map((r) => glass(r.outcome === 'pass' ? '#dcecf8' : SIGNAL, 0)),
+        columns: data.trio.map((r) => glass(r.outcome === 'pass' ? '#dcecf8' : SIGNAL, 0)),
         limitBar: glass(AMBER, 0),
         limitSheet: glass(AMBER, 0),
         haloChange: halo('#ffe9c7'),
@@ -343,8 +343,8 @@ function layout(data: StoryData) {
   const center = box.getCenter(new THREE.Vector3())
   const size = box.getSize(new THREE.Vector3())
   // Measurement columns stand in a row along the front of the sandbox.
-  const count = Math.min(4, data.runs.length)
-  const columns = Array.from({ length: count }, (_, i) => v3(center.x + (i - (count - 1) / 2) * 0.62, FLOOR, box.max.z - 0.45))
+  const count = data.trio.length
+  const columns = Array.from({ length: count }, (_, i) => v3(center.x + (i - (count - 1) / 2) * 0.72, FLOOR, box.max.z - 0.45))
 
   return { assembled, unfolded, concluded, curves, assumptionIndex, focus, inBox, box: { center, size }, columns }
 }
@@ -378,7 +378,7 @@ function Stage({ data, progress, huds, reduced, compact }: SceneProps) {
   const DOTS = 28
   const exp = data.experiment
   const limitValue = exp?.limit?.value ?? null
-  const runs = data.runs.slice(0, 4)
+  const runs = data.trio
   const runValues = runs.map((r) => (typeof r.value === 'number' ? r.value : null))
   const scaleTo = limitValue ?? Math.max(1, ...runValues.map((v) => v ?? 0)) / 1.3
   const heights = runValues.map((v) => (v == null ? 0 : (v / scaleTo) * LIMIT_H))
@@ -464,9 +464,9 @@ function Stage({ data, progress, huds, reduced, compact }: SceneProps) {
     const f = L.focus
     const stops: [Key, Key][] = [
       [k(v3(4.4, 2.9, 10.4), v3(0, -0.1, 0), 0, 0.03), k(v3(3.5, 2.6, 10.9), v3(0, -0.1, 0), 0, 0.03)],
-      [k(v3(0.3, 2.6, 11.6), v3(0, -0.05, 0.2), 0, -0.02), k(v3(-0.6, 2.4, 11.3), v3(0, -0.05, 0.2), 0, -0.02)],
+      [k(v3(0.3, 2.9, 12.6), v3(0, -0.05, 0.2), 0, -0.07), k(v3(-0.6, 2.7, 12.3), v3(0, -0.05, 0.2), 0, -0.07)],
       [k(f.clone().add(v3(-2.6, 1.3, 8.4)), f.clone().add(v3(0, -0.5, 0)), -0.17, 0.03), k(f.clone().add(v3(-1.9, 1.1, 8.2)), f.clone().add(v3(0, -0.5, 0)), -0.17, 0.03)],
-      [k(sb.clone().add(v3(-2.6, 3.0, 15.4)), sb.clone(), 0.13, -0.01), k(sb.clone().add(v3(-1.8, 2.8, 15.2)), sb.clone(), 0.13, -0.01)],
+      [k(sb.clone().add(v3(-2.6, 3.0, 15.4)), sb.clone(), 0.15, 0.02), k(sb.clone().add(v3(-1.8, 2.8, 15.2)), sb.clone(), 0.15, 0.02)],
       [k(v3(4.8, 3.1, 13.4), v3(0.7, -0.3, 0.2), 0, -0.17), k(v3(4.0, 2.9, 13.8), v3(0.7, -0.3, 0.2), 0, -0.17)],
     ]
     return stops
@@ -523,9 +523,9 @@ function Stage({ data, progress, huds, reduced, compact }: SceneProps) {
       .multiplyScalar((compact ? THREE.MathUtils.lerp(1.8, 1.45, ramp(s, 0.25, 0.75)) : 1) + (1 - intro) * 0.35)
       .add(camTarget)
     if (compact) {
-      // Phones: centred, a little lower in the hero (between the headline's halves), higher once copy scrolls below.
+      // Stacked layouts: centred, a little lower in the hero, higher once copy scrolls in below.
       fx = 0
-      fy = THREE.MathUtils.lerp(0.05, 0.03, ramp(s, 0.25, 0.75))
+      fy = THREE.MathUtils.lerp(size.width > size.height ? 0.03 : 0.05, -0.06, ramp(s, 0.25, 0.75))
     }
     camera.position.copy(camPos)
     camera.lookAt(camTarget)
@@ -568,7 +568,13 @@ function Stage({ data, progress, huds, reduced, compact }: SceneProps) {
           : L.inBox.has(i)
         : true
       const o = 1 - (inFocus ? 0 : focusIn * 0.85)
-      assets.mat.bodies[i].opacity = o
+      // Opaque while fully shown, so a body hides the faces behind it; transparent only while it steps back.
+      const body = assets.mat.bodies[i]
+      if (body.transparent !== o < 0.999) {
+        body.transparent = o < 0.999
+        body.needsUpdate = true
+      }
+      body.opacity = o
       assets.mat.faces[i].opacity = o
       assets.mat.pipMats[i].opacity = o
       assets.mat.edgeMats[i].opacity = 0.9 * o
@@ -791,8 +797,8 @@ function Stage({ data, progress, huds, reduced, compact }: SceneProps) {
         ))}
         {L.columns.length > 0 && (
           <group ref={limitLine} position={[L.box.center.x, FLOOR + LIMIT_H, L.columns[0].z]} visible={false}>
-            <mesh geometry={geo.bar} material={mat.limitBar} scale={[L.columns.length * 0.62 + 0.5, 1, 1]} />
-            <mesh geometry={geo.sheet} material={mat.limitSheet} scale={[L.columns.length * 0.62 + 0.5, 1, 0.8]} />
+            <mesh geometry={geo.bar} material={mat.limitBar} scale={[L.columns.length * 0.72 + 0.5, 1, 1]} />
+            <mesh geometry={geo.sheet} material={mat.limitSheet} scale={[L.columns.length * 0.72 + 0.5, 1, 0.8]} />
           </group>
         )}
 

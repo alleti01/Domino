@@ -8,8 +8,8 @@ import { Arrow, ArrowLink } from './Motion'
 const NAV: { label: string; to: string; section?: string; external?: boolean }[] = [
   { label: 'How it works', to: href.landing('how'), section: 'how' },
   { label: 'Cases', to: href.landing('cases'), section: 'cases' },
-  { label: 'Proof', to: href.landing('proof'), section: 'proof' },
-  { label: 'Demo', to: href.landing('demo'), section: 'demo' },
+  { label: 'Built with', to: href.landing('built-with'), section: 'built-with' },
+  { label: 'FAQ', to: href.landing('faq'), section: 'faq' },
   { label: 'GitHub', to: REPO_URL, external: true },
 ]
 

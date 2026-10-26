@@ -327,5 +327,183 @@ describe('landing 3D story on the real flagship run', () => {
       'Max entries',
     ])
     expect(story.runs.map((r) => r.value)).toEqual([140, 280, 280, 140])
+    // The landing page compares one of each; the repeated candidate stays in the report.
+    expect(story.trio.map((r) => `${r.variant}:${r.value}`)).toEqual(['baseline:140', 'candidate:280', 'control:140'])
+    const { measureLabel } = await import('../components/landing/story/storyData')
+    expect(measureLabel('meta-store.rows_visible_to_builder')).toBe('Rows visible to builder')
+  })
+})
+
+describe('report navigation', () => {
+  it('opens old single-page anchors on the tab that now holds them', async () => {
+    const { resolveSection, auditView } = await import('../lib/report')
+    expect(resolveSection(null)).toEqual({ tab: 'summary', anchor: null })
+    expect(resolveSection('chain')).toEqual({ tab: 'context', anchor: 'chain' })
+    expect(resolveSection('change')).toEqual({ tab: 'context', anchor: 'change' })
+    expect(resolveSection('verdict')).toEqual({ tab: 'summary', anchor: 'verdict' })
+    expect(resolveSection('receipts')).toEqual({ tab: 'audit', anchor: 'receipts' })
+    expect(resolveSection('experiments')).toEqual({ tab: 'experiments', anchor: null })
+    expect(resolveSection('audit')).toEqual({ tab: 'audit', anchor: null })
+    expect(resolveSection('nonsense')).toEqual({ tab: 'summary', anchor: null })
+    expect(auditView('receipts')).toBe('receipts')
+    expect(auditView('trace')).toBe('trace')
+  })
+
+  it('never presents a saved trace as running now', async () => {
+    const { traceOrigin } = await import('../lib/report')
+    expect(traceOrigin({ replay: false, status: 'complete' })).toBe('Saved trace, recorded from a live run')
+    expect(traceOrigin({ replay: true, status: 'complete' })).toBe('Saved trace, replayed from an earlier recording')
+    expect(traceOrigin({ replay: false, status: 'running' })).toMatch(/ends before a verdict/)
+  })
+})
+
+describe('overview filtering', () => {
+  it('searches change titles and IDs and filters by the latest verdict', async () => {
+    const { samplesSource } = await import('./sources')
+    const { filterCases, latestState } = await import('../lib/report')
+    const { site } = await loadSite(samplesSource)
+    expect(site.cases.map(latestState)).toEqual(['reproduced_failure', 'no_failure_observed', 'reproduced_failure', 'no_failure_observed'])
+    expect(filterCases(site.cases, '', 'reproduced_failure').map((c) => c.id)).toEqual(['w-k7m2', 'w-g4k8'])
+    expect(filterCases(site.cases, 'shard', 'all').map((c) => c.id)).toEqual(['w-k7m2', 'w-h9c5'])
+    expect(filterCases(site.cases, 'template t7', 'all').map((c) => c.id)).toEqual(['w-r1z5'])
+    expect(filterCases(site.cases, 'shard', 'no_failure_observed').map((c) => c.id)).toEqual(['w-h9c5'])
+    expect(filterCases(site.cases, 'nothing like this', 'all')).toEqual([])
+  })
+})
+
+describe('dependency map', () => {
+  const load = async () => {
+    const { samplesSource } = await import('./sources')
+    const { site } = await loadSite(samplesSource)
+    const inv = (id: string) => {
+      const r = site.cases.find((c) => c.id === id)!.runs[0]
+      if (!r.load.ok) throw new Error(r.load.error)
+      return r.load.investigation
+    }
+    return inv
+  }
+  const noOverlap = (l: ReturnType<typeof import('../lib/graph').layoutMap>) => {
+    const spots = [...l.at.values()].map((p) => `${p.layer}:${p.row}`)
+    return new Set(spots).size === spots.length
+  }
+
+  it('marks the verdict path on the retrieved graph and lays it along one row', async () => {
+    const { investigationMap, layoutMap, pathOnly } = await import('../lib/graph')
+    const map = investigationMap((await load())('w-k7m2'))
+    expect(map.path).toHaveLength(6)
+    expect(map.nodes.find((n) => n.id === map.path[0])?.isChange).toBe(true)
+    expect(map.edges.filter((e) => e.onPath)).toHaveLength(5)
+    // Path links keep the verdict's own status: the last one is inferred.
+    expect(map.edges.filter((e) => e.onPath).map((e) => e.status)).toEqual(['observed', 'observed', 'observed', 'observed', 'inferred'])
+    const l = layoutMap(map)
+    expect(map.path.map((id) => l.at.get(id)!.row)).toEqual([0, 0, 0, 0, 0, 0])
+    const layers = map.path.map((id) => l.at.get(id)!.layer)
+    expect(layers).toEqual([...layers].sort((a, b) => a - b))
+    expect(new Set(layers).size).toBe(layers.length)
+    expect(noOverlap(l)).toBe(true)
+    expect(pathOnly(map).nodes).toHaveLength(6)
+  })
+
+  it('draws no failure path when the verdict names none', async () => {
+    const { investigationMap, layoutMap } = await import('../lib/graph')
+    const map = investigationMap((await load())('w-h9c5'))
+    expect(map.path).toEqual([])
+    expect(map.edges.some((e) => e.onPath)).toBe(false)
+    expect(map.nodes).toHaveLength(11)
+    expect(noOverlap(layoutMap(map))).toBe(true)
+  })
+
+  it('wraps long names after separators', async () => {
+    const { wrapName } = await import('../lib/graph')
+    expect(wrapName('worker-runtime.max_entries', 16)).toEqual(['worker-runtime.', 'max_entries'])
+    expect(wrapName('short', 16)).toEqual(['short'])
+    expect(wrapName('a.b.c.d.e.f.g.h.i.j.k.l', 4, 2)).toEqual(['a.b.', 'c.d…'])
+  })
+})
+
+describe('experiment instrument', () => {
+  it('states only what the recorded runs show', async () => {
+    const { samplesSource } = await import('./sources')
+    const { instrumentNotes } = await import('../components/report/derive')
+    const { site } = await loadSite(samplesSource)
+    const inv = (id: string) => {
+      const r = site.cases.find((c) => c.id === id)!.runs[0]
+      if (!r.load.ok) throw new Error(r.load.error)
+      return r.load.investigation
+    }
+    expect(instrumentNotes(inv('w-k7m2'), 'meta-store.rows_visible_to_builder')).toEqual([
+      'meta-store.rows_visible_to_builder went from 140 to 280 with the change. A changed value is not a failure by itself; pass and fail come from the checks.',
+      '2 of 2 candidate runs failed runtime_starts_with_bundle: the repeat agrees.',
+      'With the change undone, the control passed every check.',
+    ])
+    const calm = instrumentNotes(inv('w-h9c5'), 'meta-store.rows_visible_to_builder')
+    expect(calm[1]).toBe('The candidate run passed every check.')
+    expect(calm[2]).toBe('No control run (change undone) was recorded.')
+  })
+})
+
+describe('3D view and shared selection', () => {
+  const load = async (id: string) => {
+    const { samplesSource } = await import('./sources')
+    const { site } = await loadSite(samplesSource)
+    const r = site.cases.find((c) => c.id === id)!.runs[0]
+    if (!r.load.ok) throw new Error(r.load.error)
+    return r.load.investigation
+  }
+
+  it('keeps a valid selection when the drawn scope changes', async () => {
+    const { investigationMap, pathOnly, resolveSelection } = await import('../lib/graph')
+    const full = investigationMap(await load('w-k7m2'))
+    const off = full.nodes.find((n) => n.step == null)!
+    // A context component stays selected in the full map…
+    expect(resolveSelection(full, { type: 'node', id: off.id })).toEqual({ type: 'node', id: off.id })
+    // …and falls back to the first doubtful path link when only the path is drawn.
+    const doubt = full.edges.find((e) => e.onPath && e.status !== 'observed')!
+    expect(resolveSelection(pathOnly(full), { type: 'node', id: off.id })).toEqual({ type: 'edge', id: doubt.id })
+    // With no path, the default is the change itself.
+    const calm = investigationMap(await load('w-h9c5'))
+    expect(resolveSelection(calm, null)).toEqual({ type: 'node', id: calm.nodes.find((n) => n.isChange)!.id })
+  })
+
+  it('lights a node, its links and their far ends, and nothing else', async () => {
+    const { investigationMap, selectionFocus } = await import('../lib/graph')
+    const map = investigationMap(await load('w-k7m2'))
+    const builder = map.nodes.find((n) => n.label === 'bundle-builder')!
+    const f = selectionFocus(map, { type: 'node', id: builder.id })
+    expect(f.edges.size).toBe(5)
+    expect(f.nodes.size).toBe(6)
+    const edge = map.edges[0]
+    expect([...selectionFocus(map, { type: 'edge', id: edge.id }).nodes].sort()).toEqual([edge.from, edge.to].sort())
+  })
+
+  it('walks only the verdict path, keeping each link’s own status', async () => {
+    const { investigationMap, walkSteps } = await import('../lib/graph')
+    const steps = walkSteps(investigationMap(await load('w-k7m2')))
+    expect(steps.map((s) => s.edge.status)).toEqual(['observed', 'observed', 'observed', 'observed', 'inferred'])
+    expect(steps[4].note).toMatch(/^Inferred: proposed from the surrounding evidence/)
+    expect(steps[0].from.isChange).toBe(true)
+    // No path in the verdict, no walkthrough: a layout route is never presented as causal.
+    expect(walkSteps(investigationMap(await load('w-h9c5')))).toEqual([])
+  })
+
+  it('places the same run in the same spots, path on the front lane', async () => {
+    const { investigationMap, layoutMap, place3d, edgeControls, SPACE } = await import('../lib/graph')
+    const inv = await load('w-k7m2')
+    const a = place3d(layoutMap(investigationMap(inv)))
+    const b = place3d(layoutMap(investigationMap(inv)))
+    expect([...a]).toEqual([...b])
+    const map = investigationMap(inv)
+    expect(map.path.map((id) => a.get(id)!.z)).toEqual(map.path.map(() => 0))
+    // Links leave the source's right edge and land on the target's left edge.
+    const e = map.edges.find((x) => x.onPath)!
+    const [start, , , end] = edgeControls(a.get(e.from)!, a.get(e.to)!)
+    expect(start[0]).toBeCloseTo(a.get(e.from)!.x + SPACE.tileW / 2)
+    expect(end[0]).toBeCloseTo(a.get(e.to)!.x - SPACE.tileW / 2)
+  })
+
+  it('shortens long labels without touching IDs', async () => {
+    const { displayName } = await import('../lib/graph')
+    expect(displayName('svc_bundle_reader')).toBe('svc_bundle_reader')
+    expect(displayName('worker-runtime.startup_timeout_s', 22)).toBe('…startup_timeout_s')
   })
 })

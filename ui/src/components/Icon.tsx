@@ -16,6 +16,14 @@ export type IconName =
   | 'flag'
   | 'bar-chart'
   | 'info'
+  | 'search'
+  | 'close'
+  | 'arrow-right'
+  | 'layers'
+  | 'check'
+  | 'x'
+  | 'map'
+  | 'grid'
 
 const PATHS: Record<IconName, ReactNode> = {
   'x-circle': (
@@ -85,6 +93,19 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M12 11v5M12 8h.01" />
     </>
   ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </>
+  ),
+  close: <path d="M6 6l12 12M18 6L6 18" />,
+  'arrow-right': <path d="M4 12h15M14 6l6 6-6 6" />,
+  layers: <path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5" />,
+  check: <path d="M5 12.5l4.5 4.5L19 7" />,
+  x: <path d="M7 7l10 10M17 7L7 17" />,
+  map: <path d="M3 6h5v5H3zM16 13h5v5h-5zM8 8.5h3.5a2 2 0 012 2v3.5a2 2 0 002 2H16" />,
+  grid: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />,
 }
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {

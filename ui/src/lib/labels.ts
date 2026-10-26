@@ -10,6 +10,13 @@ export const VERDICT: Record<Verdict, { label: string; tone: Tone; icon: IconNam
 
 export type Tone = 'fail' | 'neutral' | 'warn' | 'ok' | 'muted' | 'accent'
 
+/** How the deterministic judge reaches each verdict, in plain words. */
+export const VERDICT_RULE: Record<Verdict, string> = {
+  reproduced_failure: 'The baseline passed, the candidate failed, and the control passed again once the change was undone.',
+  no_failure_observed: 'The candidate passed the same checks as the baseline, under the conditions that were tested.',
+  inconclusive: 'The runs did not give the judge enough to decide either way.',
+}
+
 export const CASE_KIND: Record<CaseKind, string> = {
   inspired: 'Simulation of a real incident mechanism',
   held_out: 'Held-out case, not seen by the agent rules',

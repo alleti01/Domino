@@ -193,20 +193,14 @@
   height: 115vh;
 }
 
-.chapter-connect {
+.chapter-connect,
+.chapter-assumption,
+.chapter-result {
   height: 150vh;
 }
 
-.chapter-assumption {
-  height: 145vh;
-}
-
 .chapter-experiment {
-  height: 205vh;
-}
-
-.chapter-result {
-  height: 145vh;
+  height: 190vh;
 }
 
 .chapter-frame {
@@ -215,9 +209,9 @@
   display: grid;
   height: 100vh;
   height: 100svh;
-  padding: calc(var(--nav-h) + 28px) var(--edge) clamp(24px, 4vh, 44px);
-  /* Copy reads over the object; keep it crisp against bright surfaces. */
-  text-shadow: 0 1px 14px rgb(5 7 11 / 0.9);
+  padding: calc(var(--nav-h) + 28px) var(--edge) clamp(28px, 6vh, 64px);
+  /* Copy sits in open space beside or around the object; the shadow keeps it crisp against the glow. */
+  text-shadow: 0 1px 16px rgb(5 7 11 / 0.95);
 }
 
 .chapter-empty {
@@ -226,7 +220,6 @@
 }
 
 .chapter-kicker,
-.story-stamp,
 .story-scroll {
   font: 500 11.5px/1.6 var(--font-mono);
   letter-spacing: 0.09em;
@@ -245,7 +238,7 @@
 .chapter-title {
   margin: 8px 0 0;
   color: var(--frost);
-  font-size: clamp(30px, 3.4vw, 50px);
+  font-size: clamp(32px, 3.6vw, 54px);
   font-weight: 500;
   line-height: 1.02;
   letter-spacing: -0.04em;
@@ -266,42 +259,23 @@
   text-shadow: none;
 }
 
-.chapter-lede,
-.chapter-body > p,
-.chapter-panel > p {
+.chapter-text {
+  max-width: 34rem;
   color: var(--mist);
-  font-size: 16px;
-  line-height: 1.6;
-}
-
-.chapter-frame code {
-  color: var(--frost);
-  font-size: 0.86em;
-}
-
-.chapter-note {
-  color: var(--dim);
-  font-size: 13.5px;
+  font-size: 17px;
   line-height: 1.55;
 }
 
-.chapter-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 22px;
+.chapter-link {
   color: var(--frost);
-  font-size: 14px;
+  font-size: 14.5px;
 }
 
-/* Panels that sit over the scene get a quiet backing. */
-.chapter-panel,
-.connect-detail,
-.experiment-body {
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(6 9 14 / 0.74);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  text-shadow: none;
+.chapter-body {
+  display: grid;
+  gap: 18px;
+  align-content: end;
+  justify-items: start;
 }
 
 /* ---------- Hero: headline split around the object ---------- */
@@ -357,7 +331,7 @@
 }
 
 .hero-sub {
-  max-width: 34rem;
+  max-width: 30rem;
   color: var(--mist);
   font-size: clamp(16px, 1.2vw, 18px);
   line-height: 1.55;
@@ -370,23 +344,16 @@
   gap: 14px 28px;
 }
 
-.hero-meta {
+.hero-disclosure {
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.chapter-hero .story-scroll {
   grid-column: 2;
   grid-row: 2;
-  display: grid;
-  gap: 8px;
-  align-content: end;
-  justify-items: end;
-  text-align: right;
-}
-
-.story-stamp {
-  color: var(--dim);
-  font-size: 10.5px;
-}
-
-.story-stamp a {
-  color: var(--frost);
+  align-self: end;
+  justify-self: end;
 }
 
 .story-scroll {
@@ -456,34 +423,22 @@
   animation: underline-redraw 0.6s var(--ease) both;
 }
 
-/* ---------- 1 · Connect: heading above the object, explanation below ---------- */
+/* ---------- 1 · Connect: heading above the object, one sentence and the sources below ---------- */
 .chapter-connect .chapter-frame {
   grid-template-rows: auto minmax(0, 1fr) auto;
   justify-items: center;
-}
-
-.chapter-connect .chapter-head {
   text-align: center;
 }
 
-.connect-body {
+.chapter-connect .chapter-body {
   grid-row: 3;
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 18px 32px;
-  align-items: end;
-  width: 100%;
-}
-
-.connect-detail {
-  display: grid;
-  gap: 12px;
-  padding: 16px 18px;
+  justify-items: center;
 }
 
 .connect-sources {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -491,192 +446,101 @@
 }
 
 .connect-sources li {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-  padding: 4px 9px;
-  border: 1px solid rgb(255 255 255 / 0.12);
-  color: var(--dim);
-  font: 400 11.5px/1.4 var(--font-mono);
+  padding: 5px 11px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 2px;
+  color: var(--mist);
+  font: 400 12px/1.4 var(--font-mono);
   transition: border-color 0.4s var(--ease-quad), color 0.4s var(--ease-quad);
 }
 
-.connect-sources li code {
-  color: inherit;
-}
-
 .connect-sources li.is-lit {
-  border-color: rgb(169 220 255 / 0.5);
+  border-color: rgb(169 220 255 / 0.55);
   color: var(--wire);
-}
-
-.connect-path {
-  color: var(--frost);
-  font: 400 12px/1.8 var(--font-mono);
-}
-
-.connect-rel {
-  color: var(--wire);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.connect-rel.inferred {
-  color: var(--amber);
-}
-
-.connect-rel.unresolved {
-  color: var(--signal);
 }
 
 /* ---------- 2 · Assumption: the relationship in close-up, the explanation beside it ---------- */
 .chapter-assumption .chapter-frame {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 25rem);
   align-items: center;
 }
 
-.chapter-assumption .chapter-panel {
+.chapter-assumption .chapter-body {
   grid-column: 2;
-  display: grid;
-  gap: 12px;
-  padding: 22px 22px 20px;
-}
-
-.chapter-assumption .chapter-panel > p:not(.chapter-kicker) {
-  font-size: 14.5px;
-  line-height: 1.55;
-}
-
-.link-legend {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0;
-  border-top: 1px solid rgb(255 255 255 / 0.1);
-  border-bottom: 1px solid rgb(255 255 255 / 0.1);
-}
-
-.link-legend > div {
-  display: grid;
-  align-content: start;
-  gap: 2px;
-  padding: 8px 10px 8px 0;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.link-legend > div + div {
-  padding-left: 10px;
-  border-left: 1px solid rgb(255 255 255 / 0.07);
-}
-
-.link-legend dt {
-  font: 500 10.5px/1.9 var(--font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.link-legend dd {
-  margin: 0;
-  color: var(--mist);
-}
-
-.link-legend .observed dt {
-  color: var(--wire);
-}
-
-.link-legend .inferred dt {
-  color: var(--amber);
-}
-
-.link-legend .unresolved dt {
-  color: var(--signal);
+  align-content: center;
 }
 
 .assumption-question {
-  padding-left: 12px;
+  max-width: 26rem;
+  padding: 2px 0 2px 14px;
   border-left: 1px solid var(--amber);
   color: var(--frost);
-  font-size: 15px;
-  line-height: 1.5;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-style: italic;
+  line-height: 1.3;
 }
 
-.assumption-question strong {
-  color: var(--amber);
-  font-weight: 500;
-}
-
-/* ---------- 3 · Experiment: heading above, the runs side by side below ---------- */
+/* ---------- 3 · Experiment: heading above, the controlled comparison below ---------- */
 .chapter-experiment .chapter-frame {
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .chapter-experiment .chapter-head {
-  max-width: 36rem;
-}
-
-.chapter-experiment .chapter-lede {
-  margin-top: 12px;
-}
-
-.experiment-body {
-  grid-row: 3;
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: 6px 26px;
-  padding: 14px 16px;
+  gap: 12px;
+  /* Leaves the right side of the frame to the sandbox. */
+  max-width: min(34rem, 40vw);
 }
 
-.experiment-body > p {
-  font-size: 13px;
+.chapter-experiment .chapter-body {
+  grid-row: 3;
 }
 
 .run-strip {
-  grid-row: 1 / span 3;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 9.5rem));
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid rgb(255 255 255 / 0.08);
 }
 
 .run-strip li {
   display: grid;
   align-content: start;
   gap: 2px;
-  padding: 10px 12px 12px;
-  opacity: 0.38;
-  transition: opacity 0.4s var(--ease-quad), background-color 0.4s var(--ease-quad);
+  padding: 10px 18px 10px 0;
+  border-top: 1px solid rgb(255 255 255 / 0.2);
+  transition: border-color 0.4s var(--ease-quad);
 }
 
 .run-strip li + li {
-  border-left: 1px solid rgb(255 255 255 / 0.08);
+  padding-left: 18px;
 }
 
 .run-strip li.is-lit {
-  opacity: 1;
+  border-top-color: var(--frost);
 }
 
 .run-strip li.fail.is-lit {
-  background: rgb(255 106 77 / 0.07);
+  border-top-color: var(--signal);
 }
 
 .run-name {
   color: var(--frost);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
 }
 
 .run-note {
   color: var(--dim);
-  font: 400 10.5px/1.4 var(--font-mono);
+  font: 400 11px/1.4 var(--font-mono);
 }
 
 .run-value {
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--frost);
-  font-size: clamp(28px, 2.6vw, 38px);
+  font-size: clamp(30px, 2.8vw, 42px);
   line-height: 1;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
@@ -684,7 +548,7 @@
 
 .run-outcome {
   color: var(--mist);
-  font: 500 11px/1.6 var(--font-mono);
+  font: 500 11.5px/1.6 var(--font-mono);
   letter-spacing: 0.04em;
 }
 
@@ -693,114 +557,70 @@
   color: var(--signal);
 }
 
-.experiment-measure {
-  color: var(--mist);
-  font-size: 13.5px;
-  line-height: 1.55;
+.run-caption {
+  color: var(--dim);
+  font: 400 12px/1.5 var(--font-mono);
 }
 
-/* ---------- 4 · Result: the object settles above, the evidence rises below ---------- */
+/* ---------- 4 · Result: the object settles above, the verdict below ---------- */
 .chapter-result .chapter-frame {
   grid-template-rows: minmax(0, 1fr) auto;
 }
 
-.result-panel {
+.chapter-result .chapter-body {
   grid-row: 2;
-  display: grid;
-  gap: 16px;
-  padding: 20px 22px 20px;
-}
-
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid rgb(255 255 255 / 0.1);
-}
-
-.result-grid > div {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  padding: 14px 18px 0 0;
-  color: var(--mist);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.result-grid > div + div {
-  padding-left: 18px;
-  border-left: 1px solid rgb(255 255 255 / 0.08);
-}
-
-.result-grid h3 {
-  color: var(--dim);
-  font: 500 10.5px/1.6 var(--font-mono);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  gap: 14px;
 }
 
 .result-verdict {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--frost);
-  font-size: 22px;
+  font-size: clamp(22px, 2vw, 28px);
   font-weight: 500;
   letter-spacing: -0.02em;
-  text-transform: capitalize;
 }
 
 .result-verdict.tone-fail::before {
   content: '';
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--signal);
   box-shadow: 0 0 14px var(--signal);
 }
 
-.result-stats {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.result-stats strong {
-  color: var(--frost);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.result-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 26px;
-  font-size: 14.5px;
-}
-
-/* ---------- Cases and proof ---------- */
-.support {
-  display: grid;
-  gap: 28px;
-  padding: clamp(72px, 10vh, 110px) var(--edge) 0;
+/* ---------- Outcomes ---------- */
+.support,
+.builtwith,
+.faq {
+  padding: clamp(72px, 11vh, 120px) var(--edge) 0;
   background: var(--void);
   scroll-margin-top: 40px;
 }
 
 .support:focus,
-.closing:focus,
-.closing-demo:focus,
-.support-figures:focus {
+.builtwith:focus,
+.faq:focus,
+.closing:focus {
   outline: none;
+}
+
+.support {
+  display: grid;
+  gap: 28px;
 }
 
 .support-head {
   display: grid;
-  gap: 8px;
-  max-width: 44rem;
+  gap: 10px;
+  max-width: 40rem;
+}
+
+.support-head > p {
+  color: var(--mist);
+  font-size: 17px;
 }
 
 .support-title,
@@ -812,29 +632,22 @@
   letter-spacing: -0.04em;
 }
 
-.support-head > p:last-child {
-  color: var(--mist);
-}
-
 .support-cases {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.6fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 clamp(24px, 4vw, 56px);
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--rule-strong);
 }
 
 .support-case {
   display: grid;
   align-content: start;
-  gap: 6px;
-  padding: 18px 22px 18px 0;
-}
-
-.support-cases > li + li {
-  padding-left: 22px;
-  border-left: 1px solid var(--rule);
+  justify-items: start;
+  gap: 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule-strong);
 }
 
 .support-case-verdict {
@@ -869,173 +682,152 @@
   letter-spacing: -0.02em;
 }
 
-.support-case h3 a {
-  text-decoration: none;
-}
-
-.support-case h3 a:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
 .support-case-number {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  color: var(--frost);
-  font-size: 15px;
+  color: var(--mist);
+  font-size: 15.5px;
+  line-height: 1.5;
 }
 
-.support-case-number code {
+.support-case-note {
   color: var(--dim);
-  font-size: 11.5px;
-  align-self: center;
-}
-
-.support-case-kind {
-  color: var(--dim);
-  font: 400 11px/1.5 var(--font-mono);
-}
-
-.support-case-links {
-  display: flex;
-  gap: 18px;
-  margin-top: 4px;
   font-size: 13.5px;
 }
 
-.support-case-links > a:last-child {
-  color: var(--mist);
-  text-underline-offset: 4px;
+.support-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+  font-size: 15px;
 }
 
-.support-all a {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 4px;
-  height: 100%;
-  padding: 18px 0;
-  text-decoration: none;
-  font-size: 20px;
-  font-weight: 500;
-}
-
-.support-all-note {
+.support-all span {
   color: var(--dim);
-  font: 400 12px/1.4 var(--font-mono);
+  font-size: 13px;
 }
 
-.support-figures {
+/* ---------- Built with ---------- */
+.builtwith {
+  display: grid;
+  gap: 14px;
+}
+
+.builtwith ul {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--rule-strong);
+  border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
 }
 
-.support-figures li + li {
+.builtwith li + li {
   border-left: 1px solid var(--rule);
 }
 
-.support-figures a {
+.builtwith a {
   display: grid;
-  align-content: start;
-  gap: 6px;
+  gap: 4px;
   height: 100%;
-  padding: 18px 18px 20px;
+  padding: 16px 16px 18px;
   text-decoration: none;
   transition: background-color 0.3s var(--ease-quad);
 }
 
-.support-figures li:first-child a {
+.builtwith li:first-child a {
   padding-left: 0;
 }
 
-.support-figures a:hover {
+.builtwith a:hover {
   background: var(--paper-2);
 }
 
-.figure-value {
-  font-size: clamp(34px, 3.6vw, 52px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-}
-
-.figure-label {
-  color: var(--mist);
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-.figure-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-  font: 500 10.5px/1.4 var(--font-mono);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.support-note {
-  margin-top: -16px;
-  color: var(--dim);
-  font: 400 11.5px/1.5 var(--font-mono);
-}
-
-/* ---------- Closing ---------- */
-.closing {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: 32px clamp(32px, 5vw, 72px);
-  align-items: start;
-  margin-top: clamp(56px, 8vh, 88px);
-  padding: clamp(56px, 8vh, 88px) var(--edge) clamp(64px, 10vh, 110px);
-  border-top: 1px solid var(--rule);
-  background:
-    radial-gradient(50% 80% at 85% 100%, rgb(44 95 134 / 0.32), transparent 70%),
-    var(--void);
-  scroll-margin-top: 0;
-}
-
-.closing-verdicts {
-  display: grid;
-  gap: 16px;
-}
-
-.closing-verdicts dl {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0;
-  border-top: 1px solid var(--rule-strong);
-}
-
-.closing-verdicts dl > div {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  padding: 14px 16px 0 0;
-}
-
-.closing-verdicts dl > div + div {
-  padding-left: 16px;
-  border-left: 1px solid var(--rule);
-}
-
-.closing-verdicts dt {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+.builtwith-name {
   color: var(--frost);
   font-size: 16px;
   font-weight: 500;
 }
 
-.closing-verdicts dt::before {
+.builtwith-role {
+  color: var(--dim);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.builtwith .arrow {
+  margin-top: 6px;
+  color: var(--mist);
+}
+
+/* ---------- FAQ ---------- */
+.faq {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 24px clamp(24px, 4vw, 56px);
+  align-items: start;
+}
+
+.faq-list {
+  border-top: 1px solid var(--rule-strong);
+}
+
+.faq details {
+  border-bottom: 1px solid var(--rule);
+}
+
+.faq summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  color: var(--frost);
+  font-size: 17px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary::after {
+  content: '+';
+  color: var(--dim);
+  font: 400 18px/1 var(--font-mono);
+  transition: transform 0.25s var(--ease-quad);
+}
+
+.faq details[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  padding: 0 0 18px;
+  color: var(--mist);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.faq-answer p {
+  max-width: 44rem;
+}
+
+.faq-verdicts {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.faq-verdicts dt {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--frost);
+  font-weight: 500;
+}
+
+.faq-verdicts dt::before {
   content: '';
   flex-shrink: 0;
   width: 8px;
@@ -1043,93 +835,27 @@
   background: var(--stone);
 }
 
-.closing-verdicts .tone-fail dt::before {
+.faq-verdicts .tone-fail dt::before {
   background: var(--signal);
 }
 
-.closing-verdicts .tone-neutral dt::before {
+.faq-verdicts .tone-neutral dt::before {
   background: var(--steel);
 }
 
-.closing-verdicts .tone-warn dt::before {
+.faq-verdicts .tone-warn dt::before {
   background: var(--amber);
 }
 
-.closing-verdicts dd {
-  margin: 0;
-  color: var(--mist);
-  font-size: 14px;
-  line-height: 1.5;
+.faq-verdicts dd {
+  margin: 2px 0 0 16px;
 }
 
-.closing-limits {
-  display: grid;
-  gap: 6px;
-  margin: 8px 0 0;
-  padding: 14px 0 0;
-  border-top: 1px solid var(--rule);
-  color: var(--dim);
-  font-size: 13.5px;
-  line-height: 1.55;
-  list-style: none;
-}
-
-.closing-limits li::before {
-  content: '—';
-  margin-right: 8px;
-}
-
-.closing-cta {
-  display: grid;
-  gap: 22px;
-  justify-items: start;
-}
-
-.closing-title {
-  font-size: clamp(36px, 4.4vw, 64px);
-}
-
-.closing-demo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  color: var(--dim);
-  font-size: 13.5px;
-  line-height: 1.5;
-  scroll-margin-top: 140px;
-}
-
-.closing-demo-mark {
-  flex-shrink: 0;
-  width: 28px;
-  height: 18px;
-  border: 1px solid var(--rule-strong);
-  border-radius: 2px;
-  background: linear-gradient(135deg, transparent 45%, var(--rule-strong) 46% 54%, transparent 55%);
-}
-
-.closing-demo video {
-  width: min(100%, 520px);
-  border: 1px solid var(--rule-strong);
-}
-
-.site .run-locally {
-  width: 100%;
-  color: var(--dim);
-  font: 500 12px/1.5 var(--font-mono);
-}
-
-.site .run-locally summary {
-  letter-spacing: 0.04em;
-  cursor: pointer;
-}
-
-.site .closing .command {
+.site .faq .command {
   margin-top: 12px;
 }
 
-.site .closing .command pre {
+.site .faq .command pre {
   border-color: var(--rule);
   border-radius: 2px;
   background: #0d131b;
@@ -1137,13 +863,36 @@
   font-size: 12.5px;
 }
 
-.site .closing .command .button {
+.site .faq .command .button {
   border: 1px solid var(--rule-strong);
   border-radius: 2px;
   background: transparent;
   color: var(--frost);
   font-family: var(--font-mono);
   font-size: 12px;
+}
+
+/* ---------- Closing ---------- */
+.closing {
+  display: grid;
+  gap: 28px;
+  justify-items: center;
+  margin-top: clamp(72px, 11vh, 120px);
+  padding: clamp(72px, 12vh, 130px) var(--edge);
+  border-top: 1px solid var(--rule);
+  background:
+    radial-gradient(40% 80% at 50% 100%, rgb(44 95 134 / 0.32), transparent 70%),
+    var(--void);
+  text-align: center;
+  scroll-margin-top: 0;
+}
+
+.closing-title {
+  font-size: clamp(36px, 4.6vw, 68px);
+}
+
+.closing .hero-actions {
+  justify-content: center;
 }
 
 /* ---------- Nav over the story ---------- */
@@ -1169,35 +918,41 @@
 }
 
 /* ---------- Narrower screens ---------- */
+@media (max-width: 1180px) {
+  .chapter-assumption .chapter-frame {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 21rem);
+  }
+
+  .chapter-text {
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 1100px) {
-  .connect-body,
-  .experiment-body {
-    grid-template-columns: minmax(0, 1fr);
+  .builtwith ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .run-strip {
-    grid-row: auto;
+  .builtwith li:nth-child(3) {
+    border-left: 0;
   }
 
-  .support-cases {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .support-all {
-    grid-column: 1 / -1;
-    padding-left: 0 !important;
-    border-left: 0 !important;
+  .builtwith li:nth-child(n + 3) {
     border-top: 1px solid var(--rule);
   }
 
-  .closing {
+  .builtwith li:nth-child(3) a {
+    padding-left: 0;
+  }
+
+  .faq {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-/* Phones and portrait tablets: the scene stays pinned behind; each chapter's
+/* Below 900px and in portrait: the scene stays pinned behind; each chapter's
    copy scrolls up after a stretch of open scene, instead of being framed. */
-@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
   .story-vignette {
     background:
       linear-gradient(to bottom, rgb(5 7 11 / 0.55), transparent 20%, transparent 50%, rgb(5 7 11 / 0.9) 82%),
@@ -1214,36 +969,28 @@
     gap: 16px;
     height: auto;
     min-height: 0;
-    padding: 64vh var(--gutter) 10vh;
+    padding: 62vh var(--gutter) 12vh;
   }
 
+  /* The hero keeps its own frame; only the chapters stack. */
   .chapter-hero .chapter-frame {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
     min-height: 100svh;
     padding-top: calc(var(--nav-h) + 20px);
     padding-bottom: 28px;
   }
 
-  /* Headline above the object, its tail and the actions below, all on the first screen. */
-  .hero-title {
-    font-size: clamp(40px, 11.5vw, 64px);
-    gap: clamp(140px, 21vh, 220px);
+  /* Copy arrives as a dark sheet sliding over the scene, never as text on top of the geometry. */
+  .chapter:not(.chapter-hero) .chapter-frame > * {
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 36px var(--gutter) 8px;
+    background: linear-gradient(to bottom, rgb(5 7 11 / 0), rgb(5 7 11 / 0.95) 36px);
+    text-shadow: none;
   }
 
-  .chapter-hero .chapter-frame {
-    gap: 14px;
-  }
-
-  .hero-foot,
-  .hero-meta {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .hero-meta {
-    justify-items: start;
-    text-align: left;
+  .chapter:not(.chapter-hero) .chapter-frame > * + * {
+    margin-top: -16px;
+    padding-top: 0;
+    background: rgb(5 7 11 / 0.95);
   }
 
   .chapter-connect .chapter-frame,
@@ -1252,69 +999,79 @@
   .chapter-result .chapter-frame {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
-    justify-items: stretch;
-  }
-
-  .chapter-connect .chapter-head {
+    justify-items: start;
     text-align: left;
   }
 
-  .chapter-assumption .chapter-panel,
-  .chapter-head,
-  .connect-body,
-  .experiment-body,
-  .result-panel {
+  .chapter-connect .chapter-body,
+  .chapter-assumption .chapter-body,
+  .chapter-experiment .chapter-body,
+  .chapter-result .chapter-body {
     grid-column: 1;
     grid-row: auto;
+    justify-items: start;
   }
 
-  /* On phones the copy needs its own backing throughout. */
-  .chapter-head,
-  .connect-body > p {
-    padding: 16px 18px;
-    background: rgb(6 9 14 / 0.8);
+  .connect-sources {
+    justify-content: flex-start;
   }
 
   .run-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
   }
 
-  .run-strip li:nth-child(3) {
-    border-left: 0;
+  .run-strip li {
+    padding-right: 10px;
   }
 
-  .run-strip li:nth-child(n + 3) {
-    border-top: 1px solid rgb(255 255 255 / 0.08);
+  .run-strip li + li {
+    padding-left: 10px;
   }
 
-  .result-grid,
-  .closing-verdicts dl,
   .support-cases,
-  .support-figures {
+  .builtwith ul {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .result-grid > div + div,
-  .closing-verdicts dl > div + div,
-  .support-cases > li + li,
-  .support-figures li + li {
-    padding-left: 0;
+  .support-cases {
+    gap: 24px;
+  }
+
+  .builtwith li + li {
     border-left: 0;
     border-top: 1px solid var(--rule);
   }
 
-  .result-grid > div,
-  .closing-verdicts dl > div {
-    padding: 12px 0;
-  }
-
-  .support-figures a {
+  .builtwith a {
     padding-left: 0;
   }
 
-
   .hud-col {
     font-size: 13px;
+  }
+}
+
+/* Phones and portrait screens: headline above the object, its tail and the actions below, all on the first screen. */
+@media (max-width: 760px), (max-aspect-ratio: 1/1) {
+  .chapter-hero .chapter-frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 14px;
+  }
+
+  .hero-title {
+    font-size: clamp(40px, 11.5vw, 64px);
+    gap: clamp(140px, 21vh, 220px);
+  }
+
+  .hero-foot {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .chapter-hero .story-scroll {
+    display: none;
   }
 }
 
@@ -1330,7 +1087,8 @@
   }
 
   .connect-sources li,
-  .run-strip li {
+  .run-strip li,
+  .faq summary::after {
     transition: none;
   }
 }

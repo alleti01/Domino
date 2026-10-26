@@ -1,34 +1,34 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { HEADLINE, HERO_SUB } from '../../../content'
-import { VERDICT, isNemotron, shortModel } from '../../../lib/labels'
+import { VERDICT } from '../../../lib/labels'
 import { href } from '../../../lib/router'
 import type { Showcase } from '../../../lib/showcase'
 import { Arrow, ArrowLink } from '../Motion'
-import { JUDGE_RULE, heldState, relationText, runTime, shortName, storyData, type StoryData } from './storyData'
+import { JUDGE_RULE, heldState, measureLabel, relationText, runTime, shortName, storyData, type StoryData } from './storyData'
 
 const DominoScene = lazy(() => import('./DominoScene'))
 
-const VARIANT_LABEL: Record<string, string> = { baseline: 'Baseline', candidate: 'Candidate', control: 'Control' }
-const VARIANT_NOTE: Record<string, string> = {
-  baseline: 'without the change',
-  candidate: 'with the change',
-  control: 'change undone',
+const RUN_LABEL: Record<string, [string, string]> = {
+  baseline: ['Baseline', 'without the change'],
+  candidate: ['Candidate', 'with the change'],
+  control: ['Control', 'change undone'],
 }
 
 /**
  * The opening of the landing page: one object, one investigation, five frames.
- * Each chapter pins its copy around the scene while the scene holds that
- * chapter's state, then hands over to the next. All text is ordinary HTML;
- * without WebGL (or if the scene fails to start) a still composition stands in.
+ * Each chapter pins a short message around the scene while the scene holds
+ * that chapter's state; the detail lives in the linked report. All text is
+ * ordinary HTML; without WebGL (or if the scene fails to start) a still
+ * composition stands in.
  */
-export function Story({ show, placeholder }: { show: Showcase | null; placeholder: boolean }) {
+export function Story({ show }: { show: Showcase | null }) {
   const data = useMemo(() => (show ? storyData(show) : null), [show])
   const section = useRef<HTMLElement>(null)
   const progress = useRef(0)
   const huds = useRef<Record<string, HTMLElement | null>>({})
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
-  // Phones and portrait tablets stack the copy around the scene instead of framing it.
-  const compact = useMediaQuery('(max-width: 760px), (max-aspect-ratio: 1/1)')
+  // Below 900px, or in portrait, the copy scrolls beneath the pinned object instead of being framed around it.
+  const compact = useMediaQuery('(max-width: 900px), (max-aspect-ratio: 1/1)')
   const [webgl] = useState(hasWebGL)
   const [active, setActive] = useState(true)
 
@@ -65,7 +65,7 @@ export function Story({ show, placeholder }: { show: Showcase | null; placeholde
       }
       progress.current = s
       el.style.setProperty('--s', s.toFixed(3))
-      // Lists that follow the scene: sources light up as they connect, runs as they play.
+      // Lists that follow the scene: sources mark as they connect, runs as they play. Both stay readable throughout.
       const shown = reduced ? heldState(s) : s
       sources.forEach((li, i) => li.classList.toggle('is-lit', shown >= 0.75 + (i * 0.4) / Math.max(1, sources.length)))
       runs.forEach((li, i) => li.classList.toggle('is-lit', shown >= runTime(i, runs.length)))
@@ -105,7 +105,14 @@ export function Story({ show, placeholder }: { show: Showcase | null; placeholde
         {webgl && data ? (
           <SceneBoundary fallback={still}>
             <Suspense fallback={null}>
-              <DominoScene data={data} progress={progress} huds={huds} reduced={reduced} compact={compact} active={active} />
+              <DominoScene
+                data={data}
+                progress={progress}
+                huds={huds}
+                reduced={reduced}
+                compact={compact}
+                active={active}
+              />
             </Suspense>
           </SceneBoundary>
         ) : (
@@ -127,28 +134,22 @@ export function Story({ show, placeholder }: { show: Showcase | null; placeholde
               <p className="hero-sub">{HERO_SUB}</p>
               <div className="hero-actions">
                 <a className="btn-chamfer" href={reportHref}>
-                  Open a real investigation
+                  See an example investigation
                   <Arrow />
                 </a>
-                <a className="story-secondary" href={href.try}>
-                  Try it yourself
+                <a className="story-secondary" href={href.cases}>
+                  Browse all cases
                 </a>
               </div>
+              <p className="hero-disclosure">The example is a recorded practice run on a synthetic system.</p>
             </div>
-            <div className="hero-meta">
-              {show && <RunStamp show={show} placeholder={placeholder} />}
-              <p className="story-scroll" aria-hidden="true">
-                Scroll to follow one investigation
-              </p>
-            </div>
+            <p className="story-scroll" aria-hidden="true">
+              Scroll to follow it
+            </p>
           </div>
         </section>
 
-        {data ? (
-          <Chapters data={data} reportHref={reportHref} />
-        ) : (
-          <p className="chapter-empty">The investigation appears here once a run is saved.</p>
-        )}
+        {data ? <Chapters data={data} reportHref={reportHref} /> : <p className="chapter-empty">The investigation appears here once a run is saved.</p>}
       </div>
     </section>
   )
@@ -160,15 +161,10 @@ function Chapters({ data, reportHref }: { data: StoryData; reportHref: string })
   const a = data.assumption
   const x = data.experiment
   const v = data.verdict ? VERDICT[data.verdict.verdict] : null
-  const counts = { observed: 0, inferred: 0, unresolved: 0 }
-  data.links.forEach((l) => counts[l.status]++)
-  const total = data.path.length + data.others.length
-  const runs = data.runs.slice(0, 4)
-  const repeats = runs.filter((r) => r.variant === 'candidate').length
 
   return (
     <>
-      {/* 1 · Heading above the scene, explanation below. */}
+      {/* 1 · Heading above the object, one sentence and the sources below. */}
       <section id="how" className="chapter chapter-connect" data-chapter="1" aria-labelledby="ch-connect">
         <div className="chapter-frame">
           <header className="chapter-head">
@@ -179,41 +175,21 @@ function Chapters({ data, reportHref }: { data: StoryData; reportHref: string })
               One change. <em>Facts in {data.sources.length} systems.</em>
             </h2>
           </header>
-          <div className="chapter-body connect-body">
-            <p>
-              Whether change <code>{change.label}</code> is harmless depends on facts kept in different places: code,
-              permissions, configuration and catalogued data. Domino follows its relationships through the{' '}
-              <strong>Zetaris semantic layer</strong>, which joins those sources into one graph, and keeps the source row behind
-              every link.
+          <div className="chapter-body">
+            <p className="chapter-text">
+              Before judging change {change.label}, Domino gathers what is known about it — code, permissions, configuration and
+              data — from separate systems, joined through the Zetaris semantic layer.
             </p>
-            <div className="connect-detail">
-              <ul className="connect-sources" aria-label="Sources joined in this run">
-                {data.rowsBySource.map((r) => (
-                  <li key={r.source} data-source>
-                    <code>{r.source}</code>
-                    <span>
-                      {r.rows} {r.rows === 1 ? 'row' : 'rows'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="connect-path">
-                <span className="visually-hidden">Dependency path: </span>
-                {data.path.map((p, i) => (
-                  <span key={p.id}>
-                    {i > 0 && <span className={`connect-rel ${data.links[i - 1].status}`}> {relationText(data.links[i - 1].relation)} </span>}
-                    <code>{p.label}</code>
-                  </span>
-                ))}
-              </p>
-              <p className="chapter-links">
-                <ArrowLink href={at('chain')}>The chain with its source rows</ArrowLink>
-                <ArrowLink href={href.underTheHoodAt('zetaris')}>Zetaris sources and checks</ArrowLink>
-              </p>
-              <p className="chapter-note">
-                {data.path.length} of the {total} components the semantic layer returned sit on this path; the scene shows those.
-              </p>
-            </div>
+            <ul className="connect-sources" aria-label="Systems joined in this example">
+              {data.sources.map((s) => (
+                <li key={s} data-source>
+                  {s.replace(/_/g, ' ')}
+                </li>
+              ))}
+            </ul>
+            <ArrowLink className="chapter-link" href={at('chain')}>
+              See the connected evidence
+            </ArrowLink>
           </div>
         </div>
       </section>
@@ -221,63 +197,36 @@ function Chapters({ data, reportHref }: { data: StoryData; reportHref: string })
       {/* 2 · The relationship in close-up, the explanation beside it. */}
       <section id="assumption" className="chapter chapter-assumption" data-chapter="2" aria-labelledby="ch-assumption">
         <div className="chapter-frame">
-          <div className="chapter-panel">
+          <div className="chapter-body">
             <p className="chapter-kicker">
               <span>02</span> Find the assumption
             </p>
             <h2 id="ch-assumption" className="chapter-title">
-              {a ? (
-                <>
-                  One link is <em>inferred, not observed.</em>
-                </>
-              ) : (
-                <>
-                  Every link was <em>observed.</em>
-                </>
-              )}
+              A link nobody <em>wrote down.</em>
             </h2>
             {a ? (
-              <p>
-                <code>{data.path[a.from].label}</code> {relationText(a.relation)} <code>{data.path[a.to].label}</code> wasn't read
-                from a retrieved row; Domino inferred it from the evidence around it. It may be written down elsewhere, so it gets
-                tested rather than trusted.
-              </p>
+              <>
+                <p className="chapter-text">
+                  Most links came straight from records. This one, {shortName(data.path[a.from]).toLowerCase()}{' '}
+                  {relationText(a.relation)} {shortName(data.path[a.to]).toLowerCase()}, was only inferred. That makes it a
+                  hypothesis to test, not a fact.
+                </p>
+                <p className="assumption-question">
+                  After change {change.label}, does {shortName(data.path[a.from]).toLowerCase()} stay within{' '}
+                  {shortName(data.path[a.to]).toLowerCase()}?
+                </p>
+              </>
             ) : (
-              <p>Nothing on this path rests on inference, so the test targets the end of the path.</p>
+              <p className="chapter-text">Every link on this path came from a record, so the test targets the end of the path.</p>
             )}
-            <dl className="link-legend" aria-label="Links on this path">
-              <div className="observed">
-                <dt>{counts.observed} observed</dt>
-                <dd>read from a retrieved row</dd>
-              </div>
-              <div className="inferred">
-                <dt>{counts.inferred} inferred</dt>
-                <dd>proposed from evidence around it</dd>
-              </div>
-              <div className="unresolved">
-                <dt>{counts.unresolved} unresolved</dt>
-                <dd>neither confirmed nor ruled out</dd>
-              </div>
-            </dl>
-            {a && (
-              <p className="assumption-question">
-                The question worth testing: after change {change.label}, does <strong>{shortName(data.path[a.from]).toLowerCase()}</strong>{' '}
-                still stay within <strong>{shortName(data.path[a.to]).toLowerCase()}</strong>? An experiment can answer it either way.
-              </p>
-            )}
-            <p className="chapter-note">
-              What to suspect and which experiment would settle it: reasoned by NVIDIA Nemotron through Meterless Nightshift (
-              {data.evidence.nemotron}/{data.evidence.calls} model calls in this run).
-            </p>
-            <p className="chapter-links">
-              <ArrowLink href={at('hypotheses')}>The hypotheses, as the model wrote them</ArrowLink>
-              <ArrowLink href={href.underTheHoodAt('nemotron')}>Nemotron receipts</ArrowLink>
-            </p>
+            <ArrowLink className="chapter-link" href={at('hypotheses')}>
+              See the hypotheses
+            </ArrowLink>
           </div>
         </div>
       </section>
 
-      {/* 3 · Heading above, the runs side by side below, so they compare at a glance. */}
+      {/* 3 · Heading above, the controlled comparison below. */}
       <section id="experiment" className="chapter chapter-experiment" data-chapter="3" aria-labelledby="ch-experiment">
         <div className="chapter-frame">
           <header className="chapter-head">
@@ -285,117 +234,64 @@ function Chapters({ data, reportHref }: { data: StoryData; reportHref: string })
               <span>03</span> Test it and revert it
             </p>
             <h2 id="ch-experiment" className="chapter-title">
-              Run it in a sandbox. <em>Then undo it.</em>
+              Run it. <em>Then undo it.</em>
             </h2>
-            <p className="chapter-lede">
-              Same workload, isolated copy, one difference: the change.{repeats > 1 && ' The candidate runs twice to show the failure is stable.'}{' '}
-              The control undoes the change; if the failure leaves with it, the change caused it.
+            <p className="chapter-text">
+              The same workload runs in an isolated sandbox three ways. Only the change differs, so if the failure leaves when the
+              change does, the change caused it.
             </p>
           </header>
           {x && (
-            <div className="chapter-body experiment-body">
-              <ol className="run-strip" aria-label={`Sandbox runs, measuring ${x.key}`}>
-                {runs.map((r, i) => (
-                  <li key={r.id} data-run className={r.outcome === 'pass' ? 'pass' : 'fail'}>
-                    <span className="run-name">
-                      {VARIANT_LABEL[r.variant] ?? r.variant}
-                      {r.variant === 'candidate' && runs.slice(0, i).some((p) => p.variant === 'candidate') && ', again'}
-                    </span>
-                    <span className="run-note">{VARIANT_NOTE[r.variant] ?? ''}</span>
-                    <span className="run-value">{r.value == null ? '—' : String(r.value)}</span>
-                    <span className="run-outcome">{r.outcome === 'pass' ? '✓ Passed' : r.outcome === 'fail' ? '✕ Failed' : '✕ Error'}</span>
-                  </li>
-                ))}
+            <div className="chapter-body">
+              <ol className="run-strip" aria-label={`${measureLabel(x.key)}${x.limit?.value != null ? `, limit ${x.limit.value}` : ''}`}>
+                {data.trio.map((r) => {
+                  const [name, note] = RUN_LABEL[r.variant] ?? [r.variant, '']
+                  return (
+                    <li key={r.id} data-run className={r.outcome === 'pass' ? 'pass' : 'fail'}>
+                      <span className="run-name">{name}</span>
+                      <span className="run-note">{note}</span>
+                      <span className="run-value">{r.value == null ? '—' : String(r.value)}</span>
+                      <span className="run-outcome">{r.outcome === 'pass' ? 'Passed' : 'Failed'}</span>
+                    </li>
+                  )
+                })}
               </ol>
-              <p className="experiment-measure">
-                Measuring <code>{x.key}</code>
-                {x.limit && (
-                  <>
-                    {' '}
-                    against <code>{x.limit.name}</code>
-                    {x.limit.value != null && <> = {x.limit.value}</>}
-                    {x.limit.evidenceId && (
-                      <>
-                        , stated in row <code>{x.limit.evidenceId}</code>
-                      </>
-                    )}
-                  </>
-                )}
-                .{x.failure && (
-                  <>
-                    {' '}
-                    The candidate failed <code>{x.failure}</code>.
-                  </>
-                )}
+              <p className="run-caption">
+                {measureLabel(x.key)}
+                {x.limit?.value != null && <> · limit {x.limit.value}</>}
               </p>
-              <p className="chapter-note">
-                Meterless World Model holds the investigation's state, updating each hypothesis as results arrive (
-                {data.evidence.memory} reads and writes). It records results; it doesn't run experiments.
-              </p>
-              <p className="chapter-links">
-                <ArrowLink href={at('experiments')}>Every run with its logs</ArrowLink>
-                <ArrowLink href={href.underTheHoodAt('meterless')}>Meterless activity</ArrowLink>
-              </p>
+              <ArrowLink className="chapter-link" href={at('experiments')}>
+                See every run, with logs
+              </ArrowLink>
             </div>
           )}
         </div>
       </section>
 
-      {/* 4 · The object settles; the evidence rises beneath it. */}
+      {/* 4 · The object settles; the verdict and the way into the report below it. */}
       <section id="result" className="chapter chapter-result" data-chapter="4" aria-labelledby="ch-result">
         <div className="chapter-frame">
-          <div className="chapter-panel result-panel">
-            <header className="result-head">
-              <p className="chapter-kicker">
-                <span>04</span> Inspect the result
-              </p>
-              <h2 id="ch-result" className="chapter-title">
-                Code decides. <em>A second model checks the story.</em>
-              </h2>
-            </header>
-            <div className="result-grid">
-              <div>
-                <h3>Verdict</h3>
-                {data.verdict && v ? (
-                  <>
-                    <p className={`result-verdict tone-${v.tone}`}>{v.label}</p>
-                    <p>Decided by Domino's deterministic judge. {JUDGE_RULE[data.verdict.verdict]}</p>
-                  </>
-                ) : (
-                  <p>This run has no verdict yet.</p>
-                )}
-              </div>
-              <div>
-                <h3>Review</h3>
-                <p className="result-verdict">{data.review ? data.review.replace('_', ' ') : 'Not reviewed'}</p>
-                <p>
-                  A second model{data.reviewerModel && <> ({shortModel(data.reviewerModel)})</>} checked the explanation against the
-                  retrieved evidence. It reviews the explanation; it can't change the verdict.
+          <div className="chapter-body">
+            <p className="chapter-kicker">
+              <span>04</span> Inspect the result
+            </p>
+            <h2 id="ch-result" className="chapter-title">
+              Code decides <em>the verdict.</em>
+            </h2>
+            {data.verdict && v ? (
+              <>
+                <p className={`result-verdict tone-${v.tone}`}>{v.label}</p>
+                <p className="chapter-text">
+                  Domino's deterministic judge decided it from the runs, not the model. {JUDGE_RULE[data.verdict.verdict]}
                 </p>
-              </div>
-              <div>
-                <h3>Evidence</h3>
-                <ul className="result-stats">
-                  <li>
-                    <strong>{data.evidence.rows}</strong> source rows cited
-                  </li>
-                  <li>
-                    <strong>{data.runs.length}</strong> sandbox runs
-                  </li>
-                  <li>
-                    <strong>{data.evidence.calls}</strong> model calls, each with a receipt
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="result-actions">
-              <a className="btn-chamfer" href={reportHref}>
-                Open the full report
-                <Arrow />
-              </a>
-              <ArrowLink href={at('verdict')}>Evidence and limitations</ArrowLink>
-              <ArrowLink href={at('receipts')}>Receipts and trace</ArrowLink>
-            </div>
+              </>
+            ) : (
+              <p className="chapter-text">This run has no verdict yet.</p>
+            )}
+            <a className="btn-chamfer" href={reportHref}>
+              Open the full investigation
+              <Arrow />
+            </a>
           </div>
         </div>
       </section>
@@ -415,10 +311,10 @@ function Readouts({ data, huds }: { data: StoryData; huds: RefObject<Record<stri
     <div className="story-labels">
       {a && (
         <div className="hud hud-rel" ref={hud('rel')}>
-          {relationText(a.relation)} · {a.status}
+          inferred
         </div>
       )}
-      {data.runs.slice(0, 4).map((r, i) => (
+      {data.trio.map((r, i) => (
         <div key={r.id} className={`hud hud-col${r.outcome !== 'pass' ? ' is-fail' : ''}`} ref={hud(`col-${i}`)}>
           {r.value == null ? '—' : String(r.value)}
         </div>
@@ -446,23 +342,6 @@ function StillStage() {
         <span key={i} className={`still-tile${i === 0 ? ' is-change' : ''}`} style={{ ['--i' as string]: i }} />
       ))}
     </div>
-  )
-}
-
-function RunStamp({ show, placeholder }: { show: Showcase; placeholder: boolean }) {
-  const calls = show.inv.receipts.length
-  const nemotron = show.inv.receipts.filter((r) => r.routedModel && isNemotron(r.routedModel)).length
-  return (
-    <p className="story-stamp">
-      {placeholder ? 'Placeholder run, not a Domino result' : 'Saved practice run'} ·{' '}
-      <a href={href.case(show.caseEntry.id)}>{show.caseEntry.id}</a>
-      {!placeholder && (
-        <>
-          {' '}
-          · shown from its recorded trace · {nemotron}/{calls} Nemotron calls
-        </>
-      )}
-    </p>
   )
 }
 

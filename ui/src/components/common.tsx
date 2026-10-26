@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react'
-import type { SourceRef } from '../types'
-import type { Tone } from '../lib/labels'
+import { Fragment, useState, type ReactNode } from 'react'
+import type { SourceRef, Verdict } from '../types'
+import { VERDICT, type Tone } from '../lib/labels'
+import type { LatestState } from '../lib/report'
 import { rememberOpener } from '../lib/focus'
 import { useLocation, withEvidence } from '../lib/router'
 import { Icon, type IconName } from './Icon'
@@ -10,6 +11,37 @@ export function Badge({ tone, icon, children }: { tone: Tone; icon?: IconName; c
     <span className={`badge tone-${tone}`}>
       {icon && <Icon name={icon} size={14} />}
       {children}
+    </span>
+  )
+}
+
+/** A verdict in its full canonical wording, with its icon; never truncated. */
+export function VerdictMark({ verdict, large = false }: { verdict: Verdict; large?: boolean }) {
+  const v = VERDICT[verdict]
+  return (
+    <span className={`verdict-mark tone-${v.tone}${large ? ' is-large' : ''}`}>
+      <Icon name={v.icon} size={large ? 22 : 15} />
+      <span>{v.label}</span>
+    </span>
+  )
+}
+
+const STATE_MARK: Record<Exclude<LatestState, Verdict>, { label: string; tone: Tone; icon: IconName }> = {
+  incomplete: { label: 'No verdict in the saved trace', tone: 'warn', icon: 'clock' },
+  failed: { label: 'Run failed before a verdict', tone: 'fail', icon: 'alert' },
+  outage: { label: 'Outage, excluded from scoring', tone: 'warn', icon: 'alert' },
+  unreadable: { label: 'Trace could not be read', tone: 'fail', icon: 'alert' },
+  none: { label: 'No runs saved', tone: 'muted', icon: 'minus-circle' },
+}
+
+/** A case's latest state: its verdict, or the reason it has none. */
+export function StateMark({ state }: { state: LatestState }) {
+  if (state in VERDICT) return <VerdictMark verdict={state as Verdict} />
+  const m = STATE_MARK[state as Exclude<LatestState, Verdict>]
+  return (
+    <span className={`verdict-mark tone-${m.tone}`}>
+      <Icon name={m.icon} size={15} />
+      <span>{m.label}</span>
     </span>
   )
 }
@@ -87,39 +119,18 @@ export function Refs({ refs, empty }: { refs: SourceRef[]; empty?: ReactNode }) 
   )
 }
 
-export function Section({
-  id,
-  title,
-  icon,
-  lede,
-  children,
-}: {
-  id: string
-  title: string
-  icon: IconName
-  lede?: ReactNode
-  children: ReactNode
-}) {
+/** A dotted or snake_case name that may wrap only after its separators. */
+export function Ident({ name }: { name: string }) {
+  const parts = name.split(/(?<=[._-])/)
   return (
-    <section className="section" id={id} aria-labelledby={`${id}-title`}>
-      <header className="section-head">
-        <h2 id={`${id}-title`}>
-          <Icon name={icon} size={18} />
-          {title}
-        </h2>
-        {lede && <p className="section-lede">{lede}</p>}
-      </header>
-      {children}
-    </section>
-  )
-}
-
-export function Pending({ children }: { children: ReactNode }) {
-  return (
-    <p className="pending">
-      <Icon name="clock" size={16} />
-      {children}
-    </p>
+    <code className="ident">
+      {parts.map((p, i) => (
+        <Fragment key={i}>
+          {i > 0 && <wbr />}
+          {p}
+        </Fragment>
+      ))}
+    </code>
   )
 }
 

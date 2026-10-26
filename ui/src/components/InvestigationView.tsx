@@ -1,37 +1,34 @@
-import { useEffect } from 'react'
-import type { CaseEntry, Investigation, RunEntry, Verdict } from '../types'
+import { useEffect, useRef } from 'react'
+import type { CaseEntry, RunEntry } from '../types'
 import { CASE_KIND, RUN_MODE, RUN_STATUS, VERDICT, formatMs } from '../lib/labels'
+import { REPORT_TABS, resolveSection, traceOrigin, type ReportTab } from '../lib/report'
 import { href, navigate, type ReportView } from '../lib/router'
-import { plural, summarizeRuns } from '../lib/runs'
-import { jumpTo, scrollToSection } from '../lib/scroll'
-import { Badge, Breadcrumbs, PlaceholderNotice } from './common'
+import { scrollToSection } from '../lib/scroll'
+import { Breadcrumbs, PlaceholderNotice, VerdictMark } from './common'
 import { Icon } from './Icon'
-import { ChangeSection } from './investigation/ChangeSection'
-import { DependencyChainSection } from './investigation/DependencyChainSection'
-import { ExperimentsSection } from './investigation/ExperimentsSection'
-import { HypothesesSection } from './investigation/HypothesesSection'
-import { ReceiptsSection } from './investigation/ReceiptsSection'
-import { TraceSection } from './investigation/TraceSection'
-import { VerdictBanner, VerdictSection } from './investigation/VerdictSection'
 import { PrCheckView } from './PrCheckView'
+import { AuditView } from './report/Audit'
+import { ContextView } from './report/Context'
+import { ExperimentsView } from './report/Experiments'
+import { HypothesesView } from './report/Hypotheses'
+import { SummaryView } from './report/Summary'
 import { RunErrorView } from './StateViews'
 
-const SECTIONS = [
-  ['change', 'Change'],
-  ['chain', 'Dependency chain'],
-  ['hypotheses', 'Hypotheses'],
-  ['experiments', 'Experiments'],
-  ['verdict', 'Verdict'],
-  ['receipts', 'Receipts'],
-  ['trace', 'Trace'],
-] as const
+const when = (iso: string) => {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
 
 export function InvestigationView({
+  cases,
   caseEntry,
   run,
   view,
   section,
 }: {
+  cases: CaseEntry[]
   caseEntry: CaseEntry
   run: RunEntry
   view: ReportView
@@ -39,161 +36,159 @@ export function InvestigationView({
 }) {
   // Keep the run in links only when it isn't the latest, so default URLs stay short.
   const runParam = run.runId === caseEntry.runs[0]?.runId ? null : run.runId
+  const { tab, anchor } = resolveSection(section)
+  const tabsRef = useRef<HTMLElement>(null)
+  const inv = run.load.ok ? run.load.investigation : null
 
-  // ?section=chain (from the overview or PR view) scrolls to that section.
+  // A deep link to an old section reveals it inside its tab; a tab change keeps the tabs in view.
   useEffect(() => {
-    if (section && view === 'investigation') scrollToSection(section)
-  }, [section, view, run.runId])
+    if (view !== 'investigation') return
+    if (anchor) {
+      scrollToSection(anchor)
+      return
+    }
+    const bar = tabsRef.current
+    if (section && bar && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ block: 'start' })
+  }, [anchor, section, view, run.runId])
+
+  const tabHref = (t: ReportTab) => href.case(caseEntry.id, { runId: runParam, section: t === 'summary' ? null : t })
 
   return (
-    <article className="page" aria-labelledby="page-title">
-      {run.load.ok && run.load.investigation.isPlaceholder && <PlaceholderNotice />}
+    <article className="page report" aria-labelledby="page-title">
+      {inv?.isPlaceholder && <PlaceholderNotice />}
 
-      <header className="page-head">
-        <Breadcrumbs
-          items={[
-            { label: 'Overview', href: href.cases },
-            { label: caseEntry.label, href: href.case(caseEntry.id) },
-            { label: run.runId },
-          ]}
-        />
-        <p className="page-kicker">{CASE_KIND[caseEntry.kind]}</p>
-        <h1 id="page-title">{run.load.ok ? (run.load.investigation.change?.title ?? 'Untitled change') : caseEntry.label}</h1>
-        <RunMeta caseEntry={caseEntry} run={run} />
-        <RunBar caseEntry={caseEntry} run={run} view={view} />
-        <nav className="view-tabs" aria-label="View">
-          <a href={href.case(caseEntry.id, { runId: runParam })} aria-current={view === 'investigation' ? 'page' : undefined}>
-            <Icon name="list" /> Investigation
-          </a>
-          <a href={href.case(caseEntry.id, { view: 'pr', runId: runParam })} aria-current={view === 'pr' ? 'page' : undefined}>
-            <Icon name="git-pr" /> PR check
-          </a>
-        </nav>
+      <header className="report-head">
+        <div className="report-topline">
+          <Breadcrumbs
+            items={[
+              { label: 'Investigations', href: href.cases },
+              { label: caseEntry.label, href: href.case(caseEntry.id) },
+              ...(view === 'pr' ? [{ label: 'PR preview' }] : []),
+            ]}
+          />
+          <Switchers cases={cases} caseEntry={caseEntry} run={run} view={view} section={section} />
+        </div>
+
+        <p className="report-kicker">{CASE_KIND[caseEntry.kind]}</p>
+        <h1 id="page-title">{inv?.change?.title ?? caseEntry.label}</h1>
+
+        <ul className="report-meta" aria-label="About this run">
+          <li>
+            {run.verdict ? (
+              <VerdictMark verdict={run.verdict} />
+            ) : (
+              <span className={`verdict-mark tone-${RUN_STATUS[run.status].tone}`}>
+                <Icon name={RUN_STATUS[run.status].icon} size={15} />
+                <span>{run.status === 'running' ? 'No verdict in the saved trace' : RUN_STATUS[run.status].label}</span>
+              </span>
+            )}
+          </li>
+          <li className="meta-quiet">{traceOrigin(run)}</li>
+          {run.runMode !== 'full' && <li className="meta-flag">Comparison mode: {RUN_MODE[run.runMode].label}</li>}
+          {inv?.startedAt && <li className="meta-quiet">{when(inv.startedAt)}</li>}
+          {inv?.durationMs != null && <li className="meta-quiet">{formatMs(inv.durationMs)}</li>}
+          <li className="meta-quiet">
+            Run <code title={run.runId}>{run.runId}</code>
+          </li>
+        </ul>
       </header>
+
+      <nav className="report-tabs" aria-label="Report views" ref={tabsRef}>
+        <ul>
+          {REPORT_TABS.map((t) => (
+            <li key={t.id}>
+              <a href={tabHref(t.id)} aria-current={view === 'investigation' && tab === t.id ? 'page' : undefined}>
+                {t.label}
+                {inv && t.id === 'hypotheses' && <span className="tab-count">{inv.hypotheses.length}</span>}
+                {inv && t.id === 'experiments' && <span className="tab-count">{inv.experiments.length}</span>}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <a
+          className="tab-pr"
+          href={href.case(caseEntry.id, { view: 'pr', runId: runParam })}
+          aria-current={view === 'pr' ? 'page' : undefined}
+        >
+          <Icon name="git-pr" size={15} /> PR preview
+        </a>
+      </nav>
 
       {!run.load.ok ? (
         <RunErrorView runId={run.runId} message={run.load.error} />
       ) : view === 'pr' ? (
-        <PrCheckView inv={run.load.investigation} runParam={runParam} />
+        <PrCheckView key={`${caseEntry.id}:${run.runId}`} inv={run.load.investigation} runParam={runParam} />
       ) : (
-        <Report inv={run.load.investigation} />
+        <div className="report-body" id={`panel-${tab}`} key={`${caseEntry.id}:${run.runId}`}>
+          {tab === 'summary' && <SummaryView inv={run.load.investigation} runParam={runParam} />}
+          {tab === 'context' && <ContextView inv={run.load.investigation} />}
+          {tab === 'hypotheses' && <HypothesesView inv={run.load.investigation} />}
+          {tab === 'experiments' && <ExperimentsView inv={run.load.investigation} />}
+          {tab === 'audit' && <AuditView inv={run.load.investigation} section={section} runParam={runParam} />}
+        </div>
       )}
     </article>
   )
 }
 
-/** Run picker plus how all of this case's runs came out. */
-function RunBar({ caseEntry, run, view }: { caseEntry: CaseEntry; run: RunEntry; view: ReportView }) {
-  const sum = summarizeRuns(caseEntry)
-  const pickerId = `run-picker-${caseEntry.id}`
+/** Case and run selection, kept apart from the global navigation. */
+function Switchers({
+  cases,
+  caseEntry,
+  run,
+  view,
+  section,
+}: {
+  cases: CaseEntry[]
+  caseEntry: CaseEntry
+  run: RunEntry
+  view: ReportView
+  section: string | null
+}) {
+  const { tab } = resolveSection(section)
   return (
-    <div className="run-bar">
-      {caseEntry.runs.length > 1 && (
-        <div className="run-picker">
-          <label htmlFor={pickerId}>Run</label>
+    <div className="switchers">
+      {cases.length > 1 && (
+        <div className="switch">
+          <label htmlFor="case-switch">Case</label>
           <select
-            id={pickerId}
-            value={run.runId}
-            onChange={(e) => {
-              const i = caseEntry.runs.findIndex((r) => r.runId === e.target.value)
-              navigate(href.case(caseEntry.id, { view, runId: i === 0 ? null : e.target.value }))
-            }}
+            id="case-switch"
+            value={caseEntry.id}
+            onChange={(e) => navigate(href.case(e.target.value, { view, section: view === 'pr' || tab === 'summary' ? null : tab }))}
           >
-            {caseEntry.runs.map((r, i) => (
-              <option key={r.runId} value={r.runId}>
-                {i === 0 ? 'Latest: ' : ''}
-                {r.runId}
-                {r.runMode !== 'full' ? ` (${RUN_MODE[r.runMode].label})` : ''} ·{' '}
-                {r.verdict ? VERDICT[r.verdict].label : RUN_STATUS[r.status].label}
+            {cases.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
               </option>
             ))}
           </select>
         </div>
       )}
-      <p className="run-summary small">
-        <span className="muted">Across {plural(sum.total, 'Domino run')}:</span>
-        {(Object.entries(sum.counts) as [Verdict, number][]).map(([verdict, n]) => {
-          const v = VERDICT[verdict]
-          return (
-            <Badge key={verdict} tone={v.tone} icon={v.icon}>
-              {n} × {v.label}
-            </Badge>
-          )
-        })}
-        {sum.decided > 0 && sum.matching != null && caseEntry.expectedVerdict && (
-          <span className="muted">
-            {sum.matching} of {sum.decided} match the expected verdict ({VERDICT[caseEntry.expectedVerdict].label.toLowerCase()})
+      <div className="switch">
+        <label htmlFor="run-switch">Run</label>
+        {caseEntry.runs.length > 1 ? (
+          <select
+            id="run-switch"
+            value={run.runId}
+            onChange={(e) => {
+              const i = caseEntry.runs.findIndex((r) => r.runId === e.target.value)
+              navigate(href.case(caseEntry.id, { view, runId: i === 0 ? null : e.target.value, section: view === 'pr' ? null : section }))
+            }}
+          >
+            {caseEntry.runs.map((r, i) => (
+              <option key={r.runId} value={r.runId}>
+                {i === 0 ? 'Latest · ' : ''}
+                {when(r.startedAt)}
+                {r.runMode !== 'full' ? ` · ${RUN_MODE[r.runMode].label}` : ''} · {r.verdict ? VERDICT[r.verdict].label : RUN_STATUS[r.status].label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span id="run-switch" className="switch-static">
+            Only run
           </span>
         )}
-        {sum.decided === 0 && <span className="muted">no verdicts yet</span>}
-        {sum.ablations > 0 && <span className="muted">· plus {plural(sum.ablations, 'comparison run')} in reduced modes</span>}
-      </p>
+      </div>
     </div>
-  )
-}
-
-function RunMeta({ caseEntry, run }: { caseEntry: CaseEntry; run: RunEntry }) {
-  const inv = run.load.ok ? run.load.investigation : null
-  const index = caseEntry.runs.indexOf(run)
-  return (
-    <div className="page-meta">
-      {run.replay ? (
-        <Badge tone="warn" icon="info">
-          Replayed from a recording
-        </Badge>
-      ) : (
-        <Badge tone="accent">Live run</Badge>
-      )}
-      {run.runMode !== 'full' && (
-        <Badge tone="muted">
-          Comparison mode: {RUN_MODE[run.runMode].label} ({RUN_MODE[run.runMode].description.toLowerCase()})
-        </Badge>
-      )}
-      {run.status !== 'complete' && (
-        <Badge tone={RUN_STATUS[run.status].tone} icon={RUN_STATUS[run.status].icon}>
-          {RUN_STATUS[run.status].label}
-        </Badge>
-      )}
-      {run.status === 'complete' && <span className="small muted">Duration {formatMs(inv?.durationMs ?? null)}</span>}
-      <span className="small muted">
-        Run <code>{run.runId}</code>
-        {caseEntry.runs.length > 1 && (index === 0 ? ` · latest of ${caseEntry.runs.length}` : ` · ${index + 1} of ${caseEntry.runs.length}`)}
-      </span>
-    </div>
-  )
-}
-
-function Report({ inv }: { inv: Investigation }) {
-  const running = inv.status === 'running'
-  return (
-    <>
-      <VerdictBanner report={inv.verdict} status={inv.status} errors={inv.errors} review={inv.review} />
-      {inv.warnings.length > 0 && (
-        <details className="warnings">
-          <summary>
-            {inv.warnings.length} data warning{inv.warnings.length > 1 ? 's' : ''} in this run
-          </summary>
-          <ul className="bullets small">
-            {inv.warnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-        </details>
-      )}
-      <nav className="section-nav" aria-label="Sections">
-        {SECTIONS.map(([id, label]) => (
-          <a key={id} href={`#${id}`} onClick={(ev) => jumpTo(ev, id)}>
-            {label}
-          </a>
-        ))}
-      </nav>
-      <ChangeSection change={inv.change} />
-      <DependencyChainSection chain={inv.chain} hasVerdict={inv.verdict != null} />
-      <HypothesesSection hypotheses={inv.hypotheses} />
-      <ExperimentsSection experiments={inv.experiments} running={running} />
-      <VerdictSection report={inv.verdict} review={inv.review} />
-      <ReceiptsSection receipts={inv.receipts} />
-      <TraceSection trace={inv.trace} running={running} />
-    </>
   )
 }
