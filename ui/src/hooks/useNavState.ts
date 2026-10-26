@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-/** The band under the nav used to decide which section it's over. */
+/** Fallback probe height when the nav is scrolled out of view. */
 const PROBE_Y = 40
 const SHOW_ABOVE = 120
 const JITTER = 6
@@ -27,15 +27,24 @@ export function useNavState() {
       else if (y < lastY - JITTER) setHidden(false)
       if (Math.abs(y - lastY) > JITTER || y < SHOW_ABOVE) lastY = y
 
+      // Probe at the nav's own middle: it sits lower while the announcement strip is in view.
+      const nav = document.querySelector('.site-nav')?.getBoundingClientRect()
+      const probe = nav && nav.bottom > 0 ? nav.top + nav.height / 2 : PROBE_Y
       const dark = [...document.querySelectorAll<HTMLElement>('[data-nav-theme="dark"]')].some((el) => {
         const r = el.getBoundingClientRect()
-        return r.top <= PROBE_Y && r.bottom >= PROBE_Y
+        return r.top <= probe && r.bottom >= probe
       })
       setTheme(dark ? 'dark' : 'light')
     }
     window.addEventListener('scroll', update, { passive: true })
+    // Sections mount and change height after data loads, without a scroll.
+    const ro = new ResizeObserver(() => update())
+    ro.observe(document.body)
     update()
-    return () => window.removeEventListener('scroll', update)
+    return () => {
+      window.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
   }, [])
 
   return { hidden, scrolled, theme }

@@ -13,7 +13,7 @@ npm run build    # static build in ui/dist; open from any folder or static host
 ## Pages
 | URL | Page |
 |---|---|
-| `#/` | Landing page: one-liner, Try it yourself, Watch demo, live preview of a run, problem, how it works, cases, proof, demo, final call to action |
+| `#/` | Landing page: hero and four chapters around one 3D object built from a saved run (connect the facts → find the assumption → test it and revert it → inspect the result), then a compact band of cases and proof, and the closing (three verdicts, limits, demo note, call to action) |
 | `#/try` | Try it yourself (step-by-step replay: next build step) |
 | `#/cases` | Dashboard overview: every case and what the verdicts mean |
 | `#/cases/<case_id>` | Report for the case's latest run |
@@ -27,6 +27,13 @@ npm run build    # static build in ui/dist; open from any folder or static host
 Evidence IDs (`e7`, or `e7#B-002` for one Zetaris row) are only unique within a run, so evidence links always sit on a case/run URL.
 
 In dev builds, the sidebar has a **Preview UI state** control that shows the loading, empty, error and run-in-progress states.
+
+## Landing page scene
+The opening of `#/` is one 3D object (`src/components/landing/story/`, React Three Fiber on three.js, geometry built in code, no model files): the flagship saved run's dependency path as domino-shaped components standing on a plinth, the proposed change in ivory at the front. It unfolds into the connected path, closes in on the inferred link, runs baseline / candidate / control in a sandbox, and re-forms with the component that broke laid beside it. Every name, link, measurement and run comes from that run (the first case that reproduced a failure); the arrangement itself is illustrative and the page says so.
+
+- **Text first:** each chapter is ordinary HTML pinned around the scene while the scene holds that chapter's state; short names appear on the components, full identifiers and provenance in the text and the linked report.
+- **Loaded lazily:** the scene is its own chunk (about 250 kB gzipped); the page renders without waiting for it and stops rendering it once it's off screen.
+- **Fallbacks:** without WebGL, or if the scene fails to start, a still composition of the assembled object stands in and every chapter still reads in full. With reduced motion, each chapter holds its finished state instead of animating.
 
 ## Data
 Formats are in [`docs/data-formats.md`](../docs/data-formats.md). The investigation trace is Abhi's agent contract (v0.1.0).

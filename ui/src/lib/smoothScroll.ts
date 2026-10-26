@@ -17,7 +17,9 @@ export function stopSmoothScroll() {
 /** Scrolls with Lenis when it's running, so it doesn't fight a native jump. Returns false if not running. */
 export function smoothScrollTo(el: HTMLElement, { smooth }: { smooth: boolean }): boolean {
   if (!lenis) return false
-  const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0
-  lenis.scrollTo(el, { offset: -margin, immediate: !smooth, duration: 1.1 })
+  // Sections can grow after data loads; make sure Lenis isn't clamping to an old page height.
+  lenis.resize()
+  // Lenis already honours the element's scroll-margin-top.
+  lenis.scrollTo(el, { immediate: !smooth, duration: 1.1 })
   return true
 }

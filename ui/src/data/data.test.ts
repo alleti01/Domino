@@ -293,3 +293,39 @@ describe('landing tour on the real flagship run', () => {
     expect(exp.limit).toEqual({ name: 'worker-runtime.max_entries', value: 200, evidenceId: 'runtime_config:rc-0007' })
   })
 })
+
+describe('landing 3D story on the real flagship run', () => {
+  it('takes every component, link, run and the verdict from the saved run', async () => {
+    const { samplesSource } = await import('./sources')
+    const { flagship } = await import('../lib/showcase')
+    const { storyData } = await import('../components/landing/story/storyData')
+    const { site } = await loadSite(samplesSource)
+    const story = storyData(flagship(site.cases)!)!
+    expect(story.path[0].label).toBe('0042')
+    expect(story.path.length + story.others.length).toBe(11)
+    // The one inferred link is the assumption; the component it bounds is what breaks.
+    expect(story.links.filter((l) => l.status === 'inferred')).toEqual([story.assumption])
+    expect(story.path[story.assumption!.from].label).toBe('worker-runtime')
+    expect(story.breaks).toBe(story.assumption!.from)
+    expect(story.runs.map((r) => `${r.variant}:${r.outcome}`)).toEqual([
+      'baseline:pass',
+      'candidate:fail',
+      'candidate:fail',
+      'control:pass',
+    ])
+    expect(story.hypothesis?.status).toBe('supported')
+    expect(story.hypothesis?.claim.endsWith('.')).toBe(true)
+    expect(story.verdict).toEqual({ verdict: 'reproduced_failure', decidedBy: 'deterministic_judge' })
+    // The scene's short names; full identifiers stay in the page text.
+    const { shortName } = await import('../components/landing/story/storyData')
+    expect(story.path.map(shortName)).toEqual([
+      'Change 0042',
+      'Bundle reader',
+      'Bundle builder',
+      'bundle.json',
+      'Worker runtime',
+      'Max entries',
+    ])
+    expect(story.runs.map((r) => r.value)).toEqual([140, 280, 280, 140])
+  })
+})

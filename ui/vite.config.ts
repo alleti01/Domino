@@ -8,4 +8,7 @@ export default defineConfig({
   plugins: [react()],
   // Sample traces live in ../samples and are bundled in at build time.
   server: { fs: { allow: ['..'] } },
+  // The landing page's 3D scene (three.js) is one lazily loaded chunk of ~930 kB
+  // (~250 kB gzipped); nothing else waits on it.
+  build: { chunkSizeWarningLimit: 1000 },
 })
