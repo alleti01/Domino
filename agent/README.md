@@ -15,9 +15,9 @@ Override with `DOMINO_INVESTIGATOR_MODEL` / `DOMINO_REVIEWER_MODEL`; disable the
 
 ## For judges: run it with no keys
 ```bash
-cd agent && npm install && npm run demo
+cd agent && npm install && npm run demo      # or, once published: npx domino-check demo
 ```
-`demo/` holds recordings of real investigations (Nemotron via Nightshift): two practice cases plus three live-Zetaris runs covering both world families (w-k7m2 and the near-miss w-h9c5 from World 1, w-g4k8 from World 2). `npm run demo` **re-runs the real agent code** against each recording: the tool gateway, Meterless World Model, harness confirmation and deterministic judge all execute again and must reach the recorded verdict. No Nightshift, no Zetaris, no Python, no keys. Every event in a replayed trace is marked `replay: true`, and the recorded Nemotron receipts are shown as recorded, never as live calls.
+`demo/` holds five recordings of real live investigations (Nemotron via Nightshift, live Zetaris), made with the current agent: pull requests #1 and #2 from [the demo repo](https://github.com/abhijandyala/domino-demo-shop) (w-c5h2 breaks, w-f8w3 does not), plus w-k7m2, the near-miss w-h9c5 and w-g4k8 from the scored batch. How the command runs end to end: [docs/how-it-runs.md](docs/how-it-runs.md). `npm run demo` **re-runs the real agent code** against each recording: the tool gateway, Meterless World Model, harness confirmation and deterministic judge all execute again and must reach the recorded verdict. No Nightshift, no Zetaris, no Python, no keys. Every event in a replayed trace is marked `replay: true`, and the recorded Nemotron receipts are shown as recorded, never as live calls.
 
 ## Setup
 ```bash

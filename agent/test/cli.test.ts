@@ -19,6 +19,7 @@ describe("domino command settings", () => {
     expect(runsDir("x", "/work", {})).toBe("/work/x");
     expect(runsDir(undefined, "/work", { DOMINO_RUNS_DIR: "runs/elsewhere" })).toBe(join(AGENT_DIR, "runs/elsewhere"));
     expect(runsDir(undefined, "/work", {})).toBe(join(AGENT_DIR, "runs", "live"));
+    expect(runsDir(undefined, "/work", {}, "/Users/x/.npm/_npx/abc/node_modules/domino-check")).toBe("/work/domino-runs/live");
   });
 
   it("maps verdicts to exit codes a CI step can use", () => {

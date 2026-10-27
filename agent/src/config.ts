@@ -1,7 +1,8 @@
 // Where the domino command finds its settings, the data layer and its runs folder, from any directory.
 //   .env           read from the current directory, then from agent/ (shell variables always win)
 //   data layer     --data-repo, else DOMINO_DATA_REPO, else the repo this agent lives in
-//   runs folder    --out, else DOMINO_RUNS_DIR, else agent/runs/live (flat run-* folders the dashboard reads)
+//   runs folder    --out, else DOMINO_RUNS_DIR, else agent/runs/live (flat run-* folders the dashboard reads);
+//                  run through npx, ./domino-runs/live in the current folder
 
 import { existsSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
@@ -26,10 +27,12 @@ export function dataRepo(flag?: string, cwd = process.cwd(), env = process.env):
   return dir;
 }
 
-export function runsDir(flag?: string, cwd = process.cwd(), env = process.env): string {
+export function runsDir(flag?: string, cwd = process.cwd(), env = process.env, agentDir = AGENT_DIR): string {
   if (flag) return fromFlag(flag, cwd);
   if (env.DOMINO_RUNS_DIR) return fromEnv(env.DOMINO_RUNS_DIR);
-  return join(AGENT_DIR, "runs", "live");
+  // Run through npx, the package sits in npm's cache: keep the output where the user is instead.
+  if (agentDir.split(/[\\/]/).includes("node_modules")) return join(cwd, "domino-runs", "live");
+  return join(agentDir, "runs", "live");
 }
 
 /** Exit codes a CI step can act on: 0 finished, 1 failure reproduced (only when asked), 2 error, 3 outage or inconclusive. */
