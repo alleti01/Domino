@@ -9,3 +9,9 @@ change_records,ci-0007,w-x3c9,0291,content/rules/T7/rule-0291.json,adds_rule,rul
 change_records,ci-0008,w-x3c9,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
 change_records,ci-0009,w-y6p3,0291,content/rules/T7/rule-0291.json,adds_rule,rule-0291,"template=T7; matches_on=f02,f21; all other fields wildcard",Content update: rule 0291 for template T7
 change_records,ci-0010,w-y6p3,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
+change_records,ci-5001,w-c5h2,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
+change_records,ci-5002,w-c5h2,0317,services/orders/handler.py,adds_call,inventory-service.reserve,"called once per order, synchronously",Orders: reserve stock before confirming an order
+change_records,ci-5003,w-f8w3,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
+change_records,ci-5004,w-f8w3,0317,services/orders/handler.py,adds_call,inventory-service.reserve,"called once per order, synchronously",Orders: reserve stock before confirming an order
+change_records,ci-5005,w-v2k9,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
+change_records,ci-5006,w-v2k9,0317,services/orders/handler.py,adds_call,inventory-service.reserve,"called once per order, synchronously",Orders: reserve stock before confirming an order

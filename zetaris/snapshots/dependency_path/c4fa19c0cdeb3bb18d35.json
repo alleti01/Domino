@@ -1,0 +1,230 @@
+{
+  "contract_version": "0.3",
+  "call": "dependency_path",
+  "mode": "live",
+  "status": "ok",
+  "start": {
+    "entity_id": "w-f8w3/change/0317",
+    "entity_type": "change"
+  },
+  "direction": "downstream",
+  "paths": [
+    {
+      "hops": [
+        {
+          "from": "w-f8w3/change/0317",
+          "from_type": "change",
+          "to": "w-f8w3/interface/inventory-service.reserve",
+          "to_type": "interface",
+          "relation": "adds_call",
+          "edge_status": "observed",
+          "detail": "called once per order, synchronously",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-5004",
+              "query_id": "q-e4c1799d95264e90"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5012",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        },
+        {
+          "from": "w-f8w3/interface/inventory-service.reserve",
+          "from_type": "interface",
+          "to": "w-f8w3/interface/latency:inventory-service.reserve",
+          "to_type": "interface",
+          "relation": "takes",
+          "edge_status": "inferred",
+          "detail": "latency_p50_ms=40",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5012",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-f8w3/change/0317",
+          "from_type": "change",
+          "to": "w-f8w3/interface/order-service.handle_order",
+          "to_type": "interface",
+          "relation": "adds_call",
+          "edge_status": "observed",
+          "detail": "handle_order now calls inventory-service.reserve before confirm",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-5003",
+              "query_id": "q-e4c1799d95264e90"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5009",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        },
+        {
+          "from": "w-f8w3/interface/order-service.handle_order",
+          "from_type": "interface",
+          "to": "w-f8w3/interface/api-gateway",
+          "to_type": "interface",
+          "relation": "called_by",
+          "edge_status": "observed",
+          "detail": "cancels_on_caller_timeout=no",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5011",
+              "query_id": "q-e4c1799d95264e90"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5013",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        },
+        {
+          "from": "w-f8w3/interface/api-gateway",
+          "from_type": "interface",
+          "to": "w-f8w3/interface/traffic:/orders",
+          "to_type": "interface",
+          "relation": "receives",
+          "edge_status": "inferred",
+          "detail": "rps_profile=50 rps; 100 rps for 4 s every 30 s",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5015",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-f8w3/change/0317",
+          "from_type": "change",
+          "to": "w-f8w3/interface/order-service.handle_order",
+          "to_type": "interface",
+          "relation": "adds_call",
+          "edge_status": "observed",
+          "detail": "handle_order now calls inventory-service.reserve before confirm",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-5003",
+              "query_id": "q-e4c1799d95264e90"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5009",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        },
+        {
+          "from": "w-f8w3/interface/order-service.handle_order",
+          "from_type": "interface",
+          "to": "w-f8w3/interface/pool:order-workers",
+          "to_type": "interface",
+          "relation": "runs_on",
+          "edge_status": "inferred",
+          "detail": "workers=12",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5010",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-f8w3/change/0317",
+          "from_type": "change",
+          "to": "w-f8w3/interface/order-service.handle_order",
+          "to_type": "interface",
+          "relation": "adds_call",
+          "edge_status": "observed",
+          "detail": "handle_order now calls inventory-service.reserve before confirm",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-5003",
+              "query_id": "q-e4c1799d95264e90"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5009",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        },
+        {
+          "from": "w-f8w3/interface/order-service.handle_order",
+          "from_type": "interface",
+          "to": "w-f8w3/interface/latency:order-service.handle_order",
+          "to_type": "interface",
+          "relation": "takes",
+          "edge_status": "inferred",
+          "detail": "service_time_ms=60",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-5009",
+              "query_id": "q-e4c1799d95264e90"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    }
+  ],
+  "unresolved": [],
+  "dq_issues": [],
+  "edges_considered": 10,
+  "query_ids": [
+    "q-e4c1799d95264e90"
+  ],
+  "duration_ms": 1855,
+  "error": null,
+  "snapshot_request": {
+    "entity_id": "w-f8w3/change/0317",
+    "max_hops": 6
+  }
+}

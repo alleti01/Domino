@@ -33,13 +33,39 @@
     "candidate": "system with the change applied",
     "control": "change applied, then reverted"
   },
-  "params": {},
+  "params": {
+    "overrides": {
+      "type": "object",
+      "default": {},
+      "description": "settings to change before the run, as {target: value}; targets are listed in overridable"
+    }
+  },
   "metrics": [
     "meta-store.rows_visible_to_builder",
     "bundle-builder.entries",
     "bundle-builder.bundle_bytes",
     "worker-runtime.exit_code",
     "worker-runtime.loaded_entries"
+  ],
+  "overridable": [
+    {
+      "target": "worker-runtime.max_entries",
+      "current": 200,
+      "type": "number",
+      "description": "worker-runtime setting"
+    },
+    {
+      "target": "worker-runtime.startup_timeout_s",
+      "current": 30,
+      "type": "number",
+      "description": "worker-runtime setting"
+    },
+    {
+      "target": "bundle-builder.output_mode",
+      "current": "as_returned",
+      "type": "string",
+      "description": "bundle-builder setting: as_returned or collapse_same_name"
+    }
   ],
   "error": null,
   "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."

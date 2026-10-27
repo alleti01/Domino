@@ -3,16 +3,19 @@
 It runs all three variants (baseline, candidate, control) and lays the results out by component, so a
 screen can show the system before the change, with it, and with it reverted. Because that shows each
 world's outcome directly, it must never be exposed to the agent: it is not in the data_layer package,
-and by default it writes to runs/demo_views/ (git-ignored), never into tracked files.
+and it writes only to runs/demo_views/ (git-ignored, the default) or to the dashboard's bundled data
+folder samples/demo_views/, which the agent never reads. Unreleased worlds are never written.
 
     python3 worlds/demo_view.py w-k7m2                 print one world
     python3 worlds/demo_view.py --all                  write every released world to runs/demo_views/<world>.json
+    python3 worlds/demo_view.py --all --out samples/demo_views   the dashboard's bundled data
     python3 worlds/demo_view.py --all --out DIR        write them somewhere else (outside this repo)
 
 Output (every world has the same fields):
   world, title, synthetic        the world and its change title; synthetic is always true
   change                         entity_id, title, description, files, diff (what the PR changes)
-  components[]                   name, role, plus per variant: metrics (short names) and log lines
+  components[]                   name, role, plus per variant: metrics (short names), log lines and status
+                                 ("failed": non-zero exit_code; "changed": numbers differ from baseline; "ok")
   variants[]                     variant, label, passed, failed_checks[], checks[] (name/passed/observed/expected),
                                  other_logs[] (log lines that name no component)
   changed_metrics[]              component, metric, baseline, candidate, control: only metrics that differ
@@ -86,6 +89,16 @@ def build(world: str) -> dict:
             else:
                 other_logs.setdefault(variant, []).append(line)
 
+    # Each service's status per run, from its own numbers only: "failed" when it reports a non-zero
+    # exit_code, "changed" when any of its numbers differ from the baseline, otherwise "ok".
+    for c in components:
+        base = c["by_variant"]["baseline"]["metrics"]
+        for variant in VARIANTS:
+            m = c["by_variant"][variant]["metrics"]
+            exit_code = m.get("exit_code")
+            failed = isinstance(exit_code, (int, float)) and not isinstance(exit_code, bool) and exit_code != 0
+            c["by_variant"][variant]["status"] = "failed" if failed else "changed" if m != base else "ok"
+
     changed = []
     for metric in described["metrics"]:
         values = {v: runs[v]["metrics"].get(metric) for v in VARIANTS}
@@ -119,10 +132,10 @@ def main() -> int:
         return 0
 
     out = Path(args.out).expanduser().resolve()
-    tracked_area = ROOT in out.parents or out == ROOT
-    if tracked_area and DEFAULT_OUT.resolve() not in (out, *out.parents):
-        raise SystemExit(f"Refusing to write inside the repo outside runs/: {out}. These files show each world's "
-                         "outcome, so they stay out of tracked files.")
+    allowed = (DEFAULT_OUT.resolve(), (ROOT / "samples" / "demo_views").resolve())
+    if (ROOT in out.parents or out == ROOT) and not any(a in (out, *out.parents) for a in allowed):
+        raise SystemExit(f"Refusing to write inside the repo outside runs/ or samples/demo_views/: {out}. These files "
+                         "show each world's outcome, so they go only where the agent never reads.")
     held_out = set(config.private_world_ids())
     worlds = [w for w in list_worlds() if w not in held_out]  # unreleased worlds are never written out
     out.mkdir(parents=True, exist_ok=True)

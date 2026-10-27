@@ -1,6 +1,6 @@
 {
   "usl": "lightning.metastore.domino.systems",
-  "generated_at": "2026-10-24T11:59:35-0400",
+  "generated_at": "2026-10-26T23:26:18-0400",
   "rules": [
     {
       "rule": "principal_id",
@@ -192,8 +192,8 @@
       "table": "change_item",
       "type": "Primary key constraints",
       "expression": "",
-      "total": 62,
-      "valid": 62,
+      "total": 68,
+      "valid": 68,
       "invalid": 0
     },
     {
@@ -219,8 +219,8 @@
       "table": "interface_contract",
       "type": "Primary key constraints",
       "expression": "",
-      "total": 71,
-      "valid": 71,
+      "total": 95,
+      "valid": 95,
       "invalid": 0
     },
     {
@@ -228,8 +228,8 @@
       "table": "dependency_edge",
       "type": "Primary key constraints",
       "expression": "",
-      "total": 499,
-      "valid": 499,
+      "total": 529,
+      "valid": 529,
       "invalid": 0
     },
     {
@@ -237,8 +237,8 @@
       "table": "dependency_edge",
       "type": "Custom Data Quality",
       "expression": "edge_status <> 'unresolved'",
-      "total": 499,
-      "valid": 496,
+      "total": 529,
+      "valid": 526,
       "invalid": 3,
       "invalid_records": [
         {
@@ -273,8 +273,8 @@
       "table": "dependency_edge",
       "type": "Custom Data Quality",
       "expression": "edge_status IN ('observed', 'inferred', 'unresolved')",
-      "total": 499,
-      "valid": 499,
+      "total": 529,
+      "valid": 529,
       "invalid": 0
     },
     {
@@ -282,8 +282,8 @@
       "table": "dependency_edge",
       "type": "Custom Data Quality",
       "expression": "from_id <> to_id",
-      "total": 499,
-      "valid": 499,
+      "total": 529,
+      "valid": 529,
       "invalid": 0
     }
   ]

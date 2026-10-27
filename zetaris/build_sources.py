@@ -32,6 +32,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 CASES_DIR = ROOT / "worlds" / "cases"
 LOAD_ORDER = ROOT / "worlds" / "load_order.txt"
+LATE_WORLDS = ROOT / "worlds" / "late_worlds.txt"
+LATE_FIRST_ROW = 5001  # late worlds' rows are numbered from here in every set, so no existing row ID moves
 OUT_DIR = Path(__file__).resolve().parent / "sources"
 
 TABLES = {
@@ -78,6 +80,13 @@ def later_worlds() -> list:
     return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
 
 
+def late_worlds() -> list:
+    """Public worlds added after the held-out worlds were loaded. Their rows go after every other row and are
+    numbered from LATE_FIRST_ROW, in the repo set and the private set alike, so adding them renumbers nothing."""
+    lines = LATE_WORLDS.read_text(encoding="utf-8").splitlines() if LATE_WORLDS.is_file() else []
+    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+
+
 def _collect(cases_dir: Path, only: list = None, skip: list = ()) -> dict:
     tables = {name: [] for name in TABLES}
     paths = sorted(cases_dir.glob("*.json")) if cases_dir.is_dir() else []
@@ -92,13 +101,16 @@ def _collect(cases_dir: Path, only: list = None, skip: list = ()) -> dict:
     return tables
 
 
-def _write(out_dir: Path, tables: dict) -> None:
+def _write(out_dir: Path, tables: dict, late: dict) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     for name, rows in tables.items():
+        if len(rows) >= LATE_FIRST_ROW:
+            raise SystemExit(f"{name}: {len(rows)} rows would collide with late-world row IDs from {LATE_FIRST_ROW}")
+        numbered = list(enumerate(rows, start=1)) + list(enumerate(late[name], start=LATE_FIRST_ROW))
         with (out_dir / f"{name}.csv").open("w", newline="", encoding="utf-8") as fh:
             writer = csv.DictWriter(fh, fieldnames=TABLES[name], lineterminator="\n")
             writer.writeheader()
-            for i, row in enumerate(rows, start=1):
+            for i, row in numbered:
                 writer.writerow({"source_system": SOURCE_SYSTEM[name], "source_row_id": f"{PREFIX[name]}-{i:04d}", **row})
 
 
@@ -111,22 +123,24 @@ def private_out_dir() -> Path:
 def main() -> int:
     """Repo CSVs hold public worlds only. When held-out worlds exist in the private folder, the full set
     (public rows first, so their row IDs never change) is written there, and that is what Zetaris loads."""
-    later = later_worlds()
-    public = _collect(CASES_DIR, skip=later)
+    later, late = later_worlds(), late_worlds()
+    public = _collect(CASES_DIR, skip=later + late)
     # The data-quality demo system (a planted broken link) is public and goes after the worlds' rows.
     import dq_demo
     for name, rows in dq_demo.facts().items():
         public[name] += [{**row, "system_id": dq_demo.SYSTEM_ID} for row in rows]
     for name, rows in _collect(CASES_DIR, only=later).items():
         public[name] += rows
-    _write(OUT_DIR, public)
+    late_rows = _collect(CASES_DIR, only=late)
+    _write(OUT_DIR, public, late_rows)
     sys.path.insert(0, str(ROOT))
     from data_layer import config
     held_out = _collect(config.private_dir() / "worlds" / "cases")
     if any(held_out.values()):
-        _write(private_out_dir(), {name: public[name] + held_out[name] for name in TABLES})
+        _write(private_out_dir(), {name: public[name] + held_out[name] for name in TABLES}, late_rows)
     for name in TABLES:
-        print(f"{name}.csv: {len(public[name])} public rows" + (f" + {len(held_out[name])} private" if held_out[name] else ""))
+        print(f"{name}.csv: {len(public[name]) + len(late_rows[name])} public rows"
+              + (f" + {len(held_out[name])} private" if held_out[name] else ""))
     return 0
 
 

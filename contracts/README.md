@@ -169,7 +169,15 @@ Runs one world in a disposable local process. `variant`: `baseline` (before the 
 `candidate` (with the change), `control` (change reverted, or a causal control).
 `params` is optional and world-specific. `describe_world(world)["params"]` lists every accepted param as
 `{"<name>": {"type": "number" | "string" | "boolean", "description": "…", "default": <value>}}`, where `default`
-is normal operation. Today's worlds take no params (`{}`), and any other key is rejected with `status: error`.
+is normal operation. The one param today is `overrides`; any other key is rejected with `status: error`.
+
+**Verified fixes (`overrides`).** `describe_world(world)["overridable"]` lists the settings a fix may change,
+each `{"target": "<component>.<setting>", "current": <value>, "type": "number" | "string" | "boolean",
+"description": "…"}`. `run_experiment(world, variant, {"overrides": {"<target>": <value>}})` applies them to
+that world's config before the run (a `<world>/setting/` prefix on the target is accepted) and adds one
+`harness: applied override <target> = <value>` line per setting to `logs`. An unknown target or a value of
+the wrong type gives `status: error` with the reason in both `error` and `logs`; nothing runs, so a fix is
+never reported as passing when it wasn't applied.
 
 ```json
 {
