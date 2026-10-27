@@ -1,0 +1,35 @@
+{
+  "schema_version": "0.2",
+  "scorecard": "scorecard.json",
+  "zetaris": "zetaris.json",
+  "cases": [
+    {
+      "case_id": "w-k7m2",
+      "label": "Shard grants (w-k7m2)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": ["w-k7m2/change/0042"]
+    },
+    {
+      "case_id": "w-h9c5",
+      "label": "Shard grants (w-h9c5)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": ["w-h9c5/change/0042"]
+    },
+    {
+      "case_id": "w-g4k8",
+      "label": "Rule 0291, template T4 (w-g4k8)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": ["w-g4k8/change/0291"]
+    },
+    {
+      "case_id": "w-r1z5",
+      "label": "Rule 0291, template T7 (w-r1z5)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": ["w-r1z5/change/0291"]
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "engine": "e3",
+  "describe": {
+    "title": "Content update: rule 0291 for template T7",
+    "components": [
+      {
+        "name": "template-registry",
+        "role": "defines template types and their fields"
+      },
+      {
+        "name": "rule-validator",
+        "role": "checks rule files before they ship"
+      },
+      {
+        "name": "content-pipeline",
+        "role": "validates rule files, then ships them to the interpreter"
+      },
+      {
+        "name": "content-interpreter",
+        "role": "evaluates shipped rules against incoming events"
+      }
+    ],
+    "change": {
+      "entity_id": "w-r1z5/change/0291",
+      "title": "Content update: rule 0291 for template T7",
+      "description": "Adds one rule for template type T7. Passed validation in CI.",
+      "files": [
+        "content/rules/T7/rule-0291.json"
+      ],
+      "diff": "--- /dev/null\n+++ b/content/rules/T7/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f02\": \"m-0291-f02\",\n+    \"f21\": \"m-0291-f21\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T7\"\n+}\n"
+    },
+    "variants": {
+      "baseline": "system without the change (existing rules only)",
+      "candidate": "system with the change applied (existing rules plus the new rule)",
+      "control": "change applied, then reverted (existing rules only)"
+    },
+    "params": {},
+    "metrics": [
+      "rule-validator.rules_checked",
+      "rule-validator.rules_rejected",
+      "content-pipeline.rules_shipped",
+      "content-interpreter.events_processed",
+      "content-interpreter.matches",
+      "content-interpreter.exit_code"
+    ]
+  },
+  "setup": {
+    "templates": {
+      "T7": {
+        "field_count": 21
+      }
+    },
+    "consumer_inputs": 21,
+    "existing_rules": [
+      {
+        "rule_id": "rule-0280",
+        "template": "T7",
+        "criteria": {
+          "f02": "m-0280-f02",
+          "f05": "m-0280-f05"
+        }
+      },
+      {
+        "rule_id": "rule-0281",
+        "template": "T7",
+        "criteria": {
+          "f01": "m-0281-f01",
+          "f03": "m-0281-f03"
+        }
+      },
+      {
+        "rule_id": "rule-0282",
+        "template": "T7",
+        "criteria": {
+          "f04": "m-0282-f04",
+          "f07": "m-0282-f07",
+          "f09": "m-0282-f09"
+        }
+      }
+    ],
+    "new_rule": {
+      "rule_id": "rule-0291",
+      "template": "T7",
+      "criteria": {
+        "f02": "m-0291-f02",
+        "f21": "m-0291-f21"
+      }
+    },
+    "validator_checks_consumer": false,
+    "change_id": "0291",
+    "file": "content/rules/T7/rule-0291.json"
+  }
+}

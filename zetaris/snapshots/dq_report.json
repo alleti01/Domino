@@ -1,0 +1,290 @@
+{
+  "usl": "lightning.metastore.domino.systems",
+  "generated_at": "2026-10-24T11:59:35-0400",
+  "rules": [
+    {
+      "rule": "principal_id",
+      "table": "principal",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 16,
+      "valid": 16,
+      "invalid": 0
+    },
+    {
+      "rule": "database_id",
+      "table": "database_entity",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 12,
+      "valid": 12,
+      "invalid": 0
+    },
+    {
+      "rule": "table_id",
+      "table": "data_table",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 22,
+      "valid": 22,
+      "invalid": 0
+    },
+    {
+      "rule": "database_id",
+      "table": "data_table",
+      "type": "Foreign key constraints",
+      "expression": "",
+      "total": 22,
+      "valid": 22,
+      "invalid": 0
+    },
+    {
+      "rule": "positive_column_count",
+      "table": "data_table",
+      "type": "Custom Data Quality",
+      "expression": "column_count > 0",
+      "total": 22,
+      "valid": 22,
+      "invalid": 0
+    },
+    {
+      "rule": "grant_id",
+      "table": "access_grant",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 22,
+      "valid": 22,
+      "invalid": 0
+    },
+    {
+      "rule": "principal_id",
+      "table": "access_grant",
+      "type": "Foreign key constraints",
+      "expression": "",
+      "total": 22,
+      "valid": 22,
+      "invalid": 0
+    },
+    {
+      "rule": "database_id",
+      "table": "access_grant",
+      "type": "Foreign key constraints",
+      "expression": "",
+      "total": 22,
+      "valid": 22,
+      "invalid": 0
+    },
+    {
+      "rule": "stmt_id",
+      "table": "change_statement",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 7,
+      "valid": 7,
+      "invalid": 0
+    },
+    {
+      "rule": "principal_id",
+      "table": "change_statement",
+      "type": "Foreign key constraints",
+      "expression": "",
+      "total": 7,
+      "valid": 6,
+      "invalid": 1,
+      "invalid_records": [
+        {
+          "stmt_id": "dq-demo/change/0099#1",
+          "change_id": "dq-demo/change/0099",
+          "system_id": "dq-demo",
+          "action": "GRANT",
+          "privilege": "SELECT",
+          "principal_id": "dq-demo/principal/svc_ghost_reader",
+          "database_id": "dq-demo/database/default",
+          "file_path": "db/migrations/0099_report_reader.sql",
+          "title": "Grant the report reader access to events",
+          "source_system": "change_records",
+          "source_row_id": "cr-0007"
+        }
+      ],
+      "invalid_records_kept_private": 0
+    },
+    {
+      "rule": "database_id",
+      "table": "change_statement",
+      "type": "Foreign key constraints",
+      "expression": "",
+      "total": 7,
+      "valid": 7,
+      "invalid": 0
+    },
+    {
+      "rule": "job_id",
+      "table": "job",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 11,
+      "valid": 11,
+      "invalid": 0
+    },
+    {
+      "rule": "principal_id",
+      "table": "job",
+      "type": "Foreign key constraints",
+      "expression": "",
+      "total": 11,
+      "valid": 10,
+      "invalid": 1,
+      "invalid_records": [
+        {
+          "job_id": "dq-demo/service/report-builder",
+          "system_id": "dq-demo",
+          "service_name": "report-builder",
+          "principal_id": "dq-demo/principal/svc_ghost_reader",
+          "query_id": "dq-demo/query/q-events-daily",
+          "query_text": "SELECT day, count(*) FROM default.events GROUP BY day",
+          "reads_table": "events",
+          "output_artifact_id": "dq-demo/artifact/daily_report.csv",
+          "output_mode": "as_returned",
+          "source_system": "pipeline_repo",
+          "source_row_id": "jd-0011"
+        }
+      ],
+      "invalid_records_kept_private": 0
+    },
+    {
+      "rule": "setting_id",
+      "table": "runtime_setting",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 15,
+      "valid": 15,
+      "invalid": 0
+    },
+    {
+      "rule": "setting_has_value",
+      "table": "runtime_setting",
+      "type": "Custom Data Quality",
+      "expression": "setting_value IS NOT NULL AND setting_value <> ''",
+      "total": 15,
+      "valid": 15,
+      "invalid": 0
+    },
+    {
+      "rule": "obs_id",
+      "table": "query_observation",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 10,
+      "valid": 10,
+      "invalid": 0
+    },
+    {
+      "rule": "job_id",
+      "table": "query_observation",
+      "type": "Foreign key constraints",
+      "expression": "",
+      "total": 10,
+      "valid": 10,
+      "invalid": 0
+    },
+    {
+      "rule": "item_id",
+      "table": "change_item",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 62,
+      "valid": 62,
+      "invalid": 0
+    },
+    {
+      "rule": "record_key",
+      "table": "inventory_record",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 340,
+      "valid": 340,
+      "invalid": 0
+    },
+    {
+      "rule": "owner_present",
+      "table": "inventory_record",
+      "type": "Custom Data Quality",
+      "expression": "owner IS NOT NULL AND owner <> ''",
+      "total": 340,
+      "valid": 340,
+      "invalid": 0
+    },
+    {
+      "rule": "contract_id",
+      "table": "interface_contract",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 71,
+      "valid": 71,
+      "invalid": 0
+    },
+    {
+      "rule": "edge_id",
+      "table": "dependency_edge",
+      "type": "Primary key constraints",
+      "expression": "",
+      "total": 499,
+      "valid": 499,
+      "invalid": 0
+    },
+    {
+      "rule": "resolved_link",
+      "table": "dependency_edge",
+      "type": "Custom Data Quality",
+      "expression": "edge_status <> 'unresolved'",
+      "total": 499,
+      "valid": 496,
+      "invalid": 3,
+      "invalid_records": [
+        {
+          "edge_id": "dq-demo/edge/cr-0007/principal",
+          "system_id": "dq-demo",
+          "from_id": "dq-demo/change/0099",
+          "from_type": "change",
+          "to_id": "dq-demo/principal/svc_ghost_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "unresolved",
+          "evidence": "change_records:cr-0007",
+          "detail": "GRANT SELECT ON default.*"
+        },
+        {
+          "edge_id": "dq-demo/edge/jd-0011/identity",
+          "system_id": "dq-demo",
+          "from_id": "dq-demo/principal/svc_ghost_reader",
+          "from_type": "principal",
+          "to_id": "dq-demo/service/report-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "unresolved",
+          "evidence": "pipeline_repo:jd-0011",
+          "detail": "service runs as svc_ghost_reader"
+        }
+      ],
+      "invalid_records_kept_private": 1
+    },
+    {
+      "rule": "known_edge_status",
+      "table": "dependency_edge",
+      "type": "Custom Data Quality",
+      "expression": "edge_status IN ('observed', 'inferred', 'unresolved')",
+      "total": 499,
+      "valid": 499,
+      "invalid": 0
+    },
+    {
+      "rule": "no_self_link",
+      "table": "dependency_edge",
+      "type": "Custom Data Quality",
+      "expression": "from_id <> to_id",
+      "total": 499,
+      "valid": 499,
+      "invalid": 0
+    }
+  ]
+}

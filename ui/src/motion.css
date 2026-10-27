@@ -1,0 +1,28 @@
+/* Motion outside the 3D story: the nav steps aside while you read, arrows
+   and underlines answer the pointer. All of it holds still for
+   prefers-reduced-motion. The story's own motion is in
+   components/landing/story; smooth scrolling (Lenis) in lib/smoothScroll.ts. */
+
+/* ---------- Nav: hide on the way down, return on the way up ---------- */
+.site-nav.is-hidden {
+  transform: translateY(-100%);
+}
+
+/* Never hide it from someone tabbing through it. */
+.site-nav:focus-within {
+  transform: none;
+}
+
+/* ---------- Reduced motion: everything in place ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .site-nav,
+  .arrow-shaft,
+  .arrow-head {
+    transition: none;
+  }
+
+  .text-link:hover,
+  .arrow-link:hover > span:first-child {
+    animation: none;
+  }
+}

@@ -1,0 +1,541 @@
+{
+  "contract_version": "0.3",
+  "call": "list_tables",
+  "mode": "fake",
+  "status": "ok",
+  "system_column": "system_id",
+  "tables": [
+    {
+      "name": "lightning.metastore.domino.systems.principal",
+      "short_name": "principal",
+      "description": "identities known to the database catalog",
+      "source_systems": [
+        "db_catalog"
+      ],
+      "columns": [
+        {
+          "name": "principal_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "principal_name",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.database_entity",
+      "short_name": "database_entity",
+      "description": "databases known to the catalog",
+      "source_systems": [
+        "db_catalog"
+      ],
+      "columns": [
+        {
+          "name": "database_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "database_name",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.data_table",
+      "short_name": "data_table",
+      "description": "tables per database, with column counts",
+      "source_systems": [
+        "db_catalog"
+      ],
+      "columns": [
+        {
+          "name": "table_id",
+          "type": "varchar"
+        },
+        {
+          "name": "database_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "table_name",
+          "type": "varchar"
+        },
+        {
+          "name": "column_count",
+          "type": "int"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.access_grant",
+      "short_name": "access_grant",
+      "description": "current read grants per identity and database",
+      "source_systems": [
+        "db_catalog"
+      ],
+      "columns": [
+        {
+          "name": "grant_id",
+          "type": "varchar"
+        },
+        {
+          "name": "principal_id",
+          "type": "varchar"
+        },
+        {
+          "name": "database_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "privilege",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.change_statement",
+      "short_name": "change_statement",
+      "description": "grant statements in a proposed change",
+      "source_systems": [
+        "change_records"
+      ],
+      "columns": [
+        {
+          "name": "stmt_id",
+          "type": "varchar"
+        },
+        {
+          "name": "change_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "action",
+          "type": "varchar"
+        },
+        {
+          "name": "privilege",
+          "type": "varchar"
+        },
+        {
+          "name": "principal_id",
+          "type": "varchar"
+        },
+        {
+          "name": "database_id",
+          "type": "varchar"
+        },
+        {
+          "name": "file_path",
+          "type": "varchar"
+        },
+        {
+          "name": "title",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.job",
+      "short_name": "job",
+      "description": "services: identity they run as, query, output file",
+      "source_systems": [
+        "pipeline_repo"
+      ],
+      "columns": [
+        {
+          "name": "job_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "service_name",
+          "type": "varchar"
+        },
+        {
+          "name": "principal_id",
+          "type": "varchar"
+        },
+        {
+          "name": "query_id",
+          "type": "varchar"
+        },
+        {
+          "name": "query_text",
+          "type": "varchar"
+        },
+        {
+          "name": "reads_table",
+          "type": "varchar"
+        },
+        {
+          "name": "output_artifact_id",
+          "type": "varchar"
+        },
+        {
+          "name": "output_mode",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.runtime_setting",
+      "short_name": "runtime_setting",
+      "description": "services: input file and settings",
+      "source_systems": [
+        "runtime_config"
+      ],
+      "columns": [
+        {
+          "name": "setting_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "service_id",
+          "type": "varchar"
+        },
+        {
+          "name": "input_artifact_id",
+          "type": "varchar"
+        },
+        {
+          "name": "setting_key",
+          "type": "varchar"
+        },
+        {
+          "name": "setting_value",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.query_observation",
+      "short_name": "query_observation",
+      "description": "observed query results over recent runs",
+      "source_systems": [
+        "telemetry"
+      ],
+      "columns": [
+        {
+          "name": "obs_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "query_id",
+          "type": "varchar"
+        },
+        {
+          "name": "job_id",
+          "type": "varchar"
+        },
+        {
+          "name": "window_days",
+          "type": "int"
+        },
+        {
+          "name": "sampled_runs",
+          "type": "int"
+        },
+        {
+          "name": "rows_returned_p50",
+          "type": "int"
+        },
+        {
+          "name": "artifact_entries_p50",
+          "type": "int"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.change_item",
+      "short_name": "change_item",
+      "description": "other items in a proposed change: IDs, rules, jobs it runs",
+      "source_systems": [
+        "change_records"
+      ],
+      "columns": [
+        {
+          "name": "item_id",
+          "type": "varchar"
+        },
+        {
+          "name": "change_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "item_kind",
+          "type": "varchar"
+        },
+        {
+          "name": "item_ref",
+          "type": "varchar"
+        },
+        {
+          "name": "item_detail",
+          "type": "varchar"
+        },
+        {
+          "name": "file_path",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.inventory_record",
+      "short_name": "inventory_record",
+      "description": "registered records with kind, parent, owner and status",
+      "source_systems": [
+        "inventory_registry"
+      ],
+      "columns": [
+        {
+          "name": "record_key",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "record_id",
+          "type": "varchar"
+        },
+        {
+          "name": "record_kind",
+          "type": "varchar"
+        },
+        {
+          "name": "parent_record_id",
+          "type": "varchar"
+        },
+        {
+          "name": "owner",
+          "type": "varchar"
+        },
+        {
+          "name": "status",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.interface_contract",
+      "short_name": "interface_contract",
+      "description": "what components call, declare and accept",
+      "source_systems": [
+        "service_catalog"
+      ],
+      "columns": [
+        {
+          "name": "contract_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "component",
+          "type": "varchar"
+        },
+        {
+          "name": "relation",
+          "type": "varchar"
+        },
+        {
+          "name": "target",
+          "type": "varchar"
+        },
+        {
+          "name": "contract_key",
+          "type": "varchar"
+        },
+        {
+          "name": "contract_value",
+          "type": "varchar"
+        },
+        {
+          "name": "source_system",
+          "type": "varchar"
+        },
+        {
+          "name": "source_row_id",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "name": "lightning.metastore.domino.systems.dependency_edge",
+      "short_name": "dependency_edge",
+      "description": "cross-source links joined inside Zetaris, with status and evidence rows",
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "inventory_registry",
+        "pipeline_repo",
+        "runtime_config",
+        "service_catalog",
+        "telemetry"
+      ],
+      "columns": [
+        {
+          "name": "edge_id",
+          "type": "varchar"
+        },
+        {
+          "name": "system_id",
+          "type": "varchar"
+        },
+        {
+          "name": "from_id",
+          "type": "varchar"
+        },
+        {
+          "name": "from_type",
+          "type": "varchar"
+        },
+        {
+          "name": "to_id",
+          "type": "varchar"
+        },
+        {
+          "name": "to_type",
+          "type": "varchar"
+        },
+        {
+          "name": "relation",
+          "type": "varchar"
+        },
+        {
+          "name": "edge_status",
+          "type": "varchar"
+        },
+        {
+          "name": "evidence",
+          "type": "varchar"
+        },
+        {
+          "name": "detail",
+          "type": "varchar"
+        }
+      ]
+    }
+  ],
+  "error": null,
+  "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
+}

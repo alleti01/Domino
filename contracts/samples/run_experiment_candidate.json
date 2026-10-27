@@ -1,0 +1,52 @@
+{
+  "contract_version": "0.3",
+  "call": "run_experiment",
+  "mode": "fake",
+  "experiment_id": "x-5a836fe15b4b4e54",
+  "world": "fake-w0",
+  "variant": "candidate",
+  "params": {},
+  "passed": false,
+  "assertions": [
+    {
+      "name": "builder_completes",
+      "passed": true,
+      "observed": "exit 0",
+      "expected": "exit 0"
+    },
+    {
+      "name": "runtime_starts_with_bundle",
+      "passed": false,
+      "observed": "exit 2",
+      "expected": "exit 0"
+    }
+  ],
+  "metrics": {
+    "meta-store.rows_visible_to_builder": 280,
+    "bundle-builder.entries": 280,
+    "bundle-builder.bundle_bytes": 8731,
+    "worker-runtime.exit_code": 2,
+    "worker-runtime.loaded_entries": 0
+  },
+  "artifacts": [
+    {
+      "name": "bundle.json",
+      "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+      "bytes": 8731
+    }
+  ],
+  "logs": [
+    "meta-store: applied GRANT SELECT ON default.* TO svc_bundle_reader;",
+    "meta-store: applied GRANT SELECT ON r0.* TO svc_bundle_reader;",
+    "bundle-builder: read 280 rows for table bundle_fields; wrote 280 entries (8731 bytes)",
+    "worker-runtime: fatal: bundle has 280 entries but the runtime preallocates 200; refusing to start"
+  ],
+  "reproduce": {
+    "command": "python3 -m data_layer run fake-w0 candidate",
+    "input_sha256": "4bb878e36650135a589095170e817f284b74bc536432cc08b89701c6c5242c86"
+  },
+  "duration_ms": 284,
+  "error": null,
+  "status": "ok",
+  "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
+}

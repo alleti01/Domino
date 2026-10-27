@@ -1,0 +1,19 @@
+{
+  "run_id": "run-20261024012543-6d5dfe",
+  "change_id": "stub-chg-1",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "svc_builder new read access to mirror schema leads to extra rows in items.list, exceeding the loader's max_items=50 threshold and producing a consumer_status error.",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "g1",
+    "g2",
+    "s1",
+    "x2"
+  ],
+  "model_calls": 14,
+  "experiments": 4,
+  "duration_ms": 62000,
+  "outage": false,
+  "all_calls_nemotron": true
+}

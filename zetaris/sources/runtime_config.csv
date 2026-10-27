@@ -1,0 +1,16 @@
+source_system,source_row_id,system_id,service_name,input_artifact,setting_key,setting_value
+runtime_config,rc-0001,w-d2v4,worker-runtime,bundle.json,max_entries,160
+runtime_config,rc-0002,w-d2v4,worker-runtime,bundle.json,startup_timeout_s,30
+runtime_config,rc-0003,w-d2v4,status-dashboard,request_metrics.csv,refresh_s,60
+runtime_config,rc-0004,w-h9c5,worker-runtime,bundle.json,max_entries,200
+runtime_config,rc-0005,w-h9c5,worker-runtime,bundle.json,startup_timeout_s,30
+runtime_config,rc-0006,w-h9c5,status-dashboard,request_metrics.csv,refresh_s,60
+runtime_config,rc-0007,w-k7m2,worker-runtime,bundle.json,max_entries,200
+runtime_config,rc-0008,w-k7m2,worker-runtime,bundle.json,startup_timeout_s,30
+runtime_config,rc-0009,w-k7m2,status-dashboard,request_metrics.csv,refresh_s,60
+runtime_config,rc-0010,w-p4r8,worker-runtime,bundle.json,max_entries,200
+runtime_config,rc-0011,w-p4r8,worker-runtime,bundle.json,startup_timeout_s,30
+runtime_config,rc-0012,w-p4r8,status-dashboard,request_metrics.csv,refresh_s,60
+runtime_config,rc-0013,w-t3n6,worker-runtime,bundle.json,max_entries,150
+runtime_config,rc-0014,w-t3n6,worker-runtime,bundle.json,startup_timeout_s,30
+runtime_config,rc-0015,w-t3n6,status-dashboard,request_metrics.csv,refresh_s,60

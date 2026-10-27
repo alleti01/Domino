@@ -1,0 +1,512 @@
+{
+  "contract_version": "0.3",
+  "call": "dependency_path",
+  "mode": "live",
+  "status": "ok",
+  "start": {
+    "entity_id": "w-h9c5/change/0042",
+    "entity_type": "change"
+  },
+  "paths": [
+    {
+      "hops": [
+        {
+          "from": "w-h9c5/change/0042",
+          "from_type": "change",
+          "to": "w-h9c5/database/r0",
+          "to_type": "database",
+          "relation": "grants_on",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT TO svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0007",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/database/r0",
+          "from_type": "database",
+          "to": "w-h9c5/table/r0.bundle_fields",
+          "to_type": "table",
+          "relation": "contains",
+          "edge_status": "inferred",
+          "detail": "column_count=99",
+          "evidence": [
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0007",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-h9c5/change/0042",
+          "from_type": "change",
+          "to": "w-h9c5/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-h9c5/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-h9c5/query/q-bundle-fields",
+          "to_type": "query",
+          "relation": "executes",
+          "edge_status": "observed",
+          "detail": "SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name | rows_returned_p50=99 over 288 runs in 7 days",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "telemetry",
+              "source_row_id": "qt-0003",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo",
+        "telemetry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-h9c5/change/0042",
+          "from_type": "change",
+          "to": "w-h9c5/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-h9c5/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-h9c5/table/default.bundle_fields",
+          "to_type": "table",
+          "relation": "reads",
+          "edge_status": "inferred",
+          "detail": "matched on table name bundle_fields",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-h9c5/change/0042",
+          "from_type": "change",
+          "to": "w-h9c5/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-h9c5/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-h9c5/table/r0.bundle_fields",
+          "to_type": "table",
+          "relation": "reads",
+          "edge_status": "inferred",
+          "detail": "matched on table name bundle_fields",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ti-0007",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-h9c5/change/0042",
+          "from_type": "change",
+          "to": "w-h9c5/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-h9c5/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-h9c5/artifact/bundle.json",
+          "to_type": "artifact",
+          "relation": "writes",
+          "edge_status": "observed",
+          "detail": "output_mode=as_returned",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0004",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/artifact/bundle.json",
+          "from_type": "artifact",
+          "to": "w-h9c5/service/worker-runtime",
+          "to_type": "service",
+          "relation": "loaded_by",
+          "edge_status": "observed",
+          "detail": "read at startup",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0004",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/service/worker-runtime",
+          "from_type": "service",
+          "to": "w-h9c5/setting/worker-runtime.max_entries",
+          "to_type": "setting",
+          "relation": "configured_with",
+          "edge_status": "inferred",
+          "detail": "max_entries=200",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0004",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo",
+        "runtime_config"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-h9c5/change/0042",
+          "from_type": "change",
+          "to": "w-h9c5/principal/svc_bundle_reader",
+          "to_type": "principal",
+          "relation": "grants_to",
+          "edge_status": "observed",
+          "detail": "GRANT SELECT ON r0.*",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "cr-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/principal/svc_bundle_reader",
+          "from_type": "principal",
+          "to": "w-h9c5/service/bundle-builder",
+          "to_type": "service",
+          "relation": "identity_of",
+          "edge_status": "observed",
+          "detail": "service runs as svc_bundle_reader",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "db_catalog",
+              "source_row_id": "ag-0006",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/service/bundle-builder",
+          "from_type": "service",
+          "to": "w-h9c5/artifact/bundle.json",
+          "to_type": "artifact",
+          "relation": "writes",
+          "edge_status": "observed",
+          "detail": "output_mode=as_returned",
+          "evidence": [
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0004",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/artifact/bundle.json",
+          "from_type": "artifact",
+          "to": "w-h9c5/service/worker-runtime",
+          "to_type": "service",
+          "relation": "loaded_by",
+          "edge_status": "observed",
+          "detail": "read at startup",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0004",
+              "query_id": "q-528c85fd89204740"
+            },
+            {
+              "source_system": "pipeline_repo",
+              "source_row_id": "jd-0003",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        },
+        {
+          "from": "w-h9c5/service/worker-runtime",
+          "from_type": "service",
+          "to": "w-h9c5/setting/worker-runtime.startup_timeout_s",
+          "to_type": "setting",
+          "relation": "configured_with",
+          "edge_status": "inferred",
+          "detail": "startup_timeout_s=30",
+          "evidence": [
+            {
+              "source_system": "runtime_config",
+              "source_row_id": "rc-0005",
+              "query_id": "q-528c85fd89204740"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "db_catalog",
+        "pipeline_repo",
+        "runtime_config"
+      ],
+      "meets_two_source_rule": true
+    }
+  ],
+  "unresolved": [],
+  "dq_issues": [],
+  "edges_considered": 20,
+  "query_ids": [
+    "q-528c85fd89204740"
+  ],
+  "duration_ms": 1699,
+  "error": null,
+  "snapshot_request": {
+    "entity_id": "w-h9c5/change/0042",
+    "max_hops": 6
+  }
+}
