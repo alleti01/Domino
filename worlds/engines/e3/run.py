@@ -41,7 +41,8 @@ _SETTINGS = [
 
 def overridable(setup: dict) -> list:
     """What `describe` lists as changeable, with each setting's current value."""
-    return [{"target": s["target"], "current": s["get"](setup), "type": s["type"], "description": s["description"]}
+    return [{"target": s["target"], "current": s["get"](setup), "type": s["type"], "description": s["description"],
+             **({"choices": list(s["choices"])} if "choices" in s else {})}
             for s in _SETTINGS]
 
 

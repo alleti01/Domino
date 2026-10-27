@@ -1,0 +1,534 @@
+{
+  "contract_version": "0.3",
+  "call": "dependency_path",
+  "mode": "live",
+  "status": "ok",
+  "start": {
+    "entity_id": "w-b6n4/change/0187",
+    "entity_type": "change"
+  },
+  "paths": [
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/interface/cleanup-job",
+          "to_type": "interface",
+          "relation": "runs",
+          "edge_status": "observed",
+          "detail": "mode=permanent; input=targets.csv",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0023",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0052",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        },
+        {
+          "from": "w-b6n4/interface/cleanup-job",
+          "from_type": "interface",
+          "to": "w-b6n4/interface/lifecycle-api.delete_record",
+          "to_type": "interface",
+          "relation": "calls",
+          "edge_status": "observed",
+          "detail": "mode=permanent",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0052",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0053",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        },
+        {
+          "from": "w-b6n4/interface/lifecycle-api.delete_record",
+          "from_type": "interface",
+          "to": "w-b6n4/interface/record:app",
+          "to_type": "interface",
+          "relation": "accepts",
+          "edge_status": "inferred",
+          "detail": "effect=removes the record",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0053",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/interface/cleanup-job",
+          "to_type": "interface",
+          "relation": "runs",
+          "edge_status": "observed",
+          "detail": "mode=permanent; input=targets.csv",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0023",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0052",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        },
+        {
+          "from": "w-b6n4/interface/cleanup-job",
+          "from_type": "interface",
+          "to": "w-b6n4/interface/lifecycle-api.delete_record",
+          "to_type": "interface",
+          "relation": "calls",
+          "edge_status": "observed",
+          "detail": "mode=permanent",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0052",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0053",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        },
+        {
+          "from": "w-b6n4/interface/lifecycle-api.delete_record",
+          "from_type": "interface",
+          "to": "w-b6n4/interface/record:site",
+          "to_type": "interface",
+          "relation": "accepts",
+          "edge_status": "inferred",
+          "detail": "effect=removes the record and its child records",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0054",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-1994a6bb37",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-004; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0014",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0034",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-2e18bc25de",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-009; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0019",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0054",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-395c1971c0",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-010; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0020",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0058",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-6c9c49222e",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "unresolved",
+          "detail": "id r-6c9c49222e not in inventory",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0018",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records"
+      ],
+      "meets_two_source_rule": false
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-7b29747c3c",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-012; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0022",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0066",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-7f7733dcf5",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-007; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0017",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0046",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-98c3c863cb",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-006; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0016",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0042",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-bc6644fa4e",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-011; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0021",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0062",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-c19e4502ea",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-005; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0015",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0038",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-eaa5a6402c",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-002; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0012",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0026",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-fb9b9d9147",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-001; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0011",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0022",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-b6n4/change/0187",
+          "from_type": "change",
+          "to": "w-b6n4/record/r-ffece738a8",
+          "to_type": "record",
+          "relation": "targets",
+          "edge_status": "observed",
+          "detail": "kind=app:legacy-reports; owner=customer-003; status=active",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0013",
+              "query_id": "q-e37628625f914541"
+            },
+            {
+              "source_system": "inventory_registry",
+              "source_row_id": "ir-0030",
+              "query_id": "q-e37628625f914541"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "inventory_registry"
+      ],
+      "meets_two_source_rule": true
+    }
+  ],
+  "unresolved": [
+    {
+      "from": "w-b6n4/change/0187",
+      "to": "w-b6n4/record/r-6c9c49222e",
+      "relation": "targets",
+      "reason": "referenced entity not found in any other source",
+      "evidence": [
+        {
+          "source_system": "change_records",
+          "source_row_id": "ci-0018",
+          "query_id": "q-e37628625f914541"
+        }
+      ]
+    }
+  ],
+  "dq_issues": [
+    {
+      "rule": "resolved_link",
+      "table": "dependency_edge",
+      "row_id": "change_records:ci-0018",
+      "detail": "targets link w-b6n4/change/0187 -> w-b6n4/record/r-6c9c49222e points at nothing",
+      "checked_at": "2026-10-23T22:27:55-0400"
+    }
+  ],
+  "edges_considered": 78,
+  "query_ids": [
+    "q-e37628625f914541"
+  ],
+  "duration_ms": 2180,
+  "error": null,
+  "snapshot_request": {
+    "entity_id": "w-b6n4/change/0187",
+    "max_hops": 6
+  }
+}

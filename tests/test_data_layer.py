@@ -234,7 +234,8 @@ for argv, fn in calls:
 for w in ("w-k7m2", "w-g4k8"):
     d = experiments.describe_world(w)
     check(f"{w} lists overridable settings with current values", d["overridable"] and all(
-        set(o) == {"target", "current", "type", "description"} for o in d["overridable"]) and "overrides" in d["params"])
+        set(o) - {"choices"} == {"target", "current", "type", "description"} for o in d["overridable"])
+        and "overrides" in d["params"])
     o = d["overridable"][0]
     r = experiments.run_experiment(w, "baseline", {"overrides": {f"{w}/setting/{o['target']}": o["current"]}})
     check(f"{w} override applied and logged", r["status"] == "ok" and
@@ -248,6 +249,16 @@ for w in ("w-k7m2", "w-g4k8"):
     wrong = experiments.run_experiment(w, "candidate", {"overrides": {o["target"]: "not-a-valid-value"}})
     check(f"{w} wrong override type -> error", wrong["status"] == "error" and wrong["logs"])
 check("overrides must be an object", experiments.run_experiment("w-k7m2", "baseline", {"overrides": [1]})["status"] == "error")
+# String settings list their choices (current value included), so a fix search can try each one; every choice runs
+strings = [(w, o) for w in experiments.list_worlds() for o in experiments.describe_world(w)["overridable"]
+           if o["type"] == "string"]
+check("every string setting lists its choices", strings and all(
+    isinstance(o.get("choices"), list) and len(o["choices"]) > 1 and o["current"] in o["choices"] for _, o in strings))
+check("only string settings list choices", all("choices" not in o for w in experiments.list_worlds()
+      for o in experiments.describe_world(w)["overridable"] if o["type"] != "string"))
+check("every listed choice is accepted by run", all(
+    experiments.run_experiment(w, "baseline", {"overrides": {o["target"]: c}})["status"] == "ok"
+    for w, o in strings[:1] for c in o["choices"]))
 check("CLI JSON matches the Python results", same)
 check("CLI prints JSON and exits 1 when status != ok", json_on_error)
 

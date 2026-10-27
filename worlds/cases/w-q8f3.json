@@ -1,0 +1,630 @@
+{
+  "engine": "e2",
+  "describe": {
+    "title": "Remove the retired reports add-on from migrated tenants",
+    "components": [
+      {
+        "name": "tenant-registry",
+        "role": "registry of tenant records; sites own app records"
+      },
+      {
+        "name": "cleanup-job",
+        "role": "reads an ID list and asks lifecycle-api to remove each record"
+      },
+      {
+        "name": "lifecycle-api",
+        "role": "removes a registry record by ID"
+      }
+    ],
+    "change": {
+      "entity_id": "w-q8f3/change/0187",
+      "title": "Remove the retired reports add-on from migrated tenants",
+      "description": "The migrations team supplied the list of add-on instances to remove for tenants that finished moving to the new reporting service. Runs the standard cleanup job with permanent removal.",
+      "files": [
+        "ops/cleanup/0187_retire_reports_addon/run.yaml",
+        "ops/cleanup/0187_retire_reports_addon/targets.csv"
+      ],
+      "diff": "--- /dev/null\n+++ b/ops/cleanup/0187_retire_reports_addon/run.yaml\n@@ -0,0 +1,4 @@\n+job: cleanup-job\n+operation: lifecycle-api.delete_record\n+mode: permanent\n+input: targets.csv\n--- /dev/null\n+++ b/ops/cleanup/0187_retire_reports_addon/targets.csv\n@@ -0,0 +1,13 @@\n+record_id\n+r-0938f7e2b7\n+r-da8b34f986\n+r-599138f03a\n+r-3fc7c0e157\n+r-51c0877f4b\n+r-7ad97158d5\n+r-20c6bb85a4\n+r-837c489c24\n+r-ddef697515\n+r-a39a3f7f17\n+r-e8f5def0b0\n+r-5e79ff7544\n"
+    },
+    "variants": {
+      "baseline": "system without the change (the job is not run)",
+      "candidate": "system with the change applied (the job runs over the ID list)",
+      "control": "change applied, then reverted (the ID list is removed)"
+    },
+    "params": {},
+    "metrics": [
+      "tenant-registry.records_before",
+      "tenant-registry.records_after",
+      "cleanup-job.ids_processed",
+      "cleanup-job.ids_not_found",
+      "tenant-registry.removed_listed",
+      "tenant-registry.removed_unlisted",
+      "tenant-registry.removed_sites",
+      "tenant-registry.removed_apps"
+    ]
+  },
+  "setup": {
+    "records": [
+      {
+        "record_id": "r-0938f7e2b7",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-001",
+        "status": "active"
+      },
+      {
+        "record_id": "r-97efa20821",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-0938f7e2b7",
+        "owner": "customer-001",
+        "status": "active"
+      },
+      {
+        "record_id": "r-b6706316e6",
+        "kind": "app:boards",
+        "parent_id": "r-0938f7e2b7",
+        "owner": "customer-001",
+        "status": "active"
+      },
+      {
+        "record_id": "r-ff2ac410e5",
+        "kind": "app:wiki",
+        "parent_id": "r-0938f7e2b7",
+        "owner": "customer-001",
+        "status": "active"
+      },
+      {
+        "record_id": "r-da8b34f986",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-002",
+        "status": "active"
+      },
+      {
+        "record_id": "r-361c589297",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-da8b34f986",
+        "owner": "customer-002",
+        "status": "active"
+      },
+      {
+        "record_id": "r-1374c8f9d8",
+        "kind": "app:boards",
+        "parent_id": "r-da8b34f986",
+        "owner": "customer-002",
+        "status": "active"
+      },
+      {
+        "record_id": "r-919622710e",
+        "kind": "app:wiki",
+        "parent_id": "r-da8b34f986",
+        "owner": "customer-002",
+        "status": "active"
+      },
+      {
+        "record_id": "r-599138f03a",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-003",
+        "status": "active"
+      },
+      {
+        "record_id": "r-dc301cdeed",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-599138f03a",
+        "owner": "customer-003",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c465c1e1da",
+        "kind": "app:boards",
+        "parent_id": "r-599138f03a",
+        "owner": "customer-003",
+        "status": "active"
+      },
+      {
+        "record_id": "r-dc7eabd081",
+        "kind": "app:wiki",
+        "parent_id": "r-599138f03a",
+        "owner": "customer-003",
+        "status": "active"
+      },
+      {
+        "record_id": "r-3fc7c0e157",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-004",
+        "status": "active"
+      },
+      {
+        "record_id": "r-be97a7a61c",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-3fc7c0e157",
+        "owner": "customer-004",
+        "status": "active"
+      },
+      {
+        "record_id": "r-e9f7db18d8",
+        "kind": "app:boards",
+        "parent_id": "r-3fc7c0e157",
+        "owner": "customer-004",
+        "status": "active"
+      },
+      {
+        "record_id": "r-e3ae1d736b",
+        "kind": "app:wiki",
+        "parent_id": "r-3fc7c0e157",
+        "owner": "customer-004",
+        "status": "active"
+      },
+      {
+        "record_id": "r-51c0877f4b",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-005",
+        "status": "active"
+      },
+      {
+        "record_id": "r-d82553ad98",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-51c0877f4b",
+        "owner": "customer-005",
+        "status": "active"
+      },
+      {
+        "record_id": "r-dd1dddc4ce",
+        "kind": "app:boards",
+        "parent_id": "r-51c0877f4b",
+        "owner": "customer-005",
+        "status": "active"
+      },
+      {
+        "record_id": "r-acd598731a",
+        "kind": "app:wiki",
+        "parent_id": "r-51c0877f4b",
+        "owner": "customer-005",
+        "status": "active"
+      },
+      {
+        "record_id": "r-7ad97158d5",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-006",
+        "status": "active"
+      },
+      {
+        "record_id": "r-e9c8ba7a8b",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-7ad97158d5",
+        "owner": "customer-006",
+        "status": "active"
+      },
+      {
+        "record_id": "r-93bf0e05fa",
+        "kind": "app:boards",
+        "parent_id": "r-7ad97158d5",
+        "owner": "customer-006",
+        "status": "active"
+      },
+      {
+        "record_id": "r-9e32373d84",
+        "kind": "app:wiki",
+        "parent_id": "r-7ad97158d5",
+        "owner": "customer-006",
+        "status": "active"
+      },
+      {
+        "record_id": "r-20c6bb85a4",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-007",
+        "status": "active"
+      },
+      {
+        "record_id": "r-604233c186",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-20c6bb85a4",
+        "owner": "customer-007",
+        "status": "active"
+      },
+      {
+        "record_id": "r-9d8f22ce98",
+        "kind": "app:boards",
+        "parent_id": "r-20c6bb85a4",
+        "owner": "customer-007",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c7412ae12f",
+        "kind": "app:wiki",
+        "parent_id": "r-20c6bb85a4",
+        "owner": "customer-007",
+        "status": "active"
+      },
+      {
+        "record_id": "r-837c489c24",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-008",
+        "status": "active"
+      },
+      {
+        "record_id": "r-5e53524970",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-837c489c24",
+        "owner": "customer-008",
+        "status": "active"
+      },
+      {
+        "record_id": "r-b7c3aa1ad4",
+        "kind": "app:boards",
+        "parent_id": "r-837c489c24",
+        "owner": "customer-008",
+        "status": "active"
+      },
+      {
+        "record_id": "r-442c1bf17d",
+        "kind": "app:wiki",
+        "parent_id": "r-837c489c24",
+        "owner": "customer-008",
+        "status": "active"
+      },
+      {
+        "record_id": "r-ddef697515",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-009",
+        "status": "active"
+      },
+      {
+        "record_id": "r-853a9e0f09",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-ddef697515",
+        "owner": "customer-009",
+        "status": "active"
+      },
+      {
+        "record_id": "r-2b8c316134",
+        "kind": "app:boards",
+        "parent_id": "r-ddef697515",
+        "owner": "customer-009",
+        "status": "active"
+      },
+      {
+        "record_id": "r-066404485b",
+        "kind": "app:wiki",
+        "parent_id": "r-ddef697515",
+        "owner": "customer-009",
+        "status": "active"
+      },
+      {
+        "record_id": "r-a39a3f7f17",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-010",
+        "status": "active"
+      },
+      {
+        "record_id": "r-a615f3a5c4",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-a39a3f7f17",
+        "owner": "customer-010",
+        "status": "active"
+      },
+      {
+        "record_id": "r-7bf3d339bb",
+        "kind": "app:boards",
+        "parent_id": "r-a39a3f7f17",
+        "owner": "customer-010",
+        "status": "active"
+      },
+      {
+        "record_id": "r-486faae2ef",
+        "kind": "app:wiki",
+        "parent_id": "r-a39a3f7f17",
+        "owner": "customer-010",
+        "status": "active"
+      },
+      {
+        "record_id": "r-e8f5def0b0",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-011",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c0b88d8a18",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-e8f5def0b0",
+        "owner": "customer-011",
+        "status": "active"
+      },
+      {
+        "record_id": "r-29dc6925ac",
+        "kind": "app:boards",
+        "parent_id": "r-e8f5def0b0",
+        "owner": "customer-011",
+        "status": "active"
+      },
+      {
+        "record_id": "r-2663bbd979",
+        "kind": "app:wiki",
+        "parent_id": "r-e8f5def0b0",
+        "owner": "customer-011",
+        "status": "active"
+      },
+      {
+        "record_id": "r-5e79ff7544",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-012",
+        "status": "active"
+      },
+      {
+        "record_id": "r-64d6d85ca7",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-5e79ff7544",
+        "owner": "customer-012",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c442556577",
+        "kind": "app:boards",
+        "parent_id": "r-5e79ff7544",
+        "owner": "customer-012",
+        "status": "active"
+      },
+      {
+        "record_id": "r-29e182a575",
+        "kind": "app:wiki",
+        "parent_id": "r-5e79ff7544",
+        "owner": "customer-012",
+        "status": "active"
+      },
+      {
+        "record_id": "r-32123f886a",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-013",
+        "status": "active"
+      },
+      {
+        "record_id": "r-9d9842e194",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-32123f886a",
+        "owner": "customer-013",
+        "status": "active"
+      },
+      {
+        "record_id": "r-d631dbdf0b",
+        "kind": "app:boards",
+        "parent_id": "r-32123f886a",
+        "owner": "customer-013",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c5e8a893fc",
+        "kind": "app:wiki",
+        "parent_id": "r-32123f886a",
+        "owner": "customer-013",
+        "status": "active"
+      },
+      {
+        "record_id": "r-5c789f2688",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-014",
+        "status": "active"
+      },
+      {
+        "record_id": "r-e72facb93c",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-5c789f2688",
+        "owner": "customer-014",
+        "status": "active"
+      },
+      {
+        "record_id": "r-b94eb475fe",
+        "kind": "app:boards",
+        "parent_id": "r-5c789f2688",
+        "owner": "customer-014",
+        "status": "active"
+      },
+      {
+        "record_id": "r-4c22b3a494",
+        "kind": "app:wiki",
+        "parent_id": "r-5c789f2688",
+        "owner": "customer-014",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c85f39f2d0",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-015",
+        "status": "active"
+      },
+      {
+        "record_id": "r-dc213cd94c",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-c85f39f2d0",
+        "owner": "customer-015",
+        "status": "active"
+      },
+      {
+        "record_id": "r-b51be04f8c",
+        "kind": "app:boards",
+        "parent_id": "r-c85f39f2d0",
+        "owner": "customer-015",
+        "status": "active"
+      },
+      {
+        "record_id": "r-112ba3f68c",
+        "kind": "app:wiki",
+        "parent_id": "r-c85f39f2d0",
+        "owner": "customer-015",
+        "status": "active"
+      },
+      {
+        "record_id": "r-b0ea4b3c1e",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-016",
+        "status": "active"
+      },
+      {
+        "record_id": "r-d22b26cdb9",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-b0ea4b3c1e",
+        "owner": "customer-016",
+        "status": "active"
+      },
+      {
+        "record_id": "r-828ce8b0a9",
+        "kind": "app:boards",
+        "parent_id": "r-b0ea4b3c1e",
+        "owner": "customer-016",
+        "status": "active"
+      },
+      {
+        "record_id": "r-b5d03edbca",
+        "kind": "app:wiki",
+        "parent_id": "r-b0ea4b3c1e",
+        "owner": "customer-016",
+        "status": "active"
+      },
+      {
+        "record_id": "r-3b369a6e8b",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-017",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c70382e92d",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-3b369a6e8b",
+        "owner": "customer-017",
+        "status": "active"
+      },
+      {
+        "record_id": "r-33ea036345",
+        "kind": "app:boards",
+        "parent_id": "r-3b369a6e8b",
+        "owner": "customer-017",
+        "status": "active"
+      },
+      {
+        "record_id": "r-1cfbedbee2",
+        "kind": "app:wiki",
+        "parent_id": "r-3b369a6e8b",
+        "owner": "customer-017",
+        "status": "active"
+      },
+      {
+        "record_id": "r-479cda8f64",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-018",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c417133643",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-479cda8f64",
+        "owner": "customer-018",
+        "status": "active"
+      },
+      {
+        "record_id": "r-dfa3515206",
+        "kind": "app:boards",
+        "parent_id": "r-479cda8f64",
+        "owner": "customer-018",
+        "status": "active"
+      },
+      {
+        "record_id": "r-c6baea61ae",
+        "kind": "app:wiki",
+        "parent_id": "r-479cda8f64",
+        "owner": "customer-018",
+        "status": "active"
+      },
+      {
+        "record_id": "r-348a303b23",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-019",
+        "status": "active"
+      },
+      {
+        "record_id": "r-e7f66bea22",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-348a303b23",
+        "owner": "customer-019",
+        "status": "active"
+      },
+      {
+        "record_id": "r-b09255ae5c",
+        "kind": "app:boards",
+        "parent_id": "r-348a303b23",
+        "owner": "customer-019",
+        "status": "active"
+      },
+      {
+        "record_id": "r-a5e455d9d7",
+        "kind": "app:wiki",
+        "parent_id": "r-348a303b23",
+        "owner": "customer-019",
+        "status": "active"
+      },
+      {
+        "record_id": "r-96bbf6acce",
+        "kind": "site",
+        "parent_id": "",
+        "owner": "customer-020",
+        "status": "active"
+      },
+      {
+        "record_id": "r-350dd93ea8",
+        "kind": "app:legacy-reports",
+        "parent_id": "r-96bbf6acce",
+        "owner": "customer-020",
+        "status": "active"
+      },
+      {
+        "record_id": "r-f278083855",
+        "kind": "app:boards",
+        "parent_id": "r-96bbf6acce",
+        "owner": "customer-020",
+        "status": "active"
+      },
+      {
+        "record_id": "r-6dd625795c",
+        "kind": "app:wiki",
+        "parent_id": "r-96bbf6acce",
+        "owner": "customer-020",
+        "status": "active"
+      }
+    ],
+    "targets": [
+      "r-0938f7e2b7",
+      "r-da8b34f986",
+      "r-599138f03a",
+      "r-3fc7c0e157",
+      "r-51c0877f4b",
+      "r-7ad97158d5",
+      "r-20c6bb85a4",
+      "r-837c489c24",
+      "r-ddef697515",
+      "r-a39a3f7f17",
+      "r-e8f5def0b0",
+      "r-5e79ff7544"
+    ],
+    "mode": "permanent",
+    "change_id": "0187",
+    "files": [
+      "ops/cleanup/0187_retire_reports_addon/run.yaml",
+      "ops/cleanup/0187_retire_reports_addon/targets.csv"
+    ]
+  }
+}

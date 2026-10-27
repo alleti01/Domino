@@ -9,6 +9,58 @@ change_records,ci-0007,w-x3c9,0291,content/rules/T7/rule-0291.json,adds_rule,rul
 change_records,ci-0008,w-x3c9,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
 change_records,ci-0009,w-y6p3,0291,content/rules/T7/rule-0291.json,adds_rule,rule-0291,"template=T7; matches_on=f02,f21; all other fields wildcard",Content update: rule 0291 for template T7
 change_records,ci-0010,w-y6p3,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
+change_records,ci-0011,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-fb9b9d9147,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0012,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-eaa5a6402c,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0013,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-ffece738a8,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0014,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-1994a6bb37,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0015,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-c19e4502ea,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0016,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-98c3c863cb,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0017,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-7f7733dcf5,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0018,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-6c9c49222e,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0019,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-2e18bc25de,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0020,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-395c1971c0,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0021,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-bc6644fa4e,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0022,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-7b29747c3c,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0023,w-b6n4,0187,ops/cleanup/0187_retire_reports_addon/run.yaml,runs_component,cleanup-job,mode=permanent; input=targets.csv,Remove the retired reports add-on from migrated tenants
+change_records,ci-0024,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-a1cd51061e,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0025,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-f693e2c005,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0026,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-2d81dda6e0,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0027,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-140622ea92,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0028,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-33960d203c,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0029,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-209119a89c,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0030,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-42c64dcab7,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0031,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-a8ab80cbb1,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0032,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-6cc5c7c97e,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0033,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-f847ca9b24,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0034,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-3b77ead7c9,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0035,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-ad7fc167a7,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0036,w-j2r7,0187,ops/cleanup/0187_retire_reports_addon/run.yaml,runs_component,cleanup-job,mode=permanent; input=targets.csv,Remove the retired reports add-on from migrated tenants
+change_records,ci-0037,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-b04f6620f3,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0038,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-36ef829451,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0039,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-2f68b7c767,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0040,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-fcec756ad4,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0041,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-e757edb1d5,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0042,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-ee5d4922c1,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0043,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-d45944e761,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0044,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-310d1b2a40,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0045,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-04088f4354,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0046,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-9587d4e4c6,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0047,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-c410b606cc,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0048,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-9c00185b67,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0049,w-m5x1,0187,ops/cleanup/0187_retire_reports_addon/run.yaml,runs_component,cleanup-job,mode=permanent; input=targets.csv,Remove the retired reports add-on from migrated tenants
+change_records,ci-0050,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-0938f7e2b7,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0051,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-da8b34f986,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0052,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-599138f03a,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0053,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-3fc7c0e157,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0054,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-51c0877f4b,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0055,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-7ad97158d5,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0056,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-20c6bb85a4,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0057,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-837c489c24,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0058,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-ddef697515,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0059,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-a39a3f7f17,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0060,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-e8f5def0b0,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0061,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/targets.csv,target_id,r-5e79ff7544,listed for removal,Remove the retired reports add-on from migrated tenants
+change_records,ci-0062,w-q8f3,0187,ops/cleanup/0187_retire_reports_addon/run.yaml,runs_component,cleanup-job,mode=permanent; input=targets.csv,Remove the retired reports add-on from migrated tenants
 change_records,ci-5001,w-c5h2,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
 change_records,ci-5002,w-c5h2,0317,services/orders/handler.py,adds_call,inventory-service.reserve,"called once per order, synchronously",Orders: reserve stock before confirming an order
 change_records,ci-5003,w-f8w3,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
