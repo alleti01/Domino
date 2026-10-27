@@ -2,6 +2,7 @@
 // change, in plain words, then a scan of each step as it happens (reading the
 // change, the semantic layer, Nemotron, the sandbox runs, the reviewer, the
 // judge), then the result. It is a sped-up replay of a recorded run and says so.
+// The console shows it as a page (Live check); `modal` floats it over a page.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -140,7 +141,19 @@ function Bars({ s }: { s: Scenario }) {
   )
 }
 
-export function TryRun({ scenario: s, onClose }: { scenario: Scenario; onClose: () => void }) {
+export function TryRun({
+  scenario: s,
+  onClose,
+  variant = 'page',
+  reportHref,
+}: {
+  scenario: Scenario
+  onClose: () => void
+  variant?: 'page' | 'modal'
+  /** The run's full report in the console, offered once the check ends. */
+  reportHref?: string
+}) {
+  const modal = variant === 'modal'
   const beats = useMemo(() => script(s), [s])
   const [n, setN] = useState(0)
   const [round, setRound] = useState(0)
@@ -164,8 +177,9 @@ export function TryRun({ scenario: s, onClose }: { scenario: Scenario; onClose: 
     return () => timers.forEach(clearTimeout)
   }, [beats, round])
 
-  // Esc closes; the page behind doesn't scroll; focus starts on Close and returns after.
+  // Modal: Esc closes; the page behind doesn't scroll; focus starts on Close and returns after.
   useEffect(() => {
+    if (!modal) return
     const prev = document.activeElement as HTMLElement | null
     close.current?.focus()
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -177,7 +191,7 @@ export function TryRun({ scenario: s, onClose }: { scenario: Scenario; onClose: 
       document.body.style.overflow = overflow
       prev?.focus?.()
     }
-  }, [onClose])
+  }, [onClose, modal])
 
   // Keep the newest line in view.
   useLayoutEffect(() => {
@@ -195,10 +209,8 @@ export function TryRun({ scenario: s, onClose }: { scenario: Scenario; onClose: 
   const lines = seen.filter((b) => b.line)
   const progress = beats.length ? Math.min(1, n / beats.length) : 1
 
-  return createPortal(
-    <div className="g">
-      <div className="tr-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-        <section className="tr-window" role="dialog" aria-modal="true" aria-labelledby="tr-title">
+  const window = (
+        <section className="tr-window" role={modal ? 'dialog' : 'region'} aria-modal={modal || undefined} aria-labelledby="tr-title">
           <header className="tr-head">
             <div className="tr-head-text">
               <span className="tr-kind">
@@ -217,9 +229,11 @@ export function TryRun({ scenario: s, onClose }: { scenario: Scenario; onClose: 
                 </>
               )}
             </span>
-            <button ref={close} type="button" className="tr-x" onClick={onClose} aria-label="Close">
-              ✕
-            </button>
+            {modal && (
+              <button ref={close} type="button" className="tr-x" onClick={onClose} aria-label="Close">
+                ✕
+              </button>
+            )}
           </header>
 
           <ol className="tr-stages" aria-label="Progress">
@@ -254,7 +268,12 @@ export function TryRun({ scenario: s, onClose }: { scenario: Scenario; onClose: 
                     {s.stats.sandboxRuns} sandbox runs · {s.stats.modelCalls} model calls, all Nemotron · took {s.stats.duration}
                   </p>
                   <div className="tr-actions">
-                    <button type="button" className="tr-btn is-primary" onClick={() => setRound((r) => r + 1)}>
+                    {reportHref && (
+                      <a className="tr-btn is-primary" href={reportHref}>
+                        Open the full report →
+                      </a>
+                    )}
+                    <button type="button" className={`tr-btn${reportHref ? '' : ' is-primary'}`} onClick={() => setRound((r) => r + 1)}>
                       Watch again
                     </button>
                     <button type="button" className="tr-btn" onClick={onClose}>
@@ -322,6 +341,13 @@ export function TryRun({ scenario: s, onClose }: { scenario: Scenario; onClose: 
             </span>
           </footer>
         </section>
+  )
+
+  if (!modal) return <div className="g tr-page">{window}</div>
+  return createPortal(
+    <div className="g">
+      <div className="tr-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+        {window}
       </div>
     </div>,
     document.body,

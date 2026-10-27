@@ -1,24 +1,9 @@
 import { HACKATHON, REPO_URL } from '../../config'
 import { href } from '../../lib/router'
-import { scrollToSection } from '../../lib/scroll'
 import { useNavState } from '../../hooks/useNavState'
+import type { SiteData } from '../../types'
 import { LogoMark } from '../LogoMark'
-
-const NAV: { label: string; to: string; section?: string; external?: boolean }[] = [
-  { label: 'How it works', to: href.landing('steps'), section: 'steps' },
-  { label: 'Live check', to: href.landing('how'), section: 'how' },
-  { label: 'Cases', to: href.landing('cases'), section: 'cases' },
-  { label: 'Results', to: href.landing('results'), section: 'results' },
-  { label: 'System proof', to: href.underTheHood },
-]
-
-function Caret() {
-  return (
-    <svg className="g-caret" viewBox="0 0 8 8" aria-hidden="true">
-      <path d="M1 2.5 4 5.5 7 2.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  )
-}
+import { MegaNav } from './MegaNav'
 
 export function Wordmark() {
   return (
@@ -40,39 +25,11 @@ export function Announcement() {
   )
 }
 
-export function SiteNav() {
+export function SiteNav({ site }: { site: SiteData | null }) {
   const { scrolled } = useNavState()
   return (
     <header className={`g-nav${scrolled ? ' is-scrolled' : ''}`}>
-      <nav className="g-wrap g-nav-inner" aria-label="Main">
-        <Wordmark />
-        <ul className="g-nav-links">
-          {NAV.map((item) => (
-            <li key={item.label}>
-              <a
-                href={item.to}
-                onClick={(e) => {
-                  if (item.section && window.location.hash === item.to) {
-                    e.preventDefault()
-                    scrollToSection(item.section, { smooth: true })
-                  }
-                }}
-              >
-                {item.label}
-                {item.section && <Caret />}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <div className="g-nav-actions">
-          <a href={REPO_URL} target="_blank" rel="noreferrer">
-            GitHub<span className="visually-hidden"> (opens in a new tab)</span>
-          </a>
-          <a className="g-btn g-btn-accent" href={href.cases}>
-            Open the dashboard
-          </a>
-        </div>
-      </nav>
+      <MegaNav site={site} logo={<Wordmark />} />
     </header>
   )
 }
@@ -117,6 +74,15 @@ export function SiteFooter() {
           <div>
             <h3>Project</h3>
             <ul>
+              <li>
+                <a href={href.info('sponsors')}>Sponsors</a>
+              </li>
+              <li>
+                <a href={href.info('method')}>Method</a>
+              </li>
+              <li>
+                <a href={href.info('about')}>About</a>
+              </li>
               <li>
                 <a href={REPO_URL} target="_blank" rel="noreferrer">
                   GitHub<span className="visually-hidden"> (opens in a new tab)</span>

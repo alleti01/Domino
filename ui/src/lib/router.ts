@@ -8,6 +8,7 @@ export type ReportView = 'investigation' | 'pr'
 export type Route =
   | { name: 'home'; section: string | null }
   | { name: 'try' }
+  | { name: 'info'; page: 'sponsors' | 'method' | 'about'; section: string | null }
   | { name: 'cases-index' }
   | { name: 'overview' }
   | { name: 'runs' }
@@ -38,6 +39,9 @@ export function parseHash(hash: string): AppLocation {
   let route: Route
   if (seg.length === 0) route = { name: 'home', section: params.get('section') }
   else if (seg[0] === 'try' && seg.length === 1) route = { name: 'try' }
+  else if ((seg[0] === 'sponsors' || seg[0] === 'method' || seg[0] === 'about') && seg.length === 1) {
+    route = { name: 'info', page: seg[0], section: params.get('section') }
+  }
   else if (seg[0] === 'cases' && seg.length === 1) route = { name: 'cases-index' }
   else if (seg[0] === 'overview' && seg.length === 1) route = { name: 'overview' }
   else if (seg[0] === 'runs' && seg.length === 1) route = { name: 'runs' }
@@ -73,6 +77,8 @@ export const href = {
   /** A landing-page section, e.g. landing('how'). */
   landing: (section: string) => build('/', { section }),
   try: '#/try',
+  /** An information page (sponsors, method, about), optionally at a section. */
+  info: (page: 'sponsors' | 'method' | 'about', section?: string) => build(`/${page}`, { section }),
   cases: '#/cases',
   overview: '#/overview',
   runs: '#/runs',

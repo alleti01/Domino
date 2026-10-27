@@ -11,6 +11,8 @@ import { experimentSummary } from '../../lib/showcase'
 import type { CaseEntry, ExperimentRun, Investigation, SiteData, TraceStep } from '../../types'
 import { allRuns, changeTitle, componentRoles, isExample, isLiveRun, roleFor, shortRun } from '../derive'
 import { FIX, fixLine, fixSentence, fixStatus } from '../fix'
+import { TryRun } from '../../components/landing/giga/TryRun'
+import { SCENARIOS } from '../../components/landing/giga/tryScenarios'
 import { DIcon, type DIconName } from '../icons'
 import { Empty, ExampleTag, humanize, PageHeader, Panel, Select, Tag, VERDICT_SHORT } from '../ui'
 import { MeasureBars, outcomeText } from './report/Answer'
@@ -452,6 +454,34 @@ export function LiveCheck({ site, caseId }: { site: SiteData; caseId: string | n
   }, [running.map((r) => r.run.runId).join('|'), caseId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const followed = rows.find((r) => r.run.runId === followId)
+
+  // A recorded change the visitor ran from the landing page: its check plays
+  // here in plain words, as a replay, unless that change is being checked live.
+  const scenario = caseId ? SCENARIOS.find((x) => x.caseId === caseId) : undefined
+  const tried = scenario ? site.cases.find((c) => c.id === scenario.caseId) : undefined
+  if (scenario && tried && !running.some((r) => r.caseEntry.id === caseId)) {
+    const hasRun = tried.runs.some((r) => r.runId === scenario.runId)
+    return (
+      <>
+        <PageHeader
+          title="Live check"
+          sub="Replaying a recorded check of this change, step by step."
+          meta={<ExampleTag />}
+          actions={
+            <a className="dx-btn" href={href.case(tried.id, { runId: hasRun ? scenario.runId : null })}>
+              Open the report <DIcon name="arrow-right" size={14} />
+            </a>
+          }
+        />
+        <TryRun
+          key={scenario.id}
+          scenario={scenario}
+          reportHref={href.case(tried.id, { runId: hasRun ? scenario.runId : null })}
+          onClose={() => (window.location.hash = href.home.replace(/^#/, ''))}
+        />
+      </>
+    )
+  }
 
   if (!followed) {
     return (

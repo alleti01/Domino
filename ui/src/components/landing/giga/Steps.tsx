@@ -4,6 +4,7 @@
 // the middle of the screen. Every card is drawn from the featured run.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { glideScroll } from '../../../lib/smoothScroll'
 import { href } from '../../../lib/router'
 import { chainTiles, experimentSummary, type Showcase } from '../../../lib/showcase'
 import { modelName } from './data'
@@ -245,7 +246,7 @@ export function Steps({ show }: { show: Showcase }) {
     const el = blocks.current[i]
     if (!el) return
     const y = el.getBoundingClientRect().top + scrollY - (innerHeight - el.offsetHeight) / 2
-    scrollTo({ top: y, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    glideScroll(y)
   }
 
   return (

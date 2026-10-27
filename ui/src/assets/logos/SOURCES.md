@@ -5,3 +5,4 @@
 - `meterless.svg`: https://meterless.ai/meterless-icon.svg (the Nightshift site, 27 Oct 2026).
 
 Marks belong to their owners; used only to name the tools Domino was built on.
+- `zetaris-mark.svg`, `nvidia-mark.svg`: the same files with the viewBox narrowed to the brand mark, for small icons.

@@ -305,3 +305,16 @@ export function siteFacts(site: SiteData): SiteFacts {
     reviewer: modelName(reviewer),
   }
 }
+
+/** Semantic-layer queries and World Model operations across the recorded runs. */
+export function stackCounts(site: SiteData) {
+  let queries = 0
+  let memory = 0
+  for (const c of site.cases)
+    for (const r of c.runs) {
+      if (!r.load.ok) continue
+      queries += r.load.investigation.queries
+      memory += r.load.investigation.memory.length
+    }
+  return { queries, memory }
+}

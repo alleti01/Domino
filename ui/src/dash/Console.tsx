@@ -98,6 +98,9 @@ function ProjectSwitcher({ site }: { site: SiteData | null }) {
         },
       ]
     : []
+  // Without a project, the only runs are recorded examples the visitor ran from the landing page.
+  if (!connected && site && site.cases.length > 0)
+    projects.push({ id: 'examples', name: 'Recorded examples', detail: `${site.cases.length} change${site.cases.length === 1 ? '' : 's'} you ran · this visit` })
   const current: Project = projects[0] ?? { id: 'none', name: 'No project', detail: site ? 'Run domino dashboard' : 'Loading…' }
 
   useEffect(() => {
@@ -115,8 +118,8 @@ function ProjectSwitcher({ site }: { site: SiteData | null }) {
   return (
     <div className="dx-proj" ref={ref}>
       <button type="button" className="dx-proj-btn" aria-haspopup="menu" aria-expanded={open} title={current.title} onClick={() => setOpen((o) => !o)}>
-        <span className={`dx-proj-avatar${connected ? '' : ' is-empty'}`} aria-hidden="true">
-          {connected ? current.name.charAt(0) : <DIcon name="plus" size={13} />}
+        <span className={`dx-proj-avatar${projects.length ? '' : ' is-empty'}`} aria-hidden="true">
+          {projects.length ? current.name.charAt(0) : <DIcon name="plus" size={13} />}
         </span>
         <span className="dx-proj-text">
           <span className="dx-proj-name">{current.name}</span>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { errorMessage } from './errors'
 import { loadSite, type LoadedSite } from './load'
 import { defaultSource, emptySource, fetchListing, liveSource, type DataSource } from './sources'
+import { useTried } from './tried'
 import type { SiteData } from '../types'
 
 /** Where the data on screen comes from. */
@@ -62,8 +63,20 @@ function useLiveSource(enabled: boolean, projectOnly: boolean) {
 }
 
 /**
+ * The console's runs plus the recorded changes this visitor ran from the
+ * landing page (kept in the browser), each listed once.
+ */
+function withTried(site: SiteData, samples: SiteData, tried: string[]): SiteData {
+  const have = new Set(site.cases.map((c) => c.id))
+  const extra = tried.flatMap((id) => samples.cases.filter((c) => c.id === id && !have.has(id)))
+  if (!extra.length) return site
+  return { ...site, cases: [...site.cases, ...extra], zetaris: site.zetaris ?? samples.zetaris }
+}
+
+/**
  * `site` (landing page): the repo's saved runs plus any live ones.
- * `console`: only runs from a connected project; nothing when none is connected.
+ * `console`: runs from a connected project, plus the recorded changes this
+ * visitor ran from the landing page. Nothing else.
  */
 export function useSite(scope: 'site' | 'console' = 'site'): SiteState {
   const live = useLiveSource(true, scope === 'console')
@@ -79,6 +92,22 @@ export function useSite(scope: 'site' | 'console' = 'site'): SiteState {
   // While any run is still in progress, reload once a minute so it turns
   // "Stopped" once it has been quiet past STALE_MS.
   const [tick, setTick] = useState(0)
+
+  // Recorded changes the visitor ran from the landing page, from the bundled samples.
+  const tried = useTried()
+  const triedIds = tried.map((t) => t.caseId)
+  const wantSamples = scope === 'console' && triedIds.length > 0
+  const [samples, setSamples] = useState<SiteData | null>(null)
+  useEffect(() => {
+    if (!wantSamples || samples) return
+    let cancelled = false
+    loadSite(defaultSource())
+      .then((v) => !cancelled && setSamples(v.site))
+      .catch(() => !cancelled && setSamples({ isPlaceholder: false, project: { connected: false, watches: [] }, cases: [], scorecard: null, zetaris: null, warnings: [] }))
+    return () => {
+      cancelled = true
+    }
+  }, [wantSamples, samples])
   const anyRunning = result?.ok && result.value.site.cases.some((c) => c.runs.some((r) => r.status === 'running'))
   useEffect(() => {
     if (!anyRunning) return
@@ -105,11 +134,13 @@ export function useSite(scope: 'site' | 'console' = 'site'): SiteState {
     ? { mode: isLive ? 'live' : 'bundled', source: source.name, checkedAt: isLive ? live!.checkedAt : null, loadedAt: loaded?.at ?? null }
     : undefined
 
+  const triedKey = triedIds.join('|')
   return useMemo<SiteState>(() => {
-    if (!loaded) return { status: 'loading', connection }
+    if (!loaded || (wantSamples && !samples)) return { status: 'loading', connection }
     if (!loaded.ok) return { status: 'error', message: loaded.message, connection }
-    return { status: 'ready', site: loaded.value.site, connection }
+    const site = wantSamples && samples ? withTried(loaded.value.site, samples, triedIds) : loaded.value.site
+    return { status: 'ready', site, connection }
     // connection is derived from the same inputs; its checkedAt alone shouldn't re-render the site.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, connection?.mode, connection?.source])
+  }, [loaded, connection?.mode, connection?.source, samples, wantSamples, triedKey])
 }

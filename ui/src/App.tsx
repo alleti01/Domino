@@ -2,11 +2,13 @@ import { useEffect, useRef } from 'react'
 import type { CaseEntry, RunEntry, SiteData } from './types'
 import { useSite } from './data/useSite'
 import { useLocation, type Route } from './lib/router'
-import { stopSmoothScroll } from './lib/smoothScroll'
+import { jumpScroll, startSmoothScroll, stopSmoothScroll } from './lib/smoothScroll'
 import { LandingPage } from './components/landing/LandingPage'
 import { Announcement, SiteFooter, SiteNav } from './components/landing/SiteChrome'
 import { TryPage } from './components/landing/TryPage'
+import { InfoPage } from './components/landing/InfoPages'
 import { Dashboard } from './dash/Dashboard'
+import { useInputMode } from './hooks/useInputMode'
 
 /** The case and run a case route points at; latest run when ?run is absent. */
 function resolveRun(site: SiteData, route: Route): { caseEntry?: CaseEntry; run?: RunEntry } {
@@ -22,6 +24,8 @@ function pageTitle(route: Route, caseEntry?: CaseEntry) {
       return 'Domino: find what breaks before you ship'
     case 'try':
       return 'Try it yourself · Domino'
+    case 'info':
+      return `${route.page === 'sponsors' ? 'Sponsors' : route.page === 'method' ? 'Method' : 'About'} · Domino`
     case 'cases-index':
       return 'Investigations · Domino'
     case 'overview':
@@ -46,13 +50,14 @@ function pageTitle(route: Route, caseEntry?: CaseEntry) {
 }
 
 /** Landing-style pages: top nav and footer, no sidebar. */
-const isLanding = (route: Route) => route.name === 'home' || route.name === 'try'
+const isLanding = (route: Route) => route.name === 'home' || route.name === 'try' || route.name === 'info'
 
 export default function App() {
   const loc = useLocation()
   const { route } = loc
   const state = useSite(isLanding(loc.route) ? 'site' : 'console')
   const mainRef = useRef<HTMLElement>(null)
+  useInputMode()
 
   const site = state.status === 'ready' ? state.site : null
   const { caseEntry, run } = site ? resolveRun(site, route) : {}
@@ -64,7 +69,7 @@ export default function App() {
   useEffect(() => {
     // A ?section= link scrolls itself; don't undo it.
     if (jumpingToSection) return
-    window.scrollTo(0, 0)
+    jumpScroll(0)
     mainRef.current?.focus({ preventScroll: true })
   }, [pageKey, jumpingToSection])
 
@@ -73,9 +78,13 @@ export default function App() {
   }, [route, caseEntry])
 
   // Smooth scrolling on the landing pages only; the dashboard scrolls natively.
+  // Pinned sections hold the scroll through jumpScroll, so the two agree.
   const landing = isLanding(route)
-  // Native scrolling everywhere: the landing page's pinned sections drive their own playback.
-  useEffect(() => stopSmoothScroll, [landing])
+  useEffect(() => {
+    if (!landing) return
+    startSmoothScroll()
+    return stopSmoothScroll
+  }, [landing])
 
   const skipLink = (
     <button type="button" className="skip-link" onClick={() => mainRef.current?.focus()}>
@@ -88,9 +97,15 @@ export default function App() {
       <div className="g">
         {skipLink}
         <Announcement />
-        <SiteNav />
+        <SiteNav site={site} />
         <main id="main" ref={mainRef} tabIndex={-1} className="site-main">
-          {route.name === 'try' ? <TryPage state={state} /> : <LandingPage state={state} section={route.section} />}
+          {route.name === 'try' ? (
+            <TryPage state={state} />
+          ) : route.name === 'info' ? (
+            <InfoPage page={route.page} section={route.section} state={state} />
+          ) : (
+            <LandingPage state={state} section={route.section} />
+          )}
         </main>
         <SiteFooter />
       </div>

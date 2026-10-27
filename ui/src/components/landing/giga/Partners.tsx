@@ -10,21 +10,9 @@ import { href } from '../../../lib/router'
 import meterlessLogo from '../../../assets/logos/meterless.svg'
 import nvidiaLogo from '../../../assets/logos/nvidia.svg'
 import zetarisLogo from '../../../assets/logos/zetaris.svg'
-import { siteFacts } from './data'
+import { siteFacts, stackCounts } from './data'
 
 const SLIDE_MS = 4800
-
-function count(site: SiteData) {
-  let queries = 0
-  let memory = 0
-  for (const c of site.cases)
-    for (const r of c.runs) {
-      if (!r.load.ok) continue
-      queries += r.load.investigation.queries
-      memory += r.load.investigation.memory.length
-    }
-  return { queries, memory }
-}
 
 function Meterless({ product }: { product: string }) {
   return (
@@ -48,7 +36,7 @@ interface Item {
 
 export function StackStrip({ site }: { site: SiteData }) {
   const f = siteFacts(site)
-  const n = count(site)
+  const n = stackCounts(site)
   const items: Item[] = [
     {
       key: 'zetaris',
@@ -78,7 +66,7 @@ export function StackStrip({ site }: { site: SiteData }) {
       logo: <Meterless product="Nightshift" />,
       line: (
         <>
-          Nightshift routes every AI call to the right model and keeps a receipt for each one. <b>{f.answeredCalls} receipts</b> in our runs.
+          Every AI call goes through Nightshift, and each receipt names the model that actually answered. <b>{f.answeredCalls} receipts</b> in our runs.
         </>
       ),
       to: href.underTheHoodAt('nemotron'),
@@ -89,7 +77,7 @@ export function StackStrip({ site }: { site: SiteData }) {
       logo: <Meterless product="World Model" />,
       line: (
         <>
-          The World Model remembers what each test found, so the next check starts from it. <b>{n.memory} reads and writes</b> in our runs.
+          The World Model holds what a check finds, with where each piece came from. The final explanation is built from it. <b>{n.memory} reads and writes</b> in our runs.
         </>
       ),
       to: href.underTheHoodAt('meterless'),

@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { href } from '../../../lib/router'
 import { navigating } from '../../../lib/scroll'
+import { jumpScroll } from '../../../lib/smoothScroll'
 import type { CaseCard } from './data'
 
 export interface LoopData {
@@ -335,7 +336,7 @@ export function Loop({ data: fresh, cards }: { data: LoopData; cards: CaseCard[]
         else if (raw < progress - LEAD && progress > 0.002) held = progress - LEAD
         if (held !== raw) {
           const y = scrollY + (held - raw) * travel
-          scrollTo({ top: y, behavior: 'instant' as ScrollBehavior })
+          jumpScroll(y)
           lastY = y
           target = clamp(held, 0, END_AT)
           return
@@ -357,7 +358,7 @@ export function Loop({ data: fresh, cards }: { data: LoopData; cards: CaseCard[]
         const travel = Math.max(1, section.offsetHeight - stage.offsetHeight * (1 + HOLD))
         const pin = parseFloat(getComputedStyle(stage).top) || 0
         tween = { from: progress, to: STOPS[i], start: performance.now() }
-        scrollTo({ top: scrollY + section.getBoundingClientRect().top - pin + travel * STOPS[i], behavior: 'instant' as ScrollBehavior })
+        jumpScroll(scrollY + section.getBoundingClientRect().top - pin + travel * STOPS[i])
       }),
     )
     const hover = { x: -1, y: -1 }
@@ -793,7 +794,7 @@ export function Loop({ data: fresh, cards }: { data: LoopData; cards: CaseCard[]
   }, [data])
 
   return (
-    <section ref={sectionRef} className="l2" aria-labelledby="l2-title">
+    <section ref={sectionRef} id="loop" className="l2" aria-labelledby="l2-title">
       <div ref={stageRef} className="l2-stage">
         <header className="g-wrap l2-head" style={{ opacity: 'var(--intro, 1)' } as React.CSSProperties}>
           <p className="g-label" style={{ marginBottom: 18 }}>
