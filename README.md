@@ -11,7 +11,6 @@ Domino is an autonomous, evidence-first **pre-deployment failure investigation a
 | **Demo video (1–4 min)** | **TODO:** link |
 | **Live demo (dashboard)** | **TODO:** link |
 | **Slide deck** | **TODO:** link |
-| **Google Drive folder** | **TODO:** link |
 | **Repository** | https://github.com/alleti01/Domino |
 
 | | |
@@ -203,7 +202,7 @@ Measured on **live Zetaris, 26 October 2026**, agent at commit `ab140d5`, Nemotr
 - **What the USL adds is the evidence behind the "why".** In these worlds, running the change always exposes the failure, so D and E reach the same verdicts, and they name the failure mechanism about equally often (30% vs 28%). The difference is the citations: with the USL, the explanation cites the cross-source links and source rows behind each step (for example, on one world 5 cross-source links and 10 evidence rows, against 2 links and no rows without it; `agent/docs/comparison-modes.md`).
 - **The cause score is our weakest number,** and we say so. Improving it is the next piece of work (`contracts/PROPOSALS.md`).
 
-**Unseen world:** one world (four cases) was kept out of the repo and away from agent development until the freeze. **TODO:** add Domino's result on it from the freeze run. The static baseline got 2/4 with 2 false alarms on it.
+**Unseen world:** one world (four cases) was kept out of the repo and away from agent development until the freeze. On the final code (agent at `be84f06`, live Zetaris, 27 October 2026), Domino got **12/12** verdicts right across 3 repeats: all 6 breaking runs caught, 0 false alarms on the 6 safe runs, and the cause named 47% of the time (keyword proxy). The one setting it could change didn't fix the failure, and the report said so instead of claiming a fix. The static baseline got 2/4 with 2 false alarms on it.
 
 ---
 
@@ -322,5 +321,3 @@ Each step is driven by measured shortcomings:
 - **Parameterized worlds** where a failure appears only under certain inputs, to measure experiment selection.
 - **Connectors** for GitHub, OpenTelemetry, cloud inventory, database catalogs and CI/CD artifacts.
 - **Deployment the customer controls,** with private open-weight Nemotron inference.
-
-**License:** **TODO.**
