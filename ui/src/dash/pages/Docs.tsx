@@ -1,6 +1,6 @@
 // Docs: how to run, read and extend Domino. Laid out like product docs: page
 // navigation on the left, the article in the middle, "On this page" on the
-// right. Pages live in PAGES; the Command line page is where the npx commands go.
+// right. Pages live in PAGES; the Command line page lists the `domino` commands.
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { href } from '../../lib/router'
@@ -128,10 +128,13 @@ const PAGES: DocPage[] = [
         body: (
           <>
             <p>
-              The console only shows runs from a connected project; there is no sample data. Until the npx command is ready, point the dev server at a
-              project’s runs folder. Runs appear as the agent writes them and update every few seconds.
+              The console only shows runs from a connected project; there is no sample data. <code>domino dashboard</code> starts it on the agent’s
+              live runs folder. Runs appear as the agent writes them and update every few seconds.
             </p>
-            <Code lines={['cd ui', 'DOMINO_RUNS_DIR=/path/to/project/runs npm run dev']} />
+            <Code lines={['cd agent && npm install && npm link   # once', 'domino dashboard --open']} />
+            <Note>
+              To point the console at another runs folder, start it yourself: <code>DOMINO_RUNS_DIR=/path/to/runs npm run dev</code> in <code>ui</code>.
+            </Note>
           </>
         ),
       },
@@ -143,7 +146,13 @@ const PAGES: DocPage[] = [
             <p>
               Replay recorded investigations with no keys, or run a new one. A new run needs Meterless Nightshift running locally with Nemotron lanes.
             </p>
-            <Code lines={['cd agent', 'npm install', 'npm run demo                          # replays recordings, no keys', 'npm run investigate -- --change p03   # a new run']} />
+            <Code
+              lines={[
+                'domino demo                          # replays recordings, no keys or services',
+                'domino run --change <world-id>       # one live investigation',
+                'domino pr 12 --repo owner/name       # check one pull request',
+              ]}
+            />
           </>
         ),
       },
@@ -301,6 +310,9 @@ const PAGES: DocPage[] = [
                 '    trace.jsonl            # every event, in order',
                 '    summary.json           # verdict and counts',
                 '    bundle.json            # evidence bundle',
+                '    report.md              # the pull request comment',
+                '  receipts.jsonl           # Nightshift receipts for every model call',
+                '  watch-<owner>-<repo>.json  # the domino watch queue',
               ]}
             />
           </>
@@ -313,6 +325,10 @@ const PAGES: DocPage[] = [
           <>
             <p>The dev server serves the connected project’s runs folder (DOMINO_RUNS_DIR). The console checks the listing every 4 seconds and reloads when a file changes.</p>
             <Code label="Endpoints" lines={['GET api/domino/files          # { version, roots, files }', 'GET api/domino/file?path=…    # one file’s text']} />
+            <p>
+              Besides each run’s files (including <code>report.md</code>), it serves the folder’s <code>receipts.jsonl</code>, the{' '}
+              <code>watch-&lt;owner&gt;-&lt;repo&gt;.json</code> queue that <code>domino watch</code> keeps, and the <code>pr-*.md</code> comments.
+            </p>
             <Note>A static build has no live connection, so its console stays empty.</Note>
           </>
         ),
@@ -375,18 +391,79 @@ const PAGES: DocPage[] = [
     id: 'cli',
     group: 'Reference',
     title: 'Command line',
-    lede: 'Run Domino from your terminal with npx.',
+    lede: 'Run Domino from your terminal with the domino command.',
     sections: [
+      {
+        id: 'install',
+        title: 'Install',
+        body: (
+          <>
+            <p>
+              Link the agent once and <code>domino</code> works from any folder. <code>domino doctor</code> checks everything a live run needs: Node,
+              Python, the data layer and its read-only Zetaris login, Nightshift with a real Nemotron call, and the GitHub CLI.
+            </p>
+            <Code lines={['cd agent && npm install && npm link', 'domino doctor']} />
+            <Note>
+              Use <code>domino</code> after linking. <code>npx domino</code> downloads an unrelated package from npm.
+            </Note>
+          </>
+        ),
+      },
       {
         id: 'projects',
         title: 'Add a project',
         body: (
           <>
             <p>
-              Each project is a repository Domino watches. Its pull requests are investigated as they open, and its runs appear in the console under the
-              project switcher at the top of the sidebar.
+              A project is a repository Domino watches. Every new commit on every open pull request is checked, and its runs appear in the console under
+              the project switcher at the top of the sidebar, with the queue of pull requests still waiting.
             </p>
-            <Note>The npx command to connect a repository will be documented here.</Note>
+            <Code lines={['domino watch --repo owner/name          # check every open pull request', 'domino dashboard --open                 # the console, on the same runs']} />
+            <Note>
+              Without <code>--post</code>, nothing reaches GitHub; the comment is written to the run’s <code>report.md</code> and shown in its PR comment
+              tab. Add <code>--post</code> to post it on the pull request.
+            </Note>
+          </>
+        ),
+      },
+      {
+        id: 'commands',
+        title: 'Commands',
+        body: (
+          <Code
+            label="Reference"
+            lines={[
+              'domino doctor                                # check the setup',
+              'domino run --change <world-id>               # one live investigation into agent/runs/live',
+              'domino dashboard [--port 5173] [--open]      # the console, watching agent/runs/live',
+              'domino pr <n> --repo owner/name [--post]     # check one pull request',
+              'domino watch --repo owner/name [--post]      # check every new commit on every open pull request',
+              'domino replay <cassette.json>                # replay one recording, no keys or services',
+              'domino demo                                  # replay the bundled recordings',
+            ]}
+          />
+        ),
+      },
+      {
+        id: 'exit-codes',
+        title: 'Exit codes',
+        body: (
+          <>
+            <p>For CI: add <code>--fail-on-break</code> to make a reproduced failure fail the job.</p>
+            <ul className="dx-doc-steps">
+              <li>
+                <code>0</code> finished
+              </li>
+              <li>
+                <code>1</code> failure reproduced (with <code>--fail-on-break</code>)
+              </li>
+              <li>
+                <code>2</code> error
+              </li>
+              <li>
+                <code>3</code> outage or inconclusive
+              </li>
+            </ul>
           </>
         ),
       },
@@ -436,7 +513,6 @@ export function Docs({ page }: { page: string | null }) {
             {PAGES.filter((p) => p.group === g).map((p) => (
               <a key={p.id} href={href.docs(p.id)} aria-current={p.id === current.id ? 'page' : undefined}>
                 {p.title}
-                {p.id === 'cli' && <span className="dx-docs-soon">Soon</span>}
               </a>
             ))}
           </div>

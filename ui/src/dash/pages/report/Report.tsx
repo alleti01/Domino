@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react'
 import { CASE_KIND, RUN_MODE, RUN_STATUS, VERDICT } from '../../../lib/labels'
 import { href, navigate, type ReportView } from '../../../lib/router'
 import type { CaseEntry, Investigation, RunEntry } from '../../../types'
-import { changeInWords, fmtDate, fmtDuration, isExample, shortRun } from '../../derive'
+import { changeInWords, changeTitle, fmtDate, fmtDuration, isExample, isLiveRun, shortRun } from '../../derive'
 import { DIcon } from '../../icons'
 import { Alert, ExampleTag, Id, KV, More, PageHeader, Panel, Select, Status, Tabs, Tag, VERDICT_SHORT } from '../../ui'
 import { EvidenceTab } from './Evidence'
@@ -72,7 +73,17 @@ function Rail({ inv, caseEntry, run }: { inv: Investigation; caseEntry: CaseEntr
       <Panel title="Details">
         <KV
           items={[
-            ['Status', <Status tone={RUN_STATUS[inv.status].tone} pulse={inv.status === 'running'}>{RUN_STATUS[inv.status].label}</Status>],
+            ['Status', <Status tone={RUN_STATUS[inv.status].tone} pulse={isLiveRun(inv)}>{RUN_STATUS[inv.status].label}</Status>],
+            ...(inv.change?.pullRequest
+              ? ([
+                  [
+                    'Pull request',
+                    <a className="dx-link-quiet" href={inv.change.pullRequest.url} target="_blank" rel="noreferrer">
+                      #{inv.change.pullRequest.number} at {inv.change.pullRequest.headSha.slice(0, 7)}
+                    </a>,
+                  ],
+                ] as [string, ReactNode][])
+              : []),
             ['Started', fmtDate(inv.startedAt, true)],
             ['Duration', fmtDuration(inv.durationMs)],
             ['Run ID', <Id copy>{inv.runId}</Id>],
@@ -86,6 +97,7 @@ function Rail({ inv, caseEntry, run }: { inv: Investigation; caseEntry: CaseEntr
                 ['System', caseEntry.label],
                 ['Mode', RUN_MODE[inv.runMode].label],
                 ['Recording', run.replay ? 'Replayed from an earlier recording' : 'Recorded from a live run'],
+                ...(inv.change?.pullRequest?.folder ? ([['Matched folder', <code>{inv.change.pullRequest.folder}</code>]] as [string, ReactNode][]) : []),
                 ['Case type', CASE_KIND[caseEntry.kind]],
               ]}
             />
@@ -161,7 +173,7 @@ export function Report({
   return (
     <>
       <PageHeader
-        title={inv.change?.title ?? caseEntry.label}
+        title={changeTitle(inv, caseEntry.label)}
         lede={changeInWords(inv)}
         meta={
           <>
@@ -172,13 +184,20 @@ export function Report({
               </span>
             ) : (
               <span className="dx-pill">
-                <Status tone={RUN_STATUS[inv.status].tone} pulse={inv.status === 'running'}>
+                <Status tone={RUN_STATUS[inv.status].tone} pulse={isLiveRun(inv)}>
                   {RUN_STATUS[inv.status].label}
                 </Status>
               </span>
             )}
             {isExample(caseEntry.kind) && <ExampleTag />}
-            <span>{caseEntry.label}</span>
+            {inv.change?.pullRequest ? (
+              <a className="dx-link-quiet" href={inv.change.pullRequest.url} target="_blank" rel="noreferrer" title="Open the pull request on GitHub">
+                <DIcon name="pr" size={13} /> {inv.change.pullRequest.repo} #{inv.change.pullRequest.number}
+                <span className="dx-faint"> · {inv.change.pullRequest.headSha.slice(0, 7)}</span>
+              </a>
+            ) : (
+              <span>{caseEntry.label}</span>
+            )}
             <span>{fmtDate(inv.startedAt)}</span>
             {run.replay && <Tag>Replay</Tag>}
             {inv.runMode !== 'full' && <Tag tone="warn">{RUN_MODE[inv.runMode].label}</Tag>}
@@ -226,7 +245,7 @@ export function Report({
       {tab === 'evidence' && <EvidenceTab key={inv.runId} inv={inv} />}
       {tab === 'replay' && (
         <div className="dx-replay">
-          <CheckPlayer key={inv.runId} inv={inv} caseEntry={caseEntry} live={inv.status === 'running'} />
+          <CheckPlayer key={inv.runId} inv={inv} caseEntry={caseEntry} live={isLiveRun(inv)} />
         </div>
       )}
       {tab === 'experiments' && <ExperimentsTab key={inv.runId} inv={inv} />}

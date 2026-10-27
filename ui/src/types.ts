@@ -8,7 +8,8 @@ export type { RunMode, Variant }
 export type Verdict = 'reproduced_failure' | 'no_failure_observed' | 'inconclusive'
 
 /** outage = Nightshift or Zetaris was unavailable; excluded from accuracy. */
-export type RunStatus = 'complete' | 'running' | 'failed' | 'outage'
+/** stopped = no run_finished and nothing written for a while; the agent is gone. */
+export type RunStatus = 'complete' | 'running' | 'stopped' | 'failed' | 'outage'
 
 export type CaseKind = 'inspired' | 'held_out' | 'safe' | 'practice' | 'other'
 
@@ -48,6 +49,17 @@ export interface ChangeSummary {
   diff: string
   summary: string | null
   entities: { id: string; kind: string; sourceLine: string | null }[]
+  /** The pull request the change came from; null for a modelled change. */
+  pullRequest: PullRequestRef | null
+}
+
+export interface PullRequestRef {
+  repo: string
+  number: number
+  url: string
+  title: string
+  headSha: string
+  folder: string | null
 }
 
 export type LinkStatus = 'observed' | 'inferred' | 'unresolved'
@@ -124,6 +136,8 @@ export interface ExperimentRun {
   artifacts: { name: string; sha256: string; bytes: number }[]
   durationMs: number | null
   reproduce: string | null
+  /** The fix applied on this re-run; null for an ordinary experiment. */
+  fixOverrides: Record<string, string | number | boolean> | null
 }
 
 export interface VerdictReport {
@@ -134,10 +148,26 @@ export interface VerdictReport {
   cause: string | null
   tested: string[]
   limitations: string[]
-  /** Suggested by the model; never verified by Domino. */
+  /** Suggested by the model. */
   mitigation: string | null
+  /** Whether the suggested fix held when Domino re-ran with it applied. */
+  fix: FixCheck | null
+  /** The explanation as claims, each with the evidence it cites. */
+  causeChain: { claim: string; refs: SourceRef[]; cites: string[] }[]
+  /** Whether every cite resolved to evidence in the run; null when not checked. */
+  causeChainOk: boolean | null
   /** Set when the model's own wording overclaims, e.g. says "safe". */
   wordingNote: string | null
+}
+
+export type FixStatus = 'held' | 'did_not_hold' | 'not_tested' | 'not_applicable'
+
+export interface FixCheck {
+  status: FixStatus
+  overrides: Record<string, string | number | boolean>
+  experimentIds: string[]
+  reasons: string[]
+  rounds: number
 }
 
 /** One model call through Nightshift. Never holds tokens or keys. */
@@ -203,6 +233,10 @@ export interface Investigation {
   /** True while the UI is showing layout placeholders rather than a real run. */
   isPlaceholder: boolean
   startedAt: string | null
+  /** The run's own report.md, as the agent wrote it for the PR; null when absent. */
+  reportMd: string | null
+  /** Timestamp of the last event in the trace. */
+  lastEventAt: string | null
   durationMs: number | null
   change: ChangeSummary | null
   chain: DependencyChain
@@ -275,8 +309,25 @@ export interface Scorecard {
   baselines: ScorecardBaseline[]
 }
 
+/** A repository `domino watch` follows, from its queue file. */
+export interface WatchState {
+  repo: string
+  updatedAt: string | null
+  /** Pull request number being checked now. */
+  current: number | null
+  queued: number[]
+  checked: { number: number; headSha: string; at: string; verdicts: Verdict[]; runIds: string[] }[]
+}
+
+/** The connected project: its runs folder and the repositories it watches. */
+export interface ProjectInfo {
+  connected: boolean
+  watches: WatchState[]
+}
+
 export interface SiteData {
   isPlaceholder: boolean
+  project: ProjectInfo
   cases: CaseEntry[]
   scorecard: Scorecard | null
   zetaris: RawZetaris | null

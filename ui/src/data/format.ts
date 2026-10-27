@@ -26,6 +26,31 @@ export interface ChangeRequest {
   description: string
   diff: string
   files: string[]
+  /** Set when the change came from a real pull request (contract 0.2.0). */
+  source?: ChangeSource | null
+}
+
+export interface ChangeSource {
+  kind: 'pull_request'
+  repo: string
+  number: number
+  url: string
+  title: string
+  head_sha: string
+  /** The folder of the repo the change was matched to. */
+  folder?: string
+}
+
+/**
+ * Domino re-runs the experiments with the suggested fix applied. `verified`
+ * means the fix held on those re-runs; the UI never uses that word.
+ */
+export interface FixVerification {
+  status: 'verified' | 'failed' | 'untested' | 'not_applicable'
+  overrides: Record<string, string | number | boolean> | null
+  experiments: string[]
+  reasons: string[]
+  rounds: number
 }
 
 export interface EvidenceRow {
@@ -168,8 +193,11 @@ export interface VerdictEvent extends TraceBase {
   tested: string[]
   limitations: string[]
   decided_by: string
-  /** Suggested by the model, never verified by Domino. */
+  /** Suggested by the model. Whether it held is in fix_verification. */
   mitigation?: string
+  /** The explanation as claims, each citing row or experiment evidence. */
+  cause_chain?: { claim: string; cites: string[] }[]
+  fix_verification?: FixVerification
 }
 /** A second model checks the explanation against the evidence. Never the verdict. */
 export interface ReviewEvent extends TraceBase {
@@ -245,17 +273,36 @@ export interface EvidenceBundle {
     decided_by: string
     tested: string[]
     limitations: string[]
-    mitigation: { text: string; verified: false } | null
+    mitigation: { text: string; verified: boolean } | null
+    fix_verification?: FixVerification
   }
+  /** verdict.cause_chain with each cite resolved to the evidence it names. */
+  cause_chain?: { claim: string; cites: { cite: string; refs: { ref: string; kind: string; facts: string }[] }[] }[]
+  /** Whether every cite resolved to evidence in the run. */
+  cause_chain_check?: string
   causal_chain: { edge: string; status: 'observed' | 'inferred'; evidence: { row_id: string; facts: string }[] }[]
   experiments: {
     experiment_id: string
     variant: Variant
     requested_by: 'agent' | 'harness'
+    /** Set on the re-runs that check the suggested fix. */
+    fix_overrides?: Record<string, string | number | boolean> | null
     rationale: string
     reproduce: string | null
   }[]
   cited_evidence: { row_id: string; source: string; facts: string }[]
+}
+
+// ---------- Agent: watch-<owner>-<repo>.json (`domino watch` queue state) ----------
+
+export interface RawWatch {
+  repo: string
+  updated_at: string
+  /** "<number>@<head_sha>" being checked now, if any. */
+  current: string | null
+  queue: string[]
+  /** Keyed "<number>@<head_sha>". */
+  checked: Record<string, { at: string; verdicts: string[]; run_ids: string[] }>
 }
 
 // ---------- Agent: receipts.jsonl (optional) ----------

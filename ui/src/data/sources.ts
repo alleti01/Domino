@@ -7,6 +7,8 @@ import { LoadError } from './errors'
 export interface DataSource {
   name: string
   isPlaceholder: boolean
+  /** A project's runs folder is connected (DOMINO_RUNS_DIR), even if it has no runs yet. */
+  connected?: boolean
   /** Every file path the source has. */
   list(): string[]
   readText(path: string): Promise<string>
@@ -69,6 +71,7 @@ export function liveSource(listing: LiveListing, projectOnly = false): DataSourc
       .map((r) => `${r.split('/').slice(-2).join('/')}/`)
       .join(' + '),
     isPlaceholder: false,
+    connected: projectOnly && !!listing.roots.runs,
     list: () => paths,
     async readText(path) {
       const res = await fetch(`api/domino/file?path=${encodeURIComponent(path)}`, { cache: 'no-store' })

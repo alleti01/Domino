@@ -3,24 +3,53 @@ import type { CaseEntry, Investigation } from '../../../types'
 import { LINK_TONE, More, Panel, Refs, Status, Tag } from '../../ui'
 import { Answer } from './Answer'
 import { buildFlow, Flow } from './Flow'
+import { FIX, fixSettings, fixStatus } from '../../fix'
 
 // ---------- Summary ----------
 
-/** The model's proposed code change: code-level, untested, so it waits behind a click. */
-function Mitigation({ text }: { text: string }) {
+/** The model's proposed fix, and whether it held when Domino re-ran with it applied. */
+function Mitigation({ inv, text }: { inv: Investigation; text: string }) {
+  const status = fixStatus(inv)
+  const fix = inv.verdict?.fix
+  const settings = fix ? fixSettings(fix.overrides) : []
   return (
     <More
       summary={
         <>
-          Suggested code change
+          Suggested fix
           <span className="dx-more-meta">
-            <Tag tone="warn">Not tested</Tag>
+            <Tag tone={FIX[status].tone}>{FIX[status].label}</Tag>
           </span>
         </>
       }
     >
       <p className="dx-prose">{text}</p>
-      <p className="dx-faint dx-mt-s">Proposed by the model. Domino has not run it.</p>
+      <p className="dx-faint dx-mt-s">{FIX[status].text}</p>
+      {fix && settings.length > 0 && status !== 'not_tested' && (
+        <dl className="dx-kv dx-mt-s">
+          {settings.map((x) => (
+            <div key={x.key}>
+              <dt title={x.key}>
+                {x.name}
+                {x.where && <span className="dx-faint"> in {x.where}</span>}
+              </dt>
+              <dd className="t-num">{x.value}</dd>
+            </div>
+          ))}
+          <div>
+            <dt>Re-runs with the fix</dt>
+            <dd>
+              {fix.experimentIds.length}
+              {fix.rounds > 1 ? ` over ${fix.rounds} attempts` : ''}
+            </dd>
+          </div>
+        </dl>
+      )}
+      {fix?.reasons.map((r) => (
+        <p key={r} className="dx-faint dx-mt-s">
+          {r}
+        </p>
+      ))}
     </More>
   )
 }
@@ -73,7 +102,30 @@ export function SummaryTab({ inv, caseEntry, runParam }: { inv: Investigation; c
                 }
               >
                 {inv.verdict.headline && <p className="dx-prose" style={{ fontWeight: 550 }}>{inv.verdict.headline}</p>}
-                <p className="dx-prose dx-mt-s">{inv.verdict.cause}</p>
+                {inv.verdict.causeChain.length > 0 ? (
+                  <>
+                    <ol className="dx-chain dx-mt-s">
+                      {inv.verdict.causeChain.map((c, i) => (
+                        <li key={i}>
+                          <span className="dx-chain-n">{i + 1}</span>
+                          <div className="dx-chain-body">
+                            <span>{c.claim}</span>
+                            <Refs refs={c.refs} empty="No evidence cited" />
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                    {inv.verdict.causeChainOk != null && (
+                      <p className="dx-row dx-mt-s" style={{ gap: 6 }}>
+                        <Status tone={inv.verdict.causeChainOk ? 'ok' : 'warn'}>
+                          {inv.verdict.causeChainOk ? 'Every step cites evidence from this run' : 'Some steps cite evidence that isn’t in this run'}
+                        </Status>
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="dx-prose dx-mt-s">{inv.verdict.cause}</p>
+                )}
                 {inv.review?.reviewerModel && (
                   <p className="dx-faint dx-mt-s">
                     Checked against the evidence by {shortModel(inv.review.reviewerModel)}
@@ -82,7 +134,7 @@ export function SummaryTab({ inv, caseEntry, runParam }: { inv: Investigation; c
                 )}
               </More>
             )}
-            {inv.verdict?.mitigation && <Mitigation text={inv.verdict.mitigation} />}
+            {inv.verdict?.mitigation && <Mitigation inv={inv} text={inv.verdict.mitigation} />}
             {issues.length > 0 && (
               <More
                 summary={
@@ -107,7 +159,7 @@ export function SummaryTab({ inv, caseEntry, runParam }: { inv: Investigation; c
 
       {inv.verdict?.mitigation && !hasWhy && (
         <section className="dx-panel">
-          <Mitigation text={inv.verdict.mitigation} />
+          <Mitigation inv={inv} text={inv.verdict.mitigation} />
         </section>
       )}
 

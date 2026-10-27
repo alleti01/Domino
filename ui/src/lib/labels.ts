@@ -35,6 +35,7 @@ export const RUN_MODE: Record<RunMode, { label: string; description: string }> =
 export const RUN_STATUS: Record<RunStatus, { label: string; tone: Tone; icon: IconName }> = {
   complete: { label: 'Complete', tone: 'muted', icon: 'check-circle' },
   running: { label: 'Running', tone: 'warn', icon: 'clock' },
+  stopped: { label: 'Stopped', tone: 'muted', icon: 'alert' },
   failed: { label: 'Run failed', tone: 'fail', icon: 'alert' },
   outage: { label: 'Outage: excluded from scoring', tone: 'warn', icon: 'alert' },
 }

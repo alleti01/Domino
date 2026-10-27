@@ -28,6 +28,7 @@ export function VerdictMark({ verdict, large = false }: { verdict: Verdict; larg
 
 const STATE_MARK: Record<Exclude<LatestState, Verdict>, { label: string; tone: Tone; icon: IconName }> = {
   incomplete: { label: 'No verdict in the saved trace', tone: 'warn', icon: 'clock' },
+  stopped: { label: 'Stopped before a verdict', tone: 'muted', icon: 'alert' },
   failed: { label: 'Run failed before a verdict', tone: 'fail', icon: 'alert' },
   outage: { label: 'Outage, excluded from scoring', tone: 'warn', icon: 'alert' },
   unreadable: { label: 'Trace could not be read', tone: 'fail', icon: 'alert' },

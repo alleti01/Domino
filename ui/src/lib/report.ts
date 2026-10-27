@@ -46,7 +46,7 @@ export function traceOrigin(run: Pick<RunEntry, 'replay' | 'status'>): string {
 // ---------- Overview ----------
 
 /** What the latest run of a case shows: its verdict, or why it has none. */
-export type LatestState = Verdict | 'incomplete' | 'failed' | 'outage' | 'unreadable' | 'none'
+export type LatestState = Verdict | 'incomplete' | 'stopped' | 'failed' | 'outage' | 'unreadable' | 'none'
 
 export function latestState(c: CaseEntry): LatestState {
   const r = c.runs[0]
@@ -55,6 +55,7 @@ export function latestState(c: CaseEntry): LatestState {
   if (r.verdict) return r.verdict
   if (r.status === 'outage') return 'outage'
   if (r.status === 'failed') return 'failed'
+  if (r.status === 'stopped') return 'stopped'
   return 'incomplete'
 }
 

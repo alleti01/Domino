@@ -3,6 +3,7 @@
 // then the numbers, the path and the fix. "Copy as Markdown" gives the exact
 // comment text to paste; nothing is posted from here.
 
+import { fixLine } from '../../fix'
 import { isNemotron, REVIEW_OUTCOME, VERDICT } from '../../../lib/labels'
 import { href } from '../../../lib/router'
 import { experimentSummary } from '../../../lib/showcase'
@@ -10,7 +11,7 @@ import type { Investigation } from '../../../types'
 import { fmtValue } from '../../derive'
 import { DIcon } from '../../icons'
 import { LogoMark } from '../../../components/LogoMark'
-import { humanize, useCopy } from '../../ui'
+import { humanize, More, useCopy } from '../../ui'
 import { outcomeText } from './Answer'
 import { buildFlow } from './Flow'
 
@@ -35,7 +36,7 @@ function markdown(inv: Investigation, reportUrl: string): string {
   }
   if (path.length > 1) lines.push(`**Path:** ${path.join(' → ')}`, '')
   if (inv.verdict.mitigation)
-    lines.push('<details><summary>Suggested fix (not tested)</summary>', '', inv.verdict.mitigation, '', '</details>', '')
+    lines.push(`<details><summary>Suggested fix (${fixLine(inv).toLowerCase()})</summary>`, '', inv.verdict.mitigation, '', '</details>', '')
   lines.push(
     `<sub>Decided by Domino’s judge from ${inv.experiments.length} sandbox runs${review ? ` · ${review}` : ''} · ${nemo} of ${inv.receipts.length} model calls on Nemotron · [Full report](${reportUrl})</sub>`,
   )
@@ -52,13 +53,26 @@ export function PrTab({ inv, runParam }: { inv: Investigation; runParam: string 
   const review = inv.review ? REVIEW_OUTCOME[inv.review.outcome] : null
   const report = href.case(inv.caseId, { runId: runParam })
   const reportUrl = `${window.location.origin}${window.location.pathname}${report}`
+  const pr = inv.change?.pullRequest ?? null
 
   return (
     <div className="dx-stack">
       <div className="dx-gh">
         <div className="dx-pr-bar">
-          <span className="dx-faint">Preview of what Domino would post on the pull request. Nothing is sent from here.</span>
-          <button type="button" className="dx-btn dx-btn-sm" onClick={() => copy(markdown(inv, reportUrl))}>
+          <span className="dx-faint">
+            {pr ? (
+              <>
+                The comment for{' '}
+                <a className="dx-link" href={pr.url} target="_blank" rel="noreferrer">
+                  {pr.repo} #{pr.number}
+                </a>
+                {inv.reportMd ? ', as the agent wrote it in report.md.' : '.'} Nothing is sent from here.
+              </>
+            ) : (
+              'Preview of what Domino would post on the pull request. Nothing is sent from here.'
+            )}
+          </span>
+          <button type="button" className="dx-btn dx-btn-sm" onClick={() => copy(inv.reportMd ?? markdown(inv, reportUrl))}>
             <DIcon name={copied ? 'check' : 'copy'} size={13} /> {copied ? 'Copied' : 'Copy as Markdown'}
           </button>
         </div>
@@ -83,7 +97,7 @@ export function PrTab({ inv, runParam }: { inv: Investigation; runParam: string 
             </span>
             <b>Domino</b>
             <span className="dx-gh-bot">bot</span>
-            <span className="dx-faint">commented on {inv.change?.changeId ?? 'this change'}</span>
+            <span className="dx-faint">commented on {pr ? `#${pr.number}` : (inv.change?.changeId ?? 'this change')}</span>
           </div>
 
           <div className="dx-gh-body">
@@ -139,7 +153,7 @@ export function PrTab({ inv, runParam }: { inv: Investigation; runParam: string 
                 {inv.verdict.mitigation && (
                   <details className="dx-gh-details">
                     <summary>
-                      Suggested fix <span className="dx-faint">(not tested)</span>
+                      Suggested fix <span className="dx-faint">({fixLine(inv).toLowerCase()})</span>
                     </summary>
                     <p>{inv.verdict.mitigation}</p>
                   </details>
@@ -157,6 +171,11 @@ export function PrTab({ inv, runParam }: { inv: Investigation; runParam: string 
           </div>
         </div>
       </div>
+      {inv.reportMd && (
+        <More summary="Markdown, as written in report.md">
+          <pre className="dx-pre">{inv.reportMd}</pre>
+        </More>
+      )}
     </div>
   )
 }

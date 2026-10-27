@@ -9,9 +9,10 @@ import { VERDICT } from '../../lib/labels'
 import { href } from '../../lib/router'
 import { experimentSummary } from '../../lib/showcase'
 import type { CaseEntry, ExperimentRun, Investigation, SiteData, TraceStep } from '../../types'
-import { allRuns, componentRoles, isExample, roleFor, shortRun } from '../derive'
+import { allRuns, changeTitle, componentRoles, isExample, isLiveRun, roleFor, shortRun } from '../derive'
+import { FIX, fixLine, fixSentence, fixStatus } from '../fix'
 import { DIcon, type DIconName } from '../icons'
-import { Empty, ExampleTag, humanize, PageHeader, Panel, Select, VERDICT_SHORT } from '../ui'
+import { Empty, ExampleTag, humanize, PageHeader, Panel, Select, Tag, VERDICT_SHORT } from '../ui'
 import { MeasureBars, outcomeText } from './report/Answer'
 import { buildFlow } from './report/Flow'
 import { investigationMap, layoutMap } from '../../lib/graph'
@@ -62,7 +63,9 @@ const ARM = { baseline: 'Without the change', candidate: 'With the change', cont
 function cueFor(s: TraceStep, inv: Investigation, x: ExperimentRun | undefined): Omit<Cue, 'id' | 'count' | 'type'> {
   switch (s.type) {
     case 'run_started':
-      return { icon: 'pr', tone: 'info', text: 'Pull request opened', detail: inv.change?.title }
+      return inv.change?.pullRequest
+        ? { icon: 'pr', tone: 'info', text: `Pull request #${inv.change.pullRequest.number}`, detail: `${inv.change.pullRequest.repo} · ${inv.change.pullRequest.title}` }
+        : { icon: 'play', tone: 'info', text: 'Run started', detail: inv.change?.title }
     case 'change_parsed':
       return { icon: 'file', tone: 'info', text: 'Reading the change', detail: inv.change?.files.join(', ') }
     case 'usl_query':
@@ -80,9 +83,10 @@ function cueFor(s: TraceStep, inv: Investigation, x: ExperimentRun | undefined):
     case 'experiment_result': {
       if (!x) return { icon: 'flask', tone: 'info', text: 'Sandbox run finished' }
       const failed = x.assertions.find((a) => !a.passed)
+      const arm = x.fixOverrides ? `Fix applied, ${ARM[x.variant].toLowerCase()}` : ARM[x.variant]
       return x.outcome === 'pass'
-        ? { icon: 'check', tone: 'ok', text: `${ARM[x.variant]}: passed` }
-        : { icon: 'x', tone: 'fail', text: `${ARM[x.variant]}: failed`, detail: failed ? `${humanize(failed.name).name.toLowerCase()} (${failed.detail})` : undefined }
+        ? { icon: 'check', tone: 'ok', text: `${arm}: passed`, detail: x.fixOverrides ? fixSentence(x.fixOverrides) : undefined }
+        : { icon: 'x', tone: 'fail', text: `${arm}: failed`, detail: failed ? `${humanize(failed.name).name.toLowerCase()} (${failed.detail})` : undefined }
     }
     case 'review':
       return /approved/.test(s.title)
@@ -94,7 +98,12 @@ function cueFor(s: TraceStep, inv: Investigation, x: ExperimentRun | undefined):
       return { icon: 'alert', tone: 'warn', text: 'Model hiccup, retrying', detail: s.title.replace(/^Error in \w+: /, '') }
     case 'verdict':
       return inv.verdict
-        ? { icon: 'shield', tone: inv.verdict.verdict === 'reproduced_failure' ? 'fail' : 'ok', text: `Judge decided: ${VERDICT_SHORT[inv.verdict.verdict]}` }
+        ? {
+            icon: 'shield',
+            tone: inv.verdict.verdict === 'reproduced_failure' ? 'fail' : 'ok',
+            text: `Judge decided: ${VERDICT_SHORT[inv.verdict.verdict]}`,
+            detail: inv.verdict.fix && inv.verdict.fix.status !== 'not_applicable' ? fixLine(inv) : undefined,
+          }
         : { icon: 'shield', tone: 'info', text: 'Judge decided' }
     case 'run_finished':
       return { icon: 'check', tone: 'muted', text: 'Check complete' }
@@ -152,7 +161,7 @@ function StageRail({ inv, n, done }: { inv: Investigation; n: number; done: bool
             <span className="dx-live-stage-mark" aria-hidden="true">
               {state === 'done' ? <DIcon name="check" size={11} /> : state === 'failed' ? <DIcon name="x" size={11} /> : null}
             </span>
-            <span className="dx-live-stage-label">{st.label}</span>
+            <span className="dx-live-stage-label">{st.key === 'pr' && !inv.change?.pullRequest ? 'Change' : st.label}</span>
           </li>
         )
       })}
@@ -297,6 +306,12 @@ function Result({ inv, caseEntry }: { inv: Investigation; caseEntry: CaseEntry }
         </div>
       </div>
       {x && <MeasureBars x={x} />}
+      {inv.verdict.mitigation && inv.verdict.fix && inv.verdict.fix.status !== 'not_applicable' && (
+        <p className="dx-row" style={{ gap: 8 }}>
+          <Tag tone={FIX[fixStatus(inv)].tone}>{fixLine(inv)}</Tag>
+          {inv.verdict.fix.status !== 'not_tested' && <span className="dx-faint">{fixSentence(inv.verdict.fix.overrides)}</span>}
+        </p>
+      )}
       <div className="dx-row dx-wrap" style={{ gap: 8 }}>
         <a className="dx-btn dx-btn-primary" href={href.case(caseEntry.id, { runId: inv.runId })}>
           Open the report <DIcon name="arrow-right" size={14} />
@@ -313,11 +328,14 @@ function Result({ inv, caseEntry }: { inv: Investigation; caseEntry: CaseEntry }
  * The check as it happens: window, stages, path and feed, then the result.
  * `live` shows a run still being written as its events arrive; otherwise the
  * run's recorded events replay in order, sped up, and hold on the result.
+ * `step`, when given, shows exactly that many events and turns off the clock
+ * (the landing page drives it from scroll).
  */
-export function CheckPlayer({ inv, caseEntry, live }: { inv: Investigation; caseEntry: CaseEntry; live: boolean }) {
+export function CheckPlayer({ inv, caseEntry, live, step }: { inv: Investigation; caseEntry: CaseEntry; live: boolean; step?: number }) {
   const times = useMemo(() => schedule(inv.trace), [inv])
   const total = inv.trace.length
-  const [n, setN] = useState(live ? total : 0)
+  const [ownN, setN] = useState(live ? total : 0)
+  const n = step ?? ownN
   const [playing, setPlaying] = useState(true)
   const [round, setRound] = useState(0)
 
@@ -325,27 +343,55 @@ export function CheckPlayer({ inv, caseEntry, live }: { inv: Investigation; case
   useEffect(() => setN(live ? total : 0), [inv.runId, round, live, total])
 
   useEffect(() => {
-    if (live || !playing || n >= total) return
+    if (step !== undefined || live || !playing || n >= total) return
     const wait = n === 0 ? times[0] : times[n] - times[n - 1]
     const t = setTimeout(() => setN((v) => v + 1), wait)
     return () => clearTimeout(t)
-  }, [live, playing, n, total, times])
+  }, [step, live, playing, n, total, times])
 
   const finished = live ? inv.status !== 'running' : n >= total && total > 0
+  const pr = inv.change?.pullRequest ?? null
+  // A replayed recording is never shown as live, even while it is being written.
+  const flag = !live
+    ? `replay of run ${shortRun(inv.runId)}`
+    : inv.replay
+      ? `recording replayed · run ${shortRun(inv.runId)}`
+      : inv.status === 'stopped'
+        ? `stopped · run ${shortRun(inv.runId)}`
+        : finished
+          ? `finished · run ${shortRun(inv.runId)}`
+          : null
   const cues = cuesUpTo(inv, n)
   const v = inv.verdict ? VERDICT[inv.verdict.verdict] : null
-  const statusLabel = finished && v ? (inv.verdict!.verdict === 'reproduced_failure' ? 'Failed' : inv.verdict!.verdict === 'inconclusive' ? 'Inconclusive' : 'Passed') : finished ? 'Ended' : 'Running'
+  const statusLabel =
+    finished && v
+      ? inv.verdict!.verdict === 'reproduced_failure'
+        ? 'Failed'
+        : inv.verdict!.verdict === 'inconclusive'
+          ? 'Inconclusive'
+          : 'Passed'
+      : live && inv.status === 'stopped'
+        ? 'Stopped'
+        : finished
+          ? 'Ended'
+          : 'Running'
   const statusTone = finished && v ? v.tone : finished ? 'muted' : 'accent'
 
   return (
     <section className="dx-live-window" key={`${inv.runId}:${round}`}>
       <header className="dx-live-head">
-        <DIcon name="pr" size={16} />
+        <DIcon name={pr ? 'pr' : 'file'} size={16} />
         <div className="dx-live-title">
-          <b>{inv.change?.title ?? caseEntry.label}</b>
+          <b>{changeTitle(inv, caseEntry.label)}</b>
           <span className="dx-faint">
-            {caseEntry.label} · {inv.change?.files.length ?? 0} file{inv.change?.files.length === 1 ? '' : 's'} ·{' '}
-            {live ? (finished ? `finished · run ${shortRun(inv.runId)}` : <span className="dx-live-flag">● Live</span>) : `replay of run ${shortRun(inv.runId)}`}
+            {pr ? (
+              <a className="dx-link-quiet" href={pr.url} target="_blank" rel="noreferrer">
+                {pr.repo} #{pr.number}
+              </a>
+            ) : (
+              caseEntry.label
+            )}{' '}
+            · {inv.change?.files.length ?? 0} file{inv.change?.files.length === 1 ? '' : 's'} · {flag ?? <span className="dx-live-flag">● Live</span>}
           </span>
         </div>
         <span className={`dx-live-status tone-${statusTone}`}>
@@ -396,7 +442,7 @@ export function CheckPlayer({ inv, caseEntry, live }: { inv: Investigation; case
  */
 export function LiveCheck({ site, caseId }: { site: SiteData; caseId: string | null }) {
   const rows = useMemo(() => allRuns(site).filter((r) => r.inv), [site])
-  const running = rows.filter((r) => r.run.status === 'running')
+  const running = rows.filter((r) => isLiveRun(r.run))
   const [followId, setFollowId] = useState<string | null>(null)
 
   // Follow the requested change's running run, else the newest running one; keep following it after it ends.
@@ -438,13 +484,13 @@ export function LiveCheck({ site, caseId }: { site: SiteData; caseId: string | n
                 onChange={(id) => setFollowId(id)}
                 options={[followed, ...others].map((r) => ({
                   value: r.run.runId,
-                  text: `${r.inv!.change?.title ?? r.caseEntry.label} ${r.caseEntry.label}`,
+                  text: `${changeTitle(r.inv, r.caseEntry.label)} ${r.caseEntry.label}`,
                   label: r.caseEntry.label,
                   hint: shortRun(r.run.runId),
                 }))}
               />
             )}
-            {followed.run.status !== 'running' && (
+            {!isLiveRun(followed.run) && (
               <a className="dx-btn" href={href.case(followed.caseEntry.id, { runId: followed.run.runId })}>
                 Open the report <DIcon name="arrow-right" size={14} />
               </a>

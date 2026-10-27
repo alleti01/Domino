@@ -3,6 +3,7 @@
 // what was committed, what broke, how it could be fixed. Every name, number
 // and link comes from the run; only the arrangement is illustrative.
 
+import { FIX, fixLine, fixStatus } from '../../fix'
 import { useState } from 'react'
 import { href } from '../../../lib/router'
 import { chainTiles, experimentSummary } from '../../../lib/showcase'
@@ -186,7 +187,7 @@ export function Flow({ inv, runParam }: { inv: Investigation; runParam: string |
             <>
               <p>{firstSentence(inv.verdict.mitigation)}</p>
               <p className="dx-row" style={{ gap: 6 }}>
-                <Tag tone="warn">Not tested</Tag>
+                <Tag tone={FIX[fixStatus(inv)].tone}>{fixLine(inv)}</Tag>
                 <span className="dx-faint">full suggestion below</span>
               </p>
             </>

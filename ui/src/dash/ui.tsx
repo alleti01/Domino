@@ -43,6 +43,7 @@ export function VerdictStatus({ verdict, short }: { verdict: Verdict; short?: bo
 
 const STATE_LABEL: Record<Exclude<LatestState, Verdict>, { label: string; tone: Tone }> = {
   incomplete: { label: 'In progress', tone: 'accent' },
+  stopped: { label: 'Stopped', tone: 'muted' },
   failed: { label: 'Run failed', tone: 'fail' },
   outage: { label: 'Outage', tone: 'warn' },
   unreadable: { label: 'Unreadable', tone: 'fail' },
@@ -428,6 +429,7 @@ const STATE_ICON: Record<LatestState, { icon: DIconName; tone: Tone; label: stri
   no_failure_observed: { icon: 'minus-circle', tone: 'neutral', label: 'No failure observed' },
   inconclusive: { icon: 'help-circle', tone: 'warn', label: 'Inconclusive' },
   incomplete: { icon: 'clock', tone: 'accent', label: 'In progress' },
+  stopped: { icon: 'pause', tone: 'muted', label: 'Stopped' },
   failed: { icon: 'alert', tone: 'fail', label: 'Run failed' },
   outage: { icon: 'alert', tone: 'warn', label: 'Outage' },
   unreadable: { icon: 'alert', tone: 'fail', label: 'Unreadable' },

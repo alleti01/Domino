@@ -31,6 +31,27 @@ const RELEASES: Release[] = [
     entries: [
       {
         kind: 'New',
+        title: 'Fix checks',
+        text: 'Domino re-runs the experiments with the suggested fix applied. Each report now says whether the fix held when re-run or did not hold, which settings it changed, and how many attempts it took; the re-runs are listed apart from the ordinary experiments.',
+      },
+      {
+        kind: 'New',
+        title: 'Pull requests and watched repositories',
+        text: 'Runs checked from a pull request show its repository, number and commit, link to it, and show the comment the agent wrote in report.md. The project switcher shows the repository domino watch is following and how many pull requests are queued.',
+        link: { label: 'Command line', href: href.docs('cli') },
+      },
+      {
+        kind: 'New',
+        title: 'Why, step by step',
+        text: 'The model’s explanation reads as numbered claims, each with the evidence it cites, and says whether every cite was found in the run.',
+      },
+      {
+        kind: 'Fixed',
+        title: 'Stopped runs and replays',
+        text: 'A run that never finished and has written nothing for 11 minutes shows as Stopped instead of running forever. A recording being replayed is never marked Live.',
+      },
+      {
+        kind: 'New',
         title: 'Live check',
         text: 'Watch a pull request while Domino checks it: the pipeline stages, the dependency path drawing itself, the sandbox runs, a readable feed of each step, then the result. It appears in the sidebar only while a run is in progress.',
       },

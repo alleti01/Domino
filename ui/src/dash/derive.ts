@@ -124,9 +124,22 @@ export function siteStats(site: SiteData): SiteStats {
     medianDurationMs: durations.length ? durations[Math.floor(durations.length / 2)] : null,
     outages: rows.filter((r) => r.run.status === 'outage').length,
     failed: rows.filter((r) => r.run.status === 'failed').length,
-    running: rows.filter((r) => r.run.status === 'running').length,
+    running: rows.filter((r) => isLiveRun(r.run)).length,
     lastRunAt: rows[0]?.run.startedAt || null,
   }
+}
+
+/** What a change is called: its pull request's title when it came from one. */
+export function changeTitle(inv: Investigation | null | undefined, fallback: string): string {
+  return inv?.change?.pullRequest?.title ?? inv?.change?.title ?? fallback
+}
+
+/**
+ * A run the agent is writing right now. A replayed recording that is still
+ * being written is not live (CLAUDE.md §4: never present a replay as live).
+ */
+export function isLiveRun(run: Pick<RunEntry, 'status' | 'replay'>) {
+  return run.status === 'running' && !run.replay
 }
 
 /** Sources cited anywhere in a run's semantic-layer graph. */

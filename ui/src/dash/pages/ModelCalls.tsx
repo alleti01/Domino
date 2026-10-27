@@ -5,7 +5,7 @@
 import { isNemotron, shortModel } from '../../lib/labels'
 import { href } from '../../lib/router'
 import type { ModelReceipt, SiteData } from '../../types'
-import { allRuns, fmtDuration, isExample, pct, shortRun, siteStats } from '../derive'
+import { allRuns, changeTitle, fmtDuration, isExample, pct, shortRun, siteStats } from '../derive'
 import { DIcon } from '../icons'
 import { ExampleTag, PageHeader, Panel, rowLink } from '../ui'
 
@@ -136,7 +136,7 @@ export function ModelCalls({ site }: { site: SiteData }) {
                       <td>
                         <span className="dx-runs-text">
                           <a className="t-title" href={link}>
-                            {inv!.change?.title ?? caseEntry.label}
+                            {changeTitle(inv, caseEntry.label)}
                           </a>
                           <span className="t-sub">
                             {caseEntry.label} · <span className="dx-id">{shortRun(run.runId)}</span>

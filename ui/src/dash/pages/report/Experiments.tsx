@@ -6,7 +6,8 @@ import { useState } from 'react'
 import type { ArmOutcome, ExperimentRun, Investigation, Variant } from '../../../types'
 import { fmtDuration, fmtValue } from '../../derive'
 import { DIcon } from '../../icons'
-import { Command, Empty, EvidenceChip, humanize, More, Panel } from '../../ui'
+import { FIX, fixSentence, fixStatus } from '../../fix'
+import { Command, Empty, EvidenceChip, humanize, More, Panel, Tag } from '../../ui'
 
 const ARM: Record<Variant, string> = {
   baseline: 'Without the change',
@@ -52,11 +53,72 @@ function Mark({ outcome, size = 14 }: { outcome: ArmOutcome | 'pass' | 'fail'; s
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
+/** Settings as "key=value", with nested override maps flattened. */
+function settingsText(params: ExperimentRun['params']) {
+  return Object.entries(params)
+    .flatMap(([k, v]): [string, unknown][] => (v && typeof v === 'object' ? Object.entries(v as Record<string, unknown>) : [[k, v]]))
+    .map(([k, v]) => `${k}=${String(v)}`)
+    .join(', ')
+}
+
+/** Re-runs with the suggested fix applied, one group per attempt (a different fix each). */
+function FixChecks({ inv, runs }: { inv: Investigation; runs: ExperimentRun[] }) {
+  const attempts = new Map<string, ExperimentRun[]>()
+  for (const r of runs) {
+    const key = JSON.stringify(r.fixOverrides)
+    attempts.set(key, [...(attempts.get(key) ?? []), r])
+  }
+  const status = fixStatus(inv)
+  return (
+    <Panel
+      title="Fix checks"
+      desc="The experiments re-run with the suggested fix applied"
+      actions={<Tag tone={FIX[status].tone}>{FIX[status].label}</Tag>}
+      flush
+    >
+      <ol className="dx-fixlist">
+        {[...attempts.values()].map((rs, i) => {
+          const held = rs.every((r) => r.outcome === 'pass')
+          return (
+            <li key={i}>
+              <Mark outcome={held ? 'pass' : 'fail'} size={16} />
+              <div>
+                <b>
+                  {attempts.size > 1 ? `Attempt ${i + 1}: ` : ''}
+                  {fixSentence(rs[0].fixOverrides ?? {})}
+                </b>
+                <span className="dx-faint">
+                  {ORDER.filter((v) => rs.some((r) => r.variant === v))
+                    .map((v) => {
+                      const of = rs.filter((r) => r.variant === v)
+                      const passed = of.filter((r) => r.outcome === 'pass').length
+                      const word = passed === of.length ? 'passed' : passed === 0 ? 'failed' : `${of.length - passed} of ${of.length} failed`
+                      return `${ARM[v]}: ${word}${of.length > 1 && (passed === 0 || passed === of.length) ? ` ×${of.length}` : ''}`
+                    })
+                    .join(' · ')}
+                </span>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+      {inv.verdict?.fix?.reasons.map((r) => (
+        <p key={r} className="dx-arms-note">
+          {r}
+        </p>
+      ))}
+    </Panel>
+  )
+}
+
 export function ExperimentsTab({ inv }: { inv: Investigation }) {
   const [all, setAll] = useState(false)
-  const runs = [...inv.experiments].sort((a, b) => ORDER.indexOf(a.variant) - ORDER.indexOf(b.variant))
+  const byArm = (a: ExperimentRun, b: ExperimentRun) => ORDER.indexOf(a.variant) - ORDER.indexOf(b.variant)
+  // Fix re-runs are a separate question (does the fix hold?), so they stay out of the arm comparison.
+  const runs = inv.experiments.filter((x) => !x.fixOverrides).sort(byArm)
+  const fixRuns = inv.experiments.filter((x) => x.fixOverrides)
 
-  if (runs.length === 0) {
+  if (inv.experiments.length === 0) {
     return (
       <Panel>
         <Empty icon="flask" title="No sandbox runs">
@@ -121,6 +183,8 @@ export function ExperimentsTab({ inv }: { inv: Investigation }) {
           </p>
         )}
       </section>
+
+      {fixRuns.length > 0 && <FixChecks inv={inv} runs={fixRuns} />}
 
       {/* Only what differs, side by side */}
       <Panel
@@ -204,10 +268,10 @@ export function ExperimentsTab({ inv }: { inv: Investigation }) {
       </Panel>
 
       {/* Each sandbox run, one line, details on demand */}
-      <Panel title="Runs" count={runs.length} flush>
+      <Panel title="Runs" count={inv.experiments.length} flush>
         <ol className="dx-xruns">
-          {runs.map((r) => {
-            const n = runs.filter((x) => x.variant === r.variant)
+          {[...runs, ...fixRuns].map((r) => {
+            const n = (r.fixOverrides ? fixRuns : runs).filter((x) => x.variant === r.variant)
             const nth = n.length > 1 ? ` ${n.indexOf(r) + 1}` : ''
             const failed = r.assertions.filter((a) => !a.passed)
             const params = Object.entries(r.params)
@@ -218,6 +282,7 @@ export function ExperimentsTab({ inv }: { inv: Investigation }) {
                     <DIcon name="chevron-right" size={14} className="dx-chev" />
                     <Mark outcome={r.outcome} />
                     <span className="dx-xrun-name">
+                      {r.fixOverrides && <span className="dx-faint">Fix applied · </span>}
                       {ARM[r.variant]}
                       {nth}
                     </span>
@@ -233,7 +298,7 @@ export function ExperimentsTab({ inv }: { inv: Investigation }) {
                     {(params.length > 0 || (r.workload && r.workload !== 'default') || r.hypothesisIds.length > 0) && (
                       <p className="dx-muted">
                         {r.workload && r.workload !== 'default' && <>Workload {r.workload}. </>}
-                        {params.length > 0 && <>Settings {params.map(([k, v]) => `${k}=${v}`).join(', ')}. </>}
+                        {params.length > 0 && <>Settings {settingsText(r.params)}. </>}
                         {r.hypothesisIds.length > 0 && (
                           <>
                             Tests{' '}

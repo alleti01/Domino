@@ -7,7 +7,7 @@ import { isNemotron, RUN_MODE } from '../../lib/labels'
 import type { LatestState } from '../../lib/report'
 import { href } from '../../lib/router'
 import type { RunEntry, RunMode, SiteData } from '../../types'
-import { allRuns, fmtDate, fmtDuration, isExample, shortRun, type RunRow } from '../derive'
+import { allRuns, changeTitle, fmtDate, fmtDuration, isExample, shortRun, type RunRow } from '../derive'
 import { Empty, ExampleTag, PageHeader, Panel, rowLink, SearchInput, Seg, Select, StateMark, Status } from '../ui'
 
 type ResultFilter = 'all' | 'reproduced_failure' | 'no_failure_observed' | 'inconclusive' | 'other'
@@ -17,6 +17,7 @@ function runState(run: RunEntry): LatestState {
   if (!run.load.ok) return 'unreadable'
   if (run.verdict) return run.verdict
   if (run.status === 'running') return 'incomplete'
+  if (run.status === 'stopped') return 'stopped'
   if (run.status === 'outage') return 'outage'
   return 'failed'
 }
@@ -54,7 +55,7 @@ export function RunsTable({ rows }: { rows: RunRow[] }) {
                     <StateMark state={runState(run)} label={false} />
                     <span className="dx-runs-text">
                       <a className="t-title" href={link}>
-                        {inv?.change?.title ?? caseEntry.label}
+                        {changeTitle(inv, caseEntry.label)}
                       </a>
                       <span className="t-sub">
                         {caseEntry.label} · <span className="dx-id">{shortRun(run.runId)}</span>

@@ -1,9 +1,9 @@
 import { emptyScorecard, sortRuns, toCaseEntry, toInvestigation, toScorecard, type RunFiles } from './adapter'
 import { errorMessage } from './errors'
-import type { RawCase, RawManifest, RawZetaris, ReceiptLine, TraceEvent } from './format'
+import type { RawCase, RawManifest, RawWatch, RawZetaris, ReceiptLine, TraceEvent } from './format'
 import { parseBundle, parseManifest, parseReceipts, parseScorecard, parseSummary, parseTrace, parseZetaris } from './parse'
 import type { DataSource } from './sources'
-import type { RunEntry, SiteData } from '../types'
+import type { RunEntry, SiteData, Verdict, WatchState } from '../types'
 
 export interface LoadedSite {
   site: SiteData
@@ -12,6 +12,31 @@ export interface LoadedSite {
 }
 
 const RUN_TRACE = /^runs\/([^/]+)\/trace\.jsonl$/
+const WATCH = /^runs\/watch-[^/]+\.json$/
+
+/** "12@abc…" → { number: 12, sha: "abc…" }. */
+function prKey(key: string) {
+  const [n, sha] = key.split('@')
+  const number = Number(n)
+  return Number.isFinite(number) ? { number, sha: sha ?? '' } : null
+}
+
+function parseWatch(text: string, file: string): WatchState {
+  const raw = JSON.parse(text) as Partial<RawWatch>
+  if (typeof raw.repo !== 'string') throw new Error(`${file}: no "repo"`)
+  return {
+    repo: raw.repo,
+    updatedAt: raw.updated_at ?? null,
+    current: raw.current ? (prKey(raw.current)?.number ?? null) : null,
+    queued: (raw.queue ?? []).flatMap((k) => prKey(String(k))?.number ?? []),
+    checked: Object.entries(raw.checked ?? {})
+      .flatMap(([k, v]) => {
+        const pr = prKey(k)
+        return pr ? [{ number: pr.number, headSha: pr.sha, at: v.at, verdicts: (v.verdicts ?? []) as Verdict[], runIds: v.run_ids ?? [] }] : []
+      })
+      .sort((a, b) => b.at.localeCompare(a.at)),
+  }
+}
 
 async function readOptional<T>(source: DataSource, path: string, parse: (text: string, file: string) => T, warnings: string[]) {
   if (!source.list().includes(path)) return null
@@ -23,9 +48,12 @@ async function readOptional<T>(source: DataSource, path: string, parse: (text: s
   }
 }
 
-/** A case for runs the manifest doesn't mention, named after the change. */
-function autoCase(changeId: string, title: string): RawCase {
-  return { case_id: `change-${changeId.replace(/[^\w-]+/g, '-')}`, label: title, kind: 'other', change_ids: [changeId] }
+/**
+ * A case for runs the manifest doesn't mention: named after the pull request
+ * it came from, else after the change.
+ */
+function autoCase(changeId: string, label: string): RawCase {
+  return { case_id: `change-${changeId.replace(/[^\w-]+/g, '-')}`, label, kind: 'other', change_ids: [changeId] }
 }
 
 /**
@@ -70,10 +98,11 @@ export async function loadSite(source: DataSource): Promise<LoadedSite> {
           bundle: await readOptional(source, `runs/${dir}/bundle.json`, parseBundle, warnings),
           receipts,
           parseWarnings: parsed.warnings,
+          reportMd: await readOptional(source, `runs/${dir}/report.md`, (t) => t, warnings),
         }
         const start = parsed.events.find((e): e is Extract<TraceEvent, { type: 'run_started' }> => e.type === 'run_started')
         const changeId = start?.change.change_id ?? summary?.change_id ?? 'unknown'
-        caseMeta = caseByChange.get(changeId) ?? autoCases.get(changeId) ?? autoCase(changeId, start?.change.title ?? changeId)
+        caseMeta = caseByChange.get(changeId) ?? autoCases.get(changeId) ?? autoCase(changeId, start?.change.source ? `${start.change.source.repo} #${start.change.source.number}` : (start?.change.title ?? changeId))
         if (!caseByChange.has(changeId)) autoCases.set(changeId, caseMeta)
         const inv = toInvestigation(files, { caseId: caseMeta.case_id, label: caseMeta.label, kind: caseMeta.kind, isPlaceholder })
         loaded.set(inv.runId, { files, caseMeta })
@@ -113,7 +142,12 @@ export async function loadSite(source: DataSource): Promise<LoadedSite> {
   const scorecard = rawScorecard ? toScorecard(rawScorecard, cases, isPlaceholder) : emptyScorecard(isPlaceholder)
   const zetaris: RawZetaris | null = await readOptional(source, manifest?.zetaris ?? 'zetaris.json', parseZetaris, warnings)
 
-  return { site: { isPlaceholder, cases, scorecard, zetaris, warnings }, runs: loaded }
+  const watches = (
+    await Promise.all(paths.filter((p) => WATCH.test(p)).map((p) => readOptional(source, p, parseWatch, warnings)))
+  ).filter((w): w is WatchState => !!w)
+  const project = { connected: !!source.connected, watches }
+
+  return { site: { isPlaceholder, project, cases, scorecard, zetaris, warnings }, runs: loaded }
 }
 
 /** Re-runs the adapter on the first `count` events of each case's latest run. */

@@ -5,7 +5,7 @@
 import { RUN_MODE, VERDICT } from '../../lib/labels'
 import { href } from '../../lib/router'
 import type { RunEntry, RunMode, SiteData } from '../../types'
-import { agreement, isExample, latestInv, siteStats } from '../derive'
+import { agreement, changeTitle, isExample, latestInv, siteStats } from '../derive'
 import { DIcon } from '../icons'
 import { ExampleTag, PageHeader, Panel, Status, VERDICT_SHORT } from '../ui'
 
@@ -129,7 +129,7 @@ export function Results({ site }: { site: SiteData }) {
                     <tr key={c.id}>
                       <th scope="row">
                         <a href={href.case(c.id)}>
-                          <span className="dx-rgrid-title">{latestInv(c)?.change?.title ?? c.label}</span>
+                          <span className="dx-rgrid-title">{changeTitle(latestInv(c), c.label)}</span>
                           <span className="dx-faint">{c.label}</span>
                         </a>
                       </th>

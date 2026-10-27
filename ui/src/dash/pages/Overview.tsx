@@ -4,7 +4,7 @@
 import { latestState, type LatestState } from '../../lib/report'
 import { href } from '../../lib/router'
 import type { CaseEntry, SiteData } from '../../types'
-import { agreement, allRuns, citedSources, fmtDate, isExample, latestInv, pct, siteStats } from '../derive'
+import { agreement, allRuns, changeTitle, citedSources, fmtDate, isExample, latestInv, pct, siteStats } from '../derive'
 import { DIcon, type DIconName } from '../icons'
 import { Alert, Empty, ExampleTag, PageHeader, Panel, Pips, VERDICT_SHORT } from '../ui'
 
@@ -13,6 +13,7 @@ const MARK: Record<LatestState, { icon: DIconName; tone: string }> = {
   no_failure_observed: { icon: 'minus-circle', tone: 'neutral' },
   inconclusive: { icon: 'help-circle', tone: 'warn' },
   incomplete: { icon: 'clock', tone: 'accent' },
+  stopped: { icon: 'pause', tone: 'muted' },
   failed: { icon: 'alert', tone: 'fail' },
   outage: { icon: 'alert', tone: 'warn' },
   unreadable: { icon: 'alert', tone: 'fail' },
@@ -21,6 +22,7 @@ const MARK: Record<LatestState, { icon: DIconName; tone: string }> = {
 
 const STATE_LABEL: Partial<Record<LatestState, string>> = {
   incomplete: 'In progress',
+  stopped: 'Stopped',
   failed: 'Run failed',
   outage: 'Outage',
   unreadable: 'Unreadable',
@@ -47,7 +49,7 @@ function ChangeRow({ c }: { c: CaseEntry }) {
           <DIcon name={m.icon} size={16} />
         </span>
         <span className="dx-ov-text">
-          <span className="dx-ov-title">{inv?.change?.title ?? c.label}</span>
+          <span className="dx-ov-title">{changeTitle(inv, c.label)}</span>
           <span className="dx-faint dx-ov-sys">
             {c.label} · {fmtDate(c.runs[0]?.startedAt)}
             {a.agreeing < a.decided && <span className="dx-ov-flag"> · repeats disagree</span>}
@@ -97,7 +99,7 @@ export function Overview({ site }: { site: SiteData }) {
   const breaks = site.cases.filter((c) => !needsAttention(c) && latestState(c) === 'reproduced_failure')
   const clean = site.cases.filter((c) => !needsAttention(c) && latestState(c) === 'no_failure_observed')
   // The bar: failures first, then the rest, so the share reads at a glance.
-  const order: LatestState[] = ['reproduced_failure', 'inconclusive', 'incomplete', 'failed', 'outage', 'unreadable', 'no_failure_observed', 'none']
+  const order: LatestState[] = ['reproduced_failure', 'inconclusive', 'incomplete', 'stopped', 'failed', 'outage', 'unreadable', 'no_failure_observed', 'none']
   const barCases = [...site.cases].sort((a, b) => order.indexOf(latestState(a)) - order.indexOf(latestState(b)))
 
   const runs = allRuns(site).filter((r) => r.inv)
@@ -179,7 +181,7 @@ export function Overview({ site }: { site: SiteData }) {
               <div className="dx-mix-bar" aria-label="Latest verdict for each change">
                 {barCases.map((c) => {
                   const st = latestState(c)
-                  const label = `${latestInv(c)?.change?.title ?? c.label} · ${c.label} · ${stateLabel(st)}`
+                  const label = `${changeTitle(latestInv(c), c.label)} · ${c.label} · ${stateLabel(st)}`
                   return <a key={c.id} href={href.case(c.id)} className={`tone-${MARK[st].tone}`} title={label} aria-label={label} />
                 })}
               </div>

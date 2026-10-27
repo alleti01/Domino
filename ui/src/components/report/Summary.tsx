@@ -11,6 +11,7 @@ import { Instrument } from './Instrument'
 const NO_VERDICT: Record<RunStatus, { title: string; text: string }> = {
   running: { title: 'No verdict in this saved trace', text: 'The recording ends before the experiments finished, so there is no result to report.' },
   complete: { title: 'No verdict recorded', text: 'The run finished without a verdict event.' },
+  stopped: { title: 'The run stopped before a verdict', text: 'Nothing new was written for over 11 minutes and the run never finished.' },
   failed: { title: 'The run failed before a verdict', text: 'No verdict was reached. The error is below.' },
   outage: { title: 'Outage: Nightshift or Zetaris was unavailable', text: 'This run is excluded from scoring rather than counted as a wrong answer.' },
 }

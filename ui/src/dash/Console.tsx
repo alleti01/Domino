@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { REPO_URL } from '../config'
 import { href, navigate, type Route } from '../lib/router'
 import type { SiteData } from '../types'
-import { allRuns, fmtAgo, isExample, shortRun } from './derive'
+import { allRuns, changeTitle, fmtAgo, isLiveRun, shortRun } from './derive'
 import { DIcon, type DIconName } from './icons'
 import { VERDICT_SHORT } from './ui'
 import { RUN_STATUS, VERDICT } from '../lib/labels'
@@ -71,18 +71,34 @@ interface Project {
   id: string
   name: string
   detail: string
+  /** Full owner/name, on hover. */
+  title?: string
 }
 
 function ProjectSwitcher({ site }: { site: SiteData | null }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const runs = site ? site.cases.reduce((n, c) => n + c.runs.length, 0) : 0
-  // Projects come from the command line; until one is connected there are none.
-  const connected = !!site && site.cases.length > 0
+  // Projects come from the command line (`domino dashboard`); until one is connected there are none.
+  const connected = !!site?.project?.connected
+  const watch = site?.project?.watches[0]
+  const repo = watch?.repo ?? (site ? allRuns(site).find((r) => r.inv?.change?.pullRequest)?.inv?.change?.pullRequest?.repo : undefined)
+  const waiting = watch ? watch.queued.length + (watch.current != null ? 1 : 0) : 0
   const projects: Project[] = connected
-    ? [{ id: 'project', name: site!.cases.some((c) => isExample(c.kind)) ? 'Example systems' : 'This repository', detail: `${site!.cases.length} changes · ${runs} runs` }]
+    ? [
+        {
+          id: 'project',
+          name: repo ? repo.split('/').pop()! : 'This project',
+          detail: watch
+            ? watch.current != null
+              ? `Checking #${watch.current}${waiting > 1 ? ` · ${waiting - 1} queued` : ''}`
+              : `Watching · ${waiting ? `${waiting} queued` : `${runs} runs`}`
+            : `${site!.cases.length} changes · ${runs} runs`,
+          title: repo,
+        },
+      ]
     : []
-  const current: Project = projects[0] ?? { id: 'none', name: 'No project', detail: site ? 'Add one with npx' : 'Loading…' }
+  const current: Project = projects[0] ?? { id: 'none', name: 'No project', detail: site ? 'Run domino dashboard' : 'Loading…' }
 
   useEffect(() => {
     if (!open) return
@@ -98,7 +114,7 @@ function ProjectSwitcher({ site }: { site: SiteData | null }) {
 
   return (
     <div className="dx-proj" ref={ref}>
-      <button type="button" className="dx-proj-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="dx-proj-btn" aria-haspopup="menu" aria-expanded={open} title={current.title} onClick={() => setOpen((o) => !o)}>
         <span className={`dx-proj-avatar${connected ? '' : ' is-empty'}`} aria-hidden="true">
           {connected ? current.name.charAt(0) : <DIcon name="plus" size={13} />}
         </span>
@@ -136,7 +152,7 @@ function ProjectSwitcher({ site }: { site: SiteData | null }) {
             </span>
             <span className="dx-proj-text">
               <span className="dx-proj-name">Add project</span>
-              <span className="dx-proj-detail">Connect a repository with npx</span>
+              <span className="dx-proj-detail">Connect a repository from the command line</span>
             </span>
           </a>
         </div>
@@ -171,11 +187,11 @@ function RecentRuns({ site, route, onNavigate }: { site: SiteData | null; route:
                 href={href.case(caseEntry.id, { runId: run.runId })}
                 aria-current={currentRun === run.runId ? 'page' : undefined}
                 onClick={onNavigate}
-                title={`${inv?.change?.title ?? caseEntry.label} · ${label}`}
+                title={`${changeTitle(inv, caseEntry.label)} · ${label}`}
               >
-                <span className={`dx-dot tone-${tone}${run.status === 'running' ? ' is-pulse' : ''}`} aria-hidden="true" />
+                <span className={`dx-dot tone-${tone}${isLiveRun(run) ? ' is-pulse' : ''}`} aria-hidden="true" />
                 <span className="dx-recent-text">
-                  <span className="dx-recent-title">{inv?.change?.title ?? caseEntry.label}</span>
+                  <span className="dx-recent-title">{changeTitle(inv, caseEntry.label)}</span>
                   <span className="dx-recent-meta">
                     {caseEntry.label.replace(/^.*· /, '')} · {fmtAgo(run.startedAt ? Date.parse(run.startedAt) : null)}
                   </span>
@@ -191,7 +207,7 @@ function RecentRuns({ site, route, onNavigate }: { site: SiteData | null; route:
 
 function Sidebar({ route, site, onNavigate }: { route: Route; site: SiteData | null; onNavigate: () => void }) {
   const active = activeNav(route)
-  const runningNow = site ? allRuns(site).filter((r) => r.run.status === 'running').length : 0
+  const runningNow = site ? allRuns(site).filter((r) => isLiveRun(r.run)).length : 0
   const counts: Partial<Record<NavKey, number>> = site
     ? { investigations: site.cases.length, runs: site.cases.reduce((n, c) => n + c.runs.length, 0) }
     : {}
@@ -268,7 +284,7 @@ function CommandPalette({ site, onClose }: { site: SiteData | null; onClose: () 
   const listRef = useRef<HTMLDivElement>(null)
 
   const items = useMemo<CmdItem[]>(() => {
-    const running = site ? allRuns(site).some((r) => r.run.status === 'running') : false
+    const running = site ? allRuns(site).some((r) => isLiveRun(r.run)) : false
     const pages: CmdItem[] = NAV.flatMap((g) => g.items)
       .filter((it) => it.key !== 'live' || running)
       .map((it) => ({
@@ -283,7 +299,7 @@ function CommandPalette({ site, onClose }: { site: SiteData | null; onClose: () 
       const inv = c.runs[0]?.load.ok ? c.runs[0].load.investigation : null
       return {
         group: 'Investigations',
-        label: inv?.change?.title ?? c.label,
+        label: changeTitle(inv, c.label),
         hint: c.label,
         to: href.case(c.id),
         icon: 'investigations',

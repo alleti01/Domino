@@ -7,14 +7,14 @@ import { filterCases, latestState, type LatestState } from '../../lib/report'
 import { href } from '../../lib/router'
 import { experimentSummary, type ExperimentSummary } from '../../lib/showcase'
 import type { CaseEntry, SiteData } from '../../types'
-import { agreement, fmtDate, fmtValue, isExample, latestInv } from '../derive'
+import { agreement, changeTitle, fmtDate, fmtValue, isExample, latestInv } from '../derive'
 import { DIcon } from '../icons'
 import { Empty, ExampleTag, humanize, PageHeader, Panel, Pips, rowLink, SearchInput, Seg, StateMark } from '../ui'
 
 type Filter = LatestState | 'all' | 'attention'
 type SortKey = 'change' | 'verdict' | 'last'
 
-const STATE_ORDER: LatestState[] = ['reproduced_failure', 'inconclusive', 'incomplete', 'failed', 'outage', 'unreadable', 'no_failure_observed', 'none']
+const STATE_ORDER: LatestState[] = ['reproduced_failure', 'inconclusive', 'incomplete', 'stopped', 'failed', 'outage', 'unreadable', 'no_failure_observed', 'none']
 
 function needsAttention(c: CaseEntry) {
   const a = agreement(c)
@@ -66,7 +66,7 @@ export function Investigations({ site }: { site: SiteData }) {
   const rows = useMemo(() => {
     const base = filter === 'attention' ? filterCases(site.cases, query, 'all').filter(needsAttention) : filterCases(site.cases, query, filter)
     const dir = sort.asc ? 1 : -1
-    const title = (c: CaseEntry) => latestInv(c)?.change?.title ?? c.label
+    const title = (c: CaseEntry) => changeTitle(latestInv(c), c.label)
     return [...base].sort((a, b) => {
       if (sort.key === 'change') return dir * title(a).localeCompare(title(b))
       if (sort.key === 'last') return dir * (a.runs[0]?.startedAt ?? '').localeCompare(b.runs[0]?.startedAt ?? '')
@@ -144,7 +144,7 @@ export function Investigations({ site }: { site: SiteData }) {
                     <tr key={c.id} {...rowLink(link)}>
                       <td className="dx-inv-change">
                         <a className="t-title" href={link}>
-                          {inv?.change?.title ?? c.label}
+                          {changeTitle(inv, c.label)}
                         </a>
                         <span className="t-sub">
                           {c.label}

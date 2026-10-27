@@ -3,7 +3,9 @@
 // here and src/data/format.ts.
 
 import type {
+  ChangeSource,
   EvidenceBundle,
+  FixVerification,
   ExperimentRequestedEvent,
   RawCase,
   RawScorecard,
@@ -17,11 +19,14 @@ import type {
   CausalLink,
   EvidenceItem,
   ExperimentRun,
+  FixCheck,
+  FixStatus,
   GraphEdge,
   Hypothesis,
   HypothesisStatus,
   Investigation,
   ModelReceipt,
+  PullRequestRef,
   RunEntry,
   RunStatus,
   Scorecard,
@@ -36,6 +41,8 @@ export interface RunFiles {
   /** Receipts for this run's request IDs, from receipts.jsonl. */
   receipts: Map<string, ReceiptLine>
   parseWarnings: string[]
+  /** report.md, when the agent wrote one. */
+  reportMd?: string | null
 }
 
 export interface CaseMeta {
@@ -203,6 +210,27 @@ function toRefs(ids: string[] | undefined, store: Map<string, EvidenceItem>, war
 
 // ---------- Investigation ----------
 
+/** An unfinished trace with nothing new for this long is shown as stopped. */
+export const STALE_MS = 11 * 60 * 1000
+
+const FIX_STATUS: Record<FixVerification['status'], FixStatus> = {
+  verified: 'held',
+  failed: 'did_not_hold',
+  untested: 'not_tested',
+  not_applicable: 'not_applicable',
+}
+
+/** "x-3cea…: api-gateway.p99 60 (baseline)" → "x-3cea…"; a row cite is its own id. */
+function citeId(cite: string) {
+  const m = cite.match(/^(x-[0-9a-f]+)\b/)
+  return m ? m[1] : cite.split(/\s/)[0]
+}
+
+function pullRequest(src: ChangeSource | null | undefined): PullRequestRef | null {
+  if (!src || src.kind !== 'pull_request' || typeof src.number !== 'number') return null
+  return { repo: src.repo, number: src.number, url: src.url, title: src.title, headSha: src.head_sha, folder: src.folder ?? null }
+}
+
 export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholder: boolean }): Investigation {
   const { events, summary, receipts: receiptLines } = files
   const warnings = [...files.parseWarnings]
@@ -272,6 +300,8 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
 
   // ----- Experiments: a request is answered by the next result -----
   const bundleExp = new Map((bundle?.experiments ?? []).map((x) => [x.experiment_id, x]))
+  const fixRaw = verdict?.fix_verification ?? bundle?.verdict.fix_verification ?? null
+  const fixIds = new Set(fixRaw?.experiments ?? [])
   const experiments: ExperimentRun[] = []
   let pending: ExperimentRequestedEvent | null = null
   for (const e of events) {
@@ -300,6 +330,9 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
       artifacts: r.artifacts ?? [],
       durationMs: r.duration_ms ?? null,
       reproduce: r.reproduce ?? fromBundle?.reproduce ?? null,
+      fixOverrides:
+        fromBundle?.fix_overrides ??
+        (fixIds.has(r.experiment_id) ? ((r.request.params?.overrides as unknown as Record<string, string | number | boolean>) ?? null) : null),
     })
   }
 
@@ -338,6 +371,9 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
   // ----- Status -----
   const errors = of('error').map((e) => ({ stepId: stepId(e), stage: e.stage, message: e.message, recoverable: e.recoverable }))
   let status: RunStatus = finished ? 'complete' : 'running'
+  // No run_finished and nothing written for a while: the agent stopped (CLAUDE.md §4).
+  const lastTs = Date.parse(events[events.length - 1]?.ts ?? '')
+  if (!finished && !Number.isNaN(lastTs) && Date.now() - lastTs > STALE_MS) status = 'stopped'
   // The agent logs an unrecoverable model error and then retries the step, so
   // an unfinished trace has only failed if it stops on such an error.
   const tail = events[events.length - 1]
@@ -375,6 +411,28 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
   }
 
   const cause = bundle?.verdict.cause ?? summary?.cause_claim ?? null
+
+  // ----- Fix check: re-runs with the suggested fix applied -----
+  const fix: FixCheck | null = fixRaw
+    ? {
+        status: FIX_STATUS[fixRaw.status] ?? 'not_tested',
+        overrides: fixRaw.overrides ?? {},
+        experimentIds: fixRaw.experiments ?? [],
+        reasons: fixRaw.reasons ?? [],
+        rounds: fixRaw.rounds ?? 0,
+      }
+    : null
+
+  // ----- Cause chain: claims with their cited evidence -----
+  type RawStep = { claim: string; cites: (string | { cite: string; refs: { ref: string }[] })[] }
+  const rawChain: RawStep[] = bundle?.cause_chain ?? verdict?.cause_chain ?? []
+  const causeChain = rawChain.map((step) => {
+    const cites = step.cites.map((c) => (typeof c === 'string' ? c : c.cite))
+    const ids = step.cites.flatMap((c) => (typeof c === 'string' ? [citeId(c)] : c.refs.map((r) => r.ref)))
+    return { claim: step.claim, cites, refs: refs([...new Set(ids)]) }
+  })
+  const chainCheck = bundle?.cause_chain_check
+  const causeChainOk = chainCheck == null ? null : chainCheck === 'passed'
   const mitigation = verdict?.mitigation ?? bundle?.verdict.mitigation?.text ?? null
 
   return {
@@ -387,6 +445,8 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
     replay: events.some((e) => e.replay),
     isPlaceholder: meta.isPlaceholder,
     startedAt: started?.ts ?? events[0].ts,
+    lastEventAt: events[events.length - 1]?.ts ?? null,
+    reportMd: files.reportMd ?? null,
     durationMs: finished?.duration_ms ?? summary?.duration_ms ?? null,
     change: started
       ? {
@@ -399,6 +459,7 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
           diff: started.change.diff ?? '',
           summary: parsed?.summary ?? null,
           entities: (parsed?.entities ?? []).map((x) => ({ id: x.id, kind: x.kind, sourceLine: x.source_line ?? null })),
+          pullRequest: pullRequest(started.change.source),
         }
       : null,
     chain: {
@@ -418,6 +479,9 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
           tested: verdict.tested,
           limitations: splitBullets(verdict.limitations),
           mitigation,
+          fix,
+          causeChain,
+          causeChainOk,
           wordingNote: wordingNote(verdict.headline, cause),
         }
       : null,

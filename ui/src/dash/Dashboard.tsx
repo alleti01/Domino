@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { SiteState } from '../data/useSite'
 import { href, type AppLocation } from '../lib/router'
-import type { CaseEntry, RunEntry } from '../types'
+import type { CaseEntry, RunEntry, SiteData } from '../types'
 import { Console, type Crumb } from './Console'
 import './dash.css'
 import { EvidenceDrawer } from './EvidenceDrawer'
@@ -39,14 +39,38 @@ function Loading() {
   )
 }
 
-function NoRuns() {
+/** Before the first run: not connected, connected and waiting, or watching a repository. */
+function NoRuns({ site }: { site: SiteData }) {
+  const watch = site.project.watches[0]
+  const docs = (
+    <a className="dx-link" href={href.docs('cli')}>
+      Command line reference
+    </a>
+  )
+  if (!site.project.connected) {
+    return (
+      <Panel>
+        <Empty icon="investigations" title="No project connected">
+          Run <code>domino dashboard</code> in your project and its checks appear here as they run. {docs}
+        </Empty>
+      </Panel>
+    )
+  }
+  if (watch) {
+    const n = watch.queued.length + (watch.current != null ? 1 : 0)
+    return (
+      <Panel>
+        <Empty icon="pr" title={`Watching ${watch.repo}`}>
+          {n ? `${n} pull request${n === 1 ? '' : 's'} queued.` : 'No pull requests waiting.'} Each one appears here as Domino checks it. {docs}
+        </Empty>
+      </Panel>
+    )
+  }
   return (
     <Panel>
-      <Empty icon="investigations" title="No project connected yet">
-        Connect a repository and its pull request checks appear here as they run.{' '}
-        <a className="dx-link" href={href.docs('cli')}>
-          How to add a project
-        </a>
+      <Empty icon="investigations" title="Connected, no runs yet">
+        Check a pull request with <code>domino pr &lt;number&gt; --repo owner/name</code>, or watch a repository with{' '}
+        <code>domino watch --repo owner/name</code>. {docs}
       </Empty>
     </Panel>
   )
@@ -102,15 +126,15 @@ export function Dashboard({
     switch (route.name) {
       case 'overview':
         crumbs = [ROOT, { label: 'Overview' }]
-        content = s.cases.length === 0 ? <NoRuns /> : <Overview site={s} />
+        content = s.cases.length === 0 ? <NoRuns site={s} /> : <Overview site={s} />
         break
       case 'cases-index':
         crumbs = [ROOT, { label: 'Investigations' }]
-        content = s.cases.length === 0 ? <NoRuns /> : <Investigations site={s} />
+        content = s.cases.length === 0 ? <NoRuns site={s} /> : <Investigations site={s} />
         break
       case 'runs':
         crumbs = [ROOT, { label: 'Runs' }]
-        content = s.cases.length === 0 ? <NoRuns /> : <Runs site={s} />
+        content = s.cases.length === 0 ? <NoRuns site={s} /> : <Runs site={s} />
         break
       case 'docs':
         crumbs = [ROOT, { label: 'Docs', href: href.docs() }]
@@ -126,18 +150,18 @@ export function Dashboard({
         break
       case 'results':
         crumbs = [ROOT, { label: 'Results' }]
-        content = s.cases.length === 0 ? <NoRuns /> : <Results site={s} />
+        content = s.cases.length === 0 ? <NoRuns site={s} /> : <Results site={s} />
         break
       case 'under-the-hood': {
         const sec = platformSection(route.section)
         crumbs = [ROOT, { label: 'Platform' }, { label: PLATFORM_TITLE[sec] }]
-        content = s.cases.length === 0 ? <NoRuns /> : <Platform site={s} section={sec} />
+        content = s.cases.length === 0 ? <NoRuns site={s} /> : <Platform site={s} section={sec} />
         break
       }
       case 'case':
         crumbs = [ROOT, { label: 'Investigations', href: href.cases }, { label: caseEntry?.label ?? route.caseId }]
-        if (!caseEntry) content = s.cases.length === 0 ? <NoRuns /> : <NotFound what="Investigation" />
-        else if (!run) content = caseEntry.runs.length === 0 ? <NoRuns /> : <NotFound what="Run" />
+        if (!caseEntry) content = s.cases.length === 0 ? <NoRuns site={s} /> : <NotFound what="Investigation" />
+        else if (!run) content = caseEntry.runs.length === 0 ? <NoRuns site={s} /> : <NotFound what="Run" />
         else content = <Report caseEntry={caseEntry} run={run} view={route.view} section={route.section} runParam={route.runId} />
         break
       default:

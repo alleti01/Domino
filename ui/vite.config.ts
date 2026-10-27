@@ -8,7 +8,7 @@ import { defineConfig, type Plugin } from 'vite'
 /**
  * Live data API for the dashboard (dev server and `vite preview` only).
  *
- *   GET api/domino/files          → { version, roots, files: [{ path, size, mtimeMs }] }
+ *   GET api/domino/files          → { version, roots, files: [{ path, size, mtimeMs, from }] }
  *   GET api/domino/file?path=…    → the file's text
  *
  * Serves ../samples (the landing page's saved runs) and, when DOMINO_RUNS_DIR
@@ -21,7 +21,10 @@ import { defineConfig, type Plugin } from 'vite'
 function dominoApi(): Plugin {
   const samplesDir = resolve(__dirname, '../samples')
   const runsDir = process.env.DOMINO_RUNS_DIR ? resolve(process.cwd(), process.env.DOMINO_RUNS_DIR) : null
-  const RUN_FILES = new Set(['trace.jsonl', 'summary.json', 'bundle.json'])
+  const RUN_FILES = new Set(['trace.jsonl', 'summary.json', 'bundle.json', 'report.md'])
+  // Files at the top of the runs folder: model receipts, `domino watch` queue
+  // state and the PR comments it wrote.
+  const ROOT_FILE = /^(receipts\.jsonl|watch-[\w.-]+\.json|pr-[\w.-]+\.md)$/
 
   /** Published path → absolute path on disk. */
   function index(): Map<string, string> {
@@ -36,6 +39,7 @@ function dominoApi(): Plugin {
     if (existsSync(samplesDir)) walk(samplesDir)
     if (runsDir && existsSync(runsDir)) {
       for (const ent of readdirSync(runsDir, { withFileTypes: true })) {
+        if (ent.isFile() && ROOT_FILE.test(ent.name)) out.set(`runs/${ent.name}`, join(runsDir, ent.name))
         if (!ent.isDirectory() || !ent.name.startsWith('run-')) continue
         for (const f of RUN_FILES) {
           const abs = join(runsDir, ent.name, f)

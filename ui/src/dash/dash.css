@@ -2664,6 +2664,34 @@ a.dx-evidence:hover {
   color: var(--dx-ink-2);
 }
 
+.dx-fixlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dx-fixlist > li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 20px;
+}
+
+.dx-fixlist > li + li {
+  border-top: 1px solid var(--dx-line);
+}
+
+.dx-fixlist > li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dx-fixlist b {
+  font-weight: 550;
+}
+
 .dx-arms-note b {
   font-weight: 550;
   color: var(--dx-ink);

@@ -22,6 +22,8 @@ export type SiteState =
 
 /** How often the dashboard asks the dev server whether any run file changed. */
 const POLL_MS = 4000
+/** How often in-progress runs are re-checked for having stopped. */
+const STALE_CHECK_MS = 60_000
 
 /**
  * The live source when the dev server's data API answers (re-made whenever a
@@ -41,7 +43,9 @@ function useLiveSource(enabled: boolean, projectOnly: boolean) {
       if (stopped) return
       const hasRuns = listing?.files.some((f) => f.path.endsWith('/trace.jsonl') && (!projectOnly || f.from === 'runs'))
       setLive((prev) => {
-        if (!listing || !hasRuns) return null
+        // The console stays on a connected project even before its first run.
+        const connected = projectOnly && !!listing?.roots.runs
+        if (!listing || (!hasRuns && !connected)) return null
         if (prev && prev.version === listing.version && prev.projectOnly === projectOnly) return { ...prev, checkedAt: Date.now() }
         return { source: liveSource(listing, projectOnly), version: listing.version, checkedAt: Date.now(), projectOnly }
       })
@@ -71,6 +75,17 @@ export function useSite(scope: 'site' | 'console' = 'site'): SiteState {
 
   const source: DataSource | null = live === undefined ? null : (live?.source ?? (scope === 'console' ? emptySource : defaultSource()))
 
+  // A run whose agent died writes nothing more, so the listing never changes.
+  // While any run is still in progress, reload once a minute so it turns
+  // "Stopped" once it has been quiet past STALE_MS.
+  const [tick, setTick] = useState(0)
+  const anyRunning = result?.ok && result.value.site.cases.some((c) => c.runs.some((r) => r.status === 'running'))
+  useEffect(() => {
+    if (!anyRunning) return
+    const t = setInterval(() => setTick((n) => n + 1), STALE_CHECK_MS)
+    return () => clearInterval(t)
+  }, [anyRunning])
+
   useEffect(() => {
     if (!source) return
     let cancelled = false
@@ -80,7 +95,7 @@ export function useSite(scope: 'site' | 'console' = 'site'): SiteState {
     return () => {
       cancelled = true
     }
-  }, [source])
+  }, [source, tick])
 
   // While a new live version loads, keep showing the previous one.
   const isLive = !!live && source === live.source

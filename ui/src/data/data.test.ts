@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
-import { toInvestigation, type RunFiles } from './adapter'
+import { describe, expect, it, vi } from 'vitest'
+import { STALE_MS, toInvestigation, type RunFiles } from './adapter'
 import { asRunning, loadSite } from './load'
 import { parseManifest, parseTrace } from './parse'
 import type { DataSource } from './sources'
@@ -120,9 +120,44 @@ describe('real agent traces', () => {
 
   it('treats a trace with no run_finished as still running', () => {
     const lines = traceText(REPRODUCED).trim().split('\n').slice(0, 12).join('\n')
+    // The clock just after the last event, so the trace isn't stale yet.
+    const last = Date.parse(JSON.parse(lines.split('\n').at(-1)!).ts)
+    vi.spyOn(Date, 'now').mockReturnValue(last + 1000)
     const partial = toInvestigation(files(lines), META)
+    vi.restoreAllMocks()
     expect(partial.status).toBe('running')
     expect(partial.verdict).toBeNull()
+  })
+
+  it('reads the fix check and the pull request a change came from (contract 0.2.0)', () => {
+    const lines = traceText(REPRODUCED)
+      .trim()
+      .split('\n')
+      .map((l) => {
+        const e = JSON.parse(l)
+        if (e.type === 'run_started')
+          e.change.source = { kind: 'pull_request', repo: 'o/r', number: 7, url: 'https://github.com/o/r/pull/7', title: 'T', head_sha: 'abc' }
+        if (e.type === 'verdict')
+          e.fix_verification = { status: 'verified', overrides: { 'svc.workers': 12 }, experiments: [], reasons: ['ok'], rounds: 2 }
+        return JSON.stringify(e)
+      })
+      .join('\n')
+    const inv = toInvestigation(files(lines), META)
+    expect(inv.change?.pullRequest?.number).toBe(7)
+    expect(inv.verdict?.fix).toMatchObject({ status: 'held', overrides: { 'svc.workers': 12 }, rounds: 2 })
+    // Without them: no pull request, and the fix counts as not tested.
+    const plain = toInvestigation(files(traceText(REPRODUCED)), META)
+    expect(plain.change?.pullRequest).toBeNull()
+    expect(plain.verdict?.fix).toBeNull()
+  })
+
+  it('shows an unfinished trace that has been quiet for over 11 minutes as stopped', () => {
+    const lines = traceText(REPRODUCED).trim().split('\n').slice(0, 12).join('\n')
+    const last = Date.parse(JSON.parse(lines.split('\n').at(-1)!).ts)
+    vi.spyOn(Date, 'now').mockReturnValue(last + STALE_MS + 1000)
+    const partial = toInvestigation(files(lines), META)
+    vi.restoreAllMocks()
+    expect(partial.status).toBe('stopped')
   })
 })
 
@@ -191,7 +226,9 @@ describe('loadSite', () => {
   })
 
   it('previews a run in progress by replaying only the first events', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(0) // a clock before the trace: not stale
     const site = asRunning(await loadSite(agentSamplesSource), 5)
+    vi.restoreAllMocks()
     const latest = site.cases[0].runs[0]
     expect(latest.status).toBe('running')
     expect(latest.load.ok && latest.load.investigation.verdict).toBeNull()
@@ -213,6 +250,7 @@ describe('wording rules', () => {
     /safe changes?\b/i, // the case category that checks for false alarms
     /'safe'/, // the case kind / contract literal
     /verified: false/, // contract: mitigations are never verified
+    /verified: boolean|'verified' \| 'failed'|verified: 'held'/, // contract literal for fix_verification; the UI says "fix held when re-run"
     /const OVERCLAIM/, // the detector itself
     /does not claim it would have prevented/, // honest disclaimer about real incidents
   ]

@@ -14,6 +14,7 @@ const STATE_LABEL: Record<LatestState, string> = {
   no_failure_observed: VERDICT.no_failure_observed.label,
   inconclusive: VERDICT.inconclusive.label,
   incomplete: 'No verdict in trace',
+  stopped: 'Stopped',
   failed: 'Run failed',
   outage: 'Outage',
   unreadable: 'Unreadable',
