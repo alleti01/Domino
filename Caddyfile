@@ -4,6 +4,8 @@
 }
 
 :{$PORT:8080} {
+	# Listen on IPv4 and IPv6 separately: Railway's health check and edge can use either.
+	bind 0.0.0.0 [::]
 	root * /srv
 	encode zstd gzip
 	header /assets/* Cache-Control "public, max-age=31536000, immutable"
