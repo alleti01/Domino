@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CaseEntry, RunEntry, SiteData } from './types'
-import { useSite, type PreviewState } from './data/useSite'
+import { useSite } from './data/useSite'
 import { useLocation, type Route } from './lib/router'
 import { stopSmoothScroll } from './lib/smoothScroll'
 import { LandingPage } from './components/landing/LandingPage'
@@ -51,8 +51,7 @@ const isLanding = (route: Route) => route.name === 'home' || route.name === 'try
 export default function App() {
   const loc = useLocation()
   const { route } = loc
-  const [preview, setPreview] = useState<PreviewState>('normal')
-  const state = useSite(preview)
+  const state = useSite(isLanding(loc.route) ? 'site' : 'console')
   const mainRef = useRef<HTMLElement>(null)
 
   const site = state.status === 'ready' ? state.site : null
@@ -98,5 +97,5 @@ export default function App() {
     )
   }
 
-  return <Dashboard loc={loc} state={state} preview={preview} onPreview={setPreview} caseEntry={caseEntry} run={run} />
+  return <Dashboard loc={loc} state={state} caseEntry={caseEntry} run={run} />
 }

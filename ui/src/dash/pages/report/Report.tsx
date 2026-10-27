@@ -6,16 +6,18 @@ import { DIcon } from '../../icons'
 import { Alert, ExampleTag, Id, KV, More, PageHeader, Panel, Select, Status, Tabs, Tag, VERDICT_SHORT } from '../../ui'
 import { EvidenceTab } from './Evidence'
 import { ExperimentsTab } from './Experiments'
+import { CheckPlayer } from '../LiveCheck'
 import { ActivityTab } from './Activity'
 import { PrTab } from './PrComment'
 import { SummaryTab } from './tabs'
 
-type TabId = 'summary' | 'evidence' | 'experiments' | 'activity' | 'pr'
+type TabId = 'summary' | 'replay' | 'evidence' | 'experiments' | 'activity' | 'pr'
 
 // Section names from older links (landing page, README) and the tab that holds them now.
 const SECTION_TAB: Record<string, TabId> = {
   summary: 'summary',
   verdict: 'summary',
+  replay: 'replay',
   evidence: 'evidence',
   path: 'evidence',
   context: 'evidence',
@@ -207,6 +209,7 @@ export function Report({
         current={tab}
         tabs={[
           { id: 'summary', label: 'Summary', href: at('summary') },
+          { id: 'replay', label: 'Replay', href: at('replay') },
           { id: 'evidence', label: 'Evidence', href: at('evidence') },
           { id: 'experiments', label: 'Experiments', href: at('experiments') },
           { id: 'activity', label: 'Activity', href: at('activity') },
@@ -221,6 +224,11 @@ export function Report({
         </div>
       )}
       {tab === 'evidence' && <EvidenceTab key={inv.runId} inv={inv} />}
+      {tab === 'replay' && (
+        <div className="dx-replay">
+          <CheckPlayer key={inv.runId} inv={inv} caseEntry={caseEntry} live={inv.status === 'running'} />
+        </div>
+      )}
       {tab === 'experiments' && <ExperimentsTab key={inv.runId} inv={inv} />}
       {tab === 'activity' && <ActivityTab inv={inv} />}
       {tab === 'pr' && <PrTab inv={inv} runParam={runParam} />}

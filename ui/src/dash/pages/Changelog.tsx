@@ -32,8 +32,17 @@ const RELEASES: Release[] = [
       {
         kind: 'New',
         title: 'Live check',
-        text: 'Watch what happens when a pull request opens: the pipeline stages, the dependency path drawing itself, the sandbox runs, a readable feed of each step, then the result. Replays a recorded run’s real events, sped up, and loops through every change.',
-        link: { label: 'Open Live check', href: href.live() },
+        text: 'Watch a pull request while Domino checks it: the pipeline stages, the dependency path drawing itself, the sandbox runs, a readable feed of each step, then the result. It appears in the sidebar only while a run is in progress.',
+      },
+      {
+        kind: 'New',
+        title: 'Replay tab',
+        text: 'Every report can replay its check in the same view, from the run’s recorded events, with pause and replay from the start.',
+      },
+      {
+        kind: 'Improved',
+        title: 'Only real runs',
+        text: 'The console shows nothing that isn’t a real run from a connected project: no placeholders, no sample or test-system runs. With no project connected it starts empty.',
       },
       {
         kind: 'New',
@@ -51,7 +60,7 @@ const RELEASES: Release[] = [
         kind: 'New',
         title: 'Live data from the agent',
         text: 'The dev server serves the run folders and the console checks for changes every 4 seconds. A run the agent is still writing shows as in progress and fills in without a reload.',
-        points: ['npm run dev reads ../samples', 'npm run dev:live also watches ../agent/runs'],
+        points: ['Reads the connected project’s runs folder (DOMINO_RUNS_DIR)', 'Runs still being written show as in progress'],
         link: { label: 'How it works', href: href.docs('data') },
       },
       {
@@ -78,7 +87,7 @@ const RELEASES: Release[] = [
         kind: 'Improved',
         title: 'Plain language everywhere',
         text: 'Identifiers read as words: “Rows visible to builder” instead of meta-store.rows_visible_to_builder, “is loaded by” instead of loaded_by, “Database catalog” instead of db_catalog. Raw IDs stay on hover.',
-        points: ['What each component does comes from the change’s own description', 'Example systems are labelled so placeholder names aren’t mistaken for real ones'],
+        points: ['What each component does comes from the change’s own description'],
       },
       {
         kind: 'Improved',

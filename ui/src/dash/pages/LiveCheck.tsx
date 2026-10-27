@@ -6,10 +6,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { VERDICT } from '../../lib/labels'
-import { href, navigate } from '../../lib/router'
+import { href } from '../../lib/router'
 import { experimentSummary } from '../../lib/showcase'
 import type { CaseEntry, ExperimentRun, Investigation, SiteData, TraceStep } from '../../types'
-import { componentRoles, isExample, latestInv, roleFor, shortRun } from '../derive'
+import { allRuns, componentRoles, isExample, roleFor, shortRun } from '../derive'
 import { DIcon, type DIconName } from '../icons'
 import { Empty, ExampleTag, humanize, PageHeader, Panel, Select, VERDICT_SHORT } from '../ui'
 import { MeasureBars, outcomeText } from './report/Answer'
@@ -133,7 +133,6 @@ function schedule(trace: TraceStep[]): number[] {
   return times
 }
 
-const RESULT_HOLD = 9000
 
 // ---------- View ----------
 
@@ -310,122 +309,150 @@ function Result({ inv, caseEntry }: { inv: Investigation; caseEntry: CaseEntry }
   )
 }
 
-export function LiveCheck({ site, caseId }: { site: SiteData; caseId: string | null }) {
-  const cases = useMemo(() => site.cases.filter((c) => latestInv(c)?.trace.length), [site.cases])
-  const idx = Math.max(0, cases.findIndex((c) => c.id === caseId))
-  const nextId = cases.length ? cases[(idx + 1) % cases.length].id : null
-  const caseEntry = cases[idx]
-  const inv = caseEntry ? latestInv(caseEntry) : null
-  const live = inv?.status === 'running'
-
-  const times = useMemo(() => (inv ? schedule(inv.trace) : []), [inv])
-  const [n, setN] = useState(0)
+/**
+ * The check as it happens: window, stages, path and feed, then the result.
+ * `live` shows a run still being written as its events arrive; otherwise the
+ * run's recorded events replay in order, sped up, and hold on the result.
+ */
+export function CheckPlayer({ inv, caseEntry, live }: { inv: Investigation; caseEntry: CaseEntry; live: boolean }) {
+  const times = useMemo(() => schedule(inv.trace), [inv])
+  const total = inv.trace.length
+  const [n, setN] = useState(live ? total : 0)
   const [playing, setPlaying] = useState(true)
   const [round, setRound] = useState(0)
-  const total = inv?.trace.length ?? 0
-  const finished = !live && n >= total && total > 0
 
-  // Restart whenever the change (or the round) changes.
-  useEffect(() => setN(live ? total : 0), [inv?.runId, round, live, total])
+  // Live: everything recorded so far. Replay: start over on a new run or a restart.
+  useEffect(() => setN(live ? total : 0), [inv.runId, round, live, total])
 
-  // Reveal the next event at its scheduled time.
   useEffect(() => {
-    if (!inv || live || !playing || n >= total) return
+    if (live || !playing || n >= total) return
     const wait = n === 0 ? times[0] : times[n] - times[n - 1]
     const t = setTimeout(() => setN((v) => v + 1), wait)
     return () => clearTimeout(t)
-  }, [inv, live, playing, n, total, times])
+  }, [live, playing, n, total, times])
 
-  // Hold on the result, then go on to the next change.
-  // Depends only on stable values: the live connection re-renders this page every few seconds.
+  const finished = live ? inv.status !== 'running' : n >= total && total > 0
+  const cues = cuesUpTo(inv, n)
+  const v = inv.verdict ? VERDICT[inv.verdict.verdict] : null
+  const statusLabel = finished && v ? (inv.verdict!.verdict === 'reproduced_failure' ? 'Failed' : inv.verdict!.verdict === 'inconclusive' ? 'Inconclusive' : 'Passed') : finished ? 'Ended' : 'Running'
+  const statusTone = finished && v ? v.tone : finished ? 'muted' : 'accent'
+
+  return (
+    <section className="dx-live-window" key={`${inv.runId}:${round}`}>
+      <header className="dx-live-head">
+        <DIcon name="pr" size={16} />
+        <div className="dx-live-title">
+          <b>{inv.change?.title ?? caseEntry.label}</b>
+          <span className="dx-faint">
+            {caseEntry.label} · {inv.change?.files.length ?? 0} file{inv.change?.files.length === 1 ? '' : 's'} ·{' '}
+            {live ? (finished ? `finished · run ${shortRun(inv.runId)}` : <span className="dx-live-flag">● Live</span>) : `replay of run ${shortRun(inv.runId)}`}
+          </span>
+        </div>
+        <span className={`dx-live-status tone-${statusTone}`}>
+          {statusLabel === 'Running' ? <span className="dx-live-spinner is-sm" /> : <span className="dx-dot" />}
+          Domino check · {statusLabel}
+        </span>
+        {!live && (
+          <span className="dx-live-controls">
+            <button type="button" className="dx-btn dx-btn-icon dx-btn-sm" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'}>
+              <DIcon name={playing ? 'pause' : 'play'} size={13} />
+            </button>
+            <button
+              type="button"
+              className="dx-btn dx-btn-icon dx-btn-sm"
+              onClick={() => {
+                setPlaying(true)
+                setRound((r) => r + 1)
+              }}
+              aria-label="Replay from the start"
+              title="Replay from the start"
+            >
+              <DIcon name="restart" size={13} />
+            </button>
+          </span>
+        )}
+      </header>
+
+      <StageRail inv={inv} n={n} done={finished} />
+
+      <div className="dx-live-body">
+        <div className="dx-live-left">{finished ? <Result inv={inv} caseEntry={caseEntry} /> : <PathView inv={inv} n={n} />}</div>
+        <div className="dx-live-right">
+          <Feed cues={cues} running={!finished} />
+        </div>
+      </div>
+
+      <div className="dx-live-progress" aria-hidden="true">
+        <span style={{ width: `${total ? (Math.min(n, total) / total) * 100 : 0}%` }} />
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Live check: only for pull requests being checked right now (runs the agent is
+ * still writing). It follows a run until it finishes and keeps its result on
+ * screen; past runs replay in their report's Replay tab.
+ */
+export function LiveCheck({ site, caseId }: { site: SiteData; caseId: string | null }) {
+  const rows = useMemo(() => allRuns(site).filter((r) => r.inv), [site])
+  const running = rows.filter((r) => r.run.status === 'running')
+  const [followId, setFollowId] = useState<string | null>(null)
+
+  // Follow the requested change's running run, else the newest running one; keep following it after it ends.
   useEffect(() => {
-    if (!finished || !playing || !nextId) return
-    const t = setTimeout(() => {
-      if (nextId === caseEntry?.id) setRound((r) => r + 1)
-      else navigate(href.live(nextId), { replace: true })
-    }, RESULT_HOLD)
-    return () => clearTimeout(t)
-  }, [finished, playing, nextId, caseEntry?.id])
+    const pick = running.find((r) => r.caseEntry.id === caseId) ?? running[0]
+    if (pick && (!followId || (caseId && pick.caseEntry.id === caseId && pick.run.runId !== followId))) setFollowId(pick.run.runId)
+  }, [running.map((r) => r.run.runId).join('|'), caseId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!caseEntry || !inv) {
+  const followed = rows.find((r) => r.run.runId === followId)
+
+  if (!followed) {
     return (
-      <Panel>
-        <Empty icon="play" title="Nothing to replay yet">
-          Runs appear here once the agent has written one.
-        </Empty>
-      </Panel>
+      <>
+        <PageHeader title="Live check" sub="Shows a pull request while Domino is checking it." />
+        <Panel>
+          <Empty icon="play" title="No pull request is being checked right now">
+            When the agent starts a run, it appears here as it happens. To watch a past check, open its report and choose the Replay tab.
+          </Empty>
+        </Panel>
+      </>
     )
   }
 
-  const cues = cuesUpTo(inv, n)
-  const v = inv.verdict ? VERDICT[inv.verdict.verdict] : null
-  const statusLabel = finished && v ? (inv.verdict!.verdict === 'reproduced_failure' ? 'Failed' : inv.verdict!.verdict === 'inconclusive' ? 'Inconclusive' : 'Passed') : 'Running'
-  const statusTone = finished && v ? v.tone : 'accent'
-
+  const others = running.filter((r) => r.run.runId !== followed.run.runId)
   return (
     <>
       <PageHeader
         title="Live check"
-        sub="What happens when a pull request opens: Domino reads the change, joins what the connected systems know, tests it in a sandbox and posts a check. This page replays a recorded run’s real events in order, sped up; a run still being written plays as it arrives."
-        meta={
-          <>
-            {isExample(caseEntry.kind) && <ExampleTag />}
-            <span className="dx-live-mode">{live ? '● Live run' : `Replay of recorded run ${shortRun(inv.runId)}`}</span>
-          </>
-        }
+        sub="A pull request while Domino checks it: the pipeline, the path it finds, the sandbox runs and a feed of each step, then the result."
+        meta={isExample(followed.caseEntry.kind) ? <ExampleTag /> : undefined}
         actions={
           <>
-            <Select
-              label="Change"
-              prefix="Change"
-              align="right"
-              value={caseEntry.id}
-              onChange={(id) => navigate(href.live(id))}
-              options={cases.map((c) => ({
-                value: c.id,
-                text: `${latestInv(c)?.change?.title ?? c.label} ${c.label}`,
-                tone: c.runs[0]?.verdict ? VERDICT[c.runs[0].verdict].tone : undefined,
-                label: c.label,
-              }))}
-            />
-            <button type="button" className="dx-btn dx-btn-icon" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'}>
-              <DIcon name={playing ? 'pause' : 'play'} size={14} />
-            </button>
-            <button type="button" className="dx-btn dx-btn-icon" onClick={() => setRound((r) => r + 1)} aria-label="Restart" title="Restart">
-              <DIcon name="restart" size={14} />
-            </button>
+            {others.length > 0 && (
+              <Select
+                label="Running checks"
+                prefix="Running"
+                align="right"
+                value={followed.run.runId}
+                onChange={(id) => setFollowId(id)}
+                options={[followed, ...others].map((r) => ({
+                  value: r.run.runId,
+                  text: `${r.inv!.change?.title ?? r.caseEntry.label} ${r.caseEntry.label}`,
+                  label: r.caseEntry.label,
+                  hint: shortRun(r.run.runId),
+                }))}
+              />
+            )}
+            {followed.run.status !== 'running' && (
+              <a className="dx-btn" href={href.case(followed.caseEntry.id, { runId: followed.run.runId })}>
+                Open the report <DIcon name="arrow-right" size={14} />
+              </a>
+            )}
           </>
         }
       />
-
-      <section className="dx-live-window" key={`${inv.runId}:${round}`}>
-        <header className="dx-live-head">
-          <DIcon name="pr" size={16} />
-          <div className="dx-live-title">
-            <b>{inv.change?.title ?? caseEntry.label}</b>
-            <span className="dx-faint">
-              {caseEntry.label} · {inv.change?.files.length ?? 0} file{inv.change?.files.length === 1 ? '' : 's'}
-            </span>
-          </div>
-          <span className={`dx-live-status tone-${statusTone}`}>
-            {statusLabel === 'Running' ? <span className="dx-live-spinner is-sm" /> : <span className="dx-dot" />}
-            Domino check · {statusLabel}
-          </span>
-        </header>
-
-        <StageRail inv={inv} n={n} done={finished} />
-
-        <div className="dx-live-body">
-          <div className="dx-live-left">{finished ? <Result inv={inv} caseEntry={caseEntry} /> : <PathView inv={inv} n={n} />}</div>
-          <div className="dx-live-right">
-            <Feed cues={cues} running={!finished} />
-          </div>
-        </div>
-
-        <div className="dx-live-progress" aria-hidden="true">
-          <span style={{ width: `${total ? (Math.min(n, total) / total) * 100 : 0}%` }} />
-        </div>
-      </section>
+      <CheckPlayer inv={followed.inv!} caseEntry={followed.caseEntry} live />
     </>
   )
 }

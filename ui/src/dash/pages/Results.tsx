@@ -176,7 +176,7 @@ export function Results({ site }: { site: SiteData }) {
             <li>
               <span className="dx-bench-name">Accuracy against the answer key</span>
               {measured.length === 0 ? (
-                <span className="dx-faint">Not measured yet. Appears when the scorecard is exported to samples/scorecard.json.</span>
+                <span className="dx-faint">Not measured yet. Appears when the project’s scorecard is exported.</span>
               ) : (
                 <table className="dx-table dx-table-compact dx-bench-table">
                   <tbody>
@@ -225,7 +225,7 @@ export function Results({ site }: { site: SiteData }) {
                 </table>
               ) : (
                 <span className="dx-faint">
-                  Not loaded yet. Runs with parts of Domino switched off (no tools, no experiments, no semantic layer) appear here once added to samples/runs/.
+                  Not loaded yet. Runs with parts of Domino switched off (no tools, no experiments, no semantic layer) appear here once the project has them.
                 </span>
               )}
             </li>

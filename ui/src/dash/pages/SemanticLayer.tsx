@@ -178,7 +178,7 @@ export function SemanticLayer({ site }: { site: SiteData }) {
         <Panel title="Platform export" flush>
           {!z ? (
             <p className="dx-faint" style={{ padding: '14px 16px' }}>
-              Onboarded sources, the compiled USL and data-quality rules appear here once the Zetaris export is written to samples/zetaris.json.
+              Onboarded sources, the compiled USL and data-quality rules appear here once the project’s Zetaris export is available.
             </p>
           ) : (
             <ul className="dx-bench">

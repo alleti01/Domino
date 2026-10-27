@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { PreviewState, SiteState } from '../data/useSite'
+import type { SiteState } from '../data/useSite'
 import { href, type AppLocation } from '../lib/router'
 import type { CaseEntry, RunEntry } from '../types'
 import { Console, type Crumb } from './Console'
@@ -42,9 +42,11 @@ function Loading() {
 function NoRuns() {
   return (
     <Panel>
-      <Empty icon="investigations" title="No investigations yet">
-        Copy the agent’s <code>runs/&lt;run_id&gt;/</code> folders into <code>samples/runs/</code>, or start the dev server with{' '}
-        <code>DOMINO_RUNS_DIR=../agent/runs</code> to watch the agent’s output live.
+      <Empty icon="investigations" title="No project connected yet">
+        Connect a repository and its pull request checks appear here as they run.{' '}
+        <a className="dx-link" href={href.docs('cli')}>
+          How to add a project
+        </a>
       </Empty>
     </Panel>
   )
@@ -67,15 +69,11 @@ const ROOT: Crumb = { label: 'Console', href: href.overview }
 export function Dashboard({
   loc,
   state,
-  preview,
-  onPreview,
   caseEntry,
   run,
 }: {
   loc: AppLocation
   state: SiteState
-  preview: PreviewState
-  onPreview: (p: PreviewState) => void
   caseEntry?: CaseEntry
   run?: RunEntry
 }) {
@@ -104,7 +102,7 @@ export function Dashboard({
     switch (route.name) {
       case 'overview':
         crumbs = [ROOT, { label: 'Overview' }]
-        content = <Overview site={s} />
+        content = s.cases.length === 0 ? <NoRuns /> : <Overview site={s} />
         break
       case 'cases-index':
         crumbs = [ROOT, { label: 'Investigations' }]
@@ -112,7 +110,7 @@ export function Dashboard({
         break
       case 'runs':
         crumbs = [ROOT, { label: 'Runs' }]
-        content = <Runs site={s} />
+        content = s.cases.length === 0 ? <NoRuns /> : <Runs site={s} />
         break
       case 'docs':
         crumbs = [ROOT, { label: 'Docs', href: href.docs() }]
@@ -128,12 +126,12 @@ export function Dashboard({
         break
       case 'results':
         crumbs = [ROOT, { label: 'Results' }]
-        content = <Results site={s} />
+        content = s.cases.length === 0 ? <NoRuns /> : <Results site={s} />
         break
       case 'under-the-hood': {
         const sec = platformSection(route.section)
         crumbs = [ROOT, { label: 'Platform' }, { label: PLATFORM_TITLE[sec] }]
-        content = <Platform site={s} section={sec} />
+        content = s.cases.length === 0 ? <NoRuns /> : <Platform site={s} section={sec} />
         break
       }
       case 'case':
@@ -154,8 +152,6 @@ export function Dashboard({
       route={route}
       site={site}
       crumbs={crumbs}
-      preview={preview}
-      onPreview={onPreview}
       mainRef={mainRef}
       full={route.name === 'live' && state.status === 'ready'}
       drawer={site && loc.evidenceId ? <EvidenceDrawer key={`${run?.runId}:${loc.evidenceId}`} id={loc.evidenceId} inv={inv} /> : null}

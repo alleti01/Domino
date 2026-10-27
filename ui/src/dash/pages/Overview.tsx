@@ -128,7 +128,7 @@ export function Overview({ site }: { site: SiteData }) {
       {site.cases.length === 0 ? (
         <Panel>
           <Empty icon="investigations" title="No investigations yet">
-            Runs the agent writes to <code>samples/runs/</code> appear here.
+            Connect a project and its pull request checks appear here.
           </Empty>
         </Panel>
       ) : (

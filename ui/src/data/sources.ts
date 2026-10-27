@@ -1,9 +1,8 @@
 // Where the dashboard reads files from. Paths are relative to the source root,
-// e.g. "manifest.json" or "runs/<run_id>/trace.jsonl". Sample runs are bundled
+// e.g. "manifest.json" or "runs/<run_id>/trace.jsonl". Saved runs are bundled
 // into the build so it works offline, from any folder, with no keys.
 
 import { LoadError } from './errors'
-import { placeholderFiles } from './placeholder'
 
 export interface DataSource {
   name: string
@@ -36,29 +35,9 @@ export const samplesSource = globSource(
   import.meta.glob('../../../samples/**/*.{json,jsonl}', { query: '?raw', import: 'default' }) as Loaders,
 )
 
-/** Abhi's real contract samples (stub world). Dev builds only. */
-export const agentSamplesSource = globSource(
-  'fixtures/agent-v0.1/',
-  '../../fixtures/agent-v0.1/',
-  (import.meta.env.DEV
-    ? import.meta.glob('../../fixtures/agent-v0.1/**/*.{json,jsonl}', { query: '?raw', import: 'default' })
-    : {}) as Loaders,
-)
-
-export const placeholderSource: DataSource = {
-  name: 'built-in placeholders/',
-  isPlaceholder: true,
-  list: () => [...placeholderFiles().keys()],
-  async readText(path) {
-    const text = placeholderFiles().get(path)
-    if (text == null) throw new LoadError(`placeholder ${path} not found`)
-    return text
-  },
-}
-
-/** Real samples once the agent has written any run, placeholders until then. */
+/** The saved runs. Empty until the agent has written one; the console then shows its empty state. */
 export function defaultSource(): DataSource {
-  return samplesSource.list().some((p) => p.endsWith('/trace.jsonl')) ? samplesSource : placeholderSource
+  return samplesSource
 }
 
 // ---------- Live: the dev server's data API (see vite.config.ts) ----------
@@ -66,7 +45,7 @@ export function defaultSource(): DataSource {
 export interface LiveListing {
   version: string
   roots: { samples: string; runs: string | null }
-  files: { path: string; size: number; mtimeMs: number }[]
+  files: { path: string; size: number; mtimeMs: number; from?: 'samples' | 'runs' }[]
 }
 
 /** The dev server's file listing, or null when there is no API (static build) or it is unreachable. */
@@ -81,9 +60,9 @@ export async function fetchListing(signal?: AbortSignal): Promise<LiveListing | 
   }
 }
 
-/** Files served live by the dev server, read on demand. */
-export function liveSource(listing: LiveListing): DataSource {
-  const paths = listing.files.map((f) => f.path)
+/** Files served live by the dev server, read on demand. `projectOnly` keeps just the connected project's runs. */
+export function liveSource(listing: LiveListing, projectOnly = false): DataSource {
+  const paths = listing.files.filter((f) => !projectOnly || f.from === 'runs').map((f) => f.path)
   return {
     name: [listing.roots.samples, listing.roots.runs]
       .filter((r): r is string => !!r)
@@ -97,4 +76,14 @@ export function liveSource(listing: LiveListing): DataSource {
       return res.text()
     },
   }
+}
+
+/** No runs at all: what the console reads when no project is connected. */
+export const emptySource: DataSource = {
+  name: 'no project connected',
+  isPlaceholder: false,
+  list: () => [],
+  async readText(path) {
+    throw new LoadError(`${path} not found`)
+  },
 }

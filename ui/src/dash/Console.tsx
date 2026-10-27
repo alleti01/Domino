@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { REPO_URL } from '../config'
-import type { PreviewState } from '../data/useSite'
-import { PREVIEW_STATES } from '../data/useSite'
 import { href, navigate, type Route } from '../lib/router'
 import type { SiteData } from '../types'
 import { allRuns, fmtAgo, isExample, shortRun } from './derive'
 import { DIcon, type DIconName } from './icons'
-import { Select, VERDICT_SHORT } from './ui'
+import { VERDICT_SHORT } from './ui'
 import { RUN_STATUS, VERDICT } from '../lib/labels'
 import { LogoMark } from '../components/LogoMark'
 
@@ -79,14 +77,12 @@ function ProjectSwitcher({ site }: { site: SiteData | null }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const runs = site ? site.cases.reduce((n, c) => n + c.runs.length, 0) : 0
-  const projects: Project[] = [
-    {
-      id: 'examples',
-      name: site?.cases.some((c) => isExample(c.kind)) ? 'Example systems' : 'This repository',
-      detail: site ? `${site.cases.length} changes · ${runs} runs` : 'Loading…',
-    },
-  ]
-  const current = projects[0]
+  // Projects come from the command line; until one is connected there are none.
+  const connected = !!site && site.cases.length > 0
+  const projects: Project[] = connected
+    ? [{ id: 'project', name: site!.cases.some((c) => isExample(c.kind)) ? 'Example systems' : 'This repository', detail: `${site!.cases.length} changes · ${runs} runs` }]
+    : []
+  const current: Project = projects[0] ?? { id: 'none', name: 'No project', detail: site ? 'Add one with npx' : 'Loading…' }
 
   useEffect(() => {
     if (!open) return
@@ -103,8 +99,8 @@ function ProjectSwitcher({ site }: { site: SiteData | null }) {
   return (
     <div className="dx-proj" ref={ref}>
       <button type="button" className="dx-proj-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span className="dx-proj-avatar" aria-hidden="true">
-          {current.name.charAt(0)}
+        <span className={`dx-proj-avatar${connected ? '' : ' is-empty'}`} aria-hidden="true">
+          {connected ? current.name.charAt(0) : <DIcon name="plus" size={13} />}
         </span>
         <span className="dx-proj-text">
           <span className="dx-proj-name">{current.name}</span>
@@ -115,6 +111,7 @@ function ProjectSwitcher({ site }: { site: SiteData | null }) {
       {open && (
         <div className="dx-proj-menu" role="menu">
           <div className="dx-proj-menu-label">Projects</div>
+          {projects.length === 0 && <div className="dx-proj-empty">No projects connected yet</div>}
           {projects.map((p) => (
             <button key={p.id} type="button" role="menuitemradio" aria-checked={p.id === current.id} className="dx-proj-item" onClick={() => setOpen(false)}>
               <span className="dx-proj-avatar is-sm" aria-hidden="true">
@@ -194,6 +191,7 @@ function RecentRuns({ site, route, onNavigate }: { site: SiteData | null; route:
 
 function Sidebar({ route, site, onNavigate }: { route: Route; site: SiteData | null; onNavigate: () => void }) {
   const active = activeNav(route)
+  const runningNow = site ? allRuns(site).filter((r) => r.run.status === 'running').length : 0
   const counts: Partial<Record<NavKey, number>> = site
     ? { investigations: site.cases.length, runs: site.cases.reduce((n, c) => n + c.runs.length, 0) }
     : {}
@@ -218,13 +216,22 @@ function Sidebar({ route, site, onNavigate }: { route: Route; site: SiteData | n
         {NAV.map((g, i) => (
           <div key={i}>
             {g.group && <div className="dx-nav-group">{g.group}</div>}
-            {g.items.map((it) => (
-              <a key={it.key} href={it.href} aria-current={active === it.key ? 'page' : undefined}>
-                <DIcon name={it.icon} />
-                {it.label}
-                {counts[it.key] != null && <span className="dx-nav-count">{counts[it.key]}</span>}
-              </a>
-            ))}
+            {g.items
+              .filter((it) => it.key !== 'live' || runningNow > 0 || active === 'live')
+              .map((it) => (
+                <a key={it.key} href={it.href} aria-current={active === it.key ? 'page' : undefined}>
+                  <DIcon name={it.icon} />
+                  {it.label}
+                  {it.key === 'live' && runningNow > 0 ? (
+                    <span className="dx-nav-live">
+                      <span className="dx-dot tone-ok is-pulse" aria-hidden="true" />
+                      {runningNow}
+                    </span>
+                  ) : (
+                    !!counts[it.key] && <span className="dx-nav-count">{counts[it.key]}</span>
+                  )}
+                </a>
+              ))}
           </div>
         ))}
       </nav>
@@ -240,49 +247,6 @@ function Sidebar({ route, site, onNavigate }: { route: Route; site: SiteData | n
         </div>
       </div>
     </aside>
-  )
-}
-
-/** Dev-only UI-state switcher, hidden until toggled with Ctrl+Shift+D so demos stay clean. */
-function DevPreview({ preview, onPreview }: { preview: PreviewState; onPreview: (p: PreviewState) => void }) {
-  const [on, setOn] = useState(() => {
-    try {
-      return localStorage.getItem('domino-dev') === '1'
-    } catch {
-      return false
-    }
-  })
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-        setOn((v) => {
-          try {
-            localStorage.setItem('domino-dev', v ? '0' : '1')
-          } catch {
-            /* storage unavailable */
-          }
-          return !v
-        })
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-  if (!import.meta.env.DEV || (!on && preview === 'normal')) return null
-  return (
-    <label className="dx-hide-sm dx-row" style={{ gap: 6 }}>
-      <span className="dx-faint" style={{ fontSize: 12 }}>
-        Dev
-      </span>
-      <Select<PreviewState>
-        label="UI state"
-        size="sm"
-        align="right"
-        value={preview}
-        onChange={onPreview}
-        options={PREVIEW_STATES.map((p) => ({ value: p.value, text: p.label, label: p.label }))}
-      />
-    </label>
   )
 }
 
@@ -304,7 +268,10 @@ function CommandPalette({ site, onClose }: { site: SiteData | null; onClose: () 
   const listRef = useRef<HTMLDivElement>(null)
 
   const items = useMemo<CmdItem[]>(() => {
-    const pages: CmdItem[] = NAV.flatMap((g) => g.items).map((it) => ({
+    const running = site ? allRuns(site).some((r) => r.run.status === 'running') : false
+    const pages: CmdItem[] = NAV.flatMap((g) => g.items)
+      .filter((it) => it.key !== 'live' || running)
+      .map((it) => ({
       group: 'Pages',
       label: it.label,
       to: it.href,
@@ -416,8 +383,6 @@ export function Console({
   route,
   site,
   crumbs,
-  preview,
-  onPreview,
   mainRef,
   drawer,
   full,
@@ -426,8 +391,6 @@ export function Console({
   route: Route
   site: SiteData | null
   crumbs: Crumb[]
-  preview: PreviewState
-  onPreview: (p: PreviewState) => void
   mainRef: React.RefObject<HTMLElement | null>
   drawer?: ReactNode
   /** Page fills the whole content area (no max width, to the bottom of the screen). */
@@ -477,7 +440,6 @@ export function Console({
             ))}
           </nav>
           <div className="dx-top-right">
-            <DevPreview preview={preview} onPreview={onPreview} />
             <button type="button" className="dx-btn dx-btn-sm dx-hide-sm" onClick={() => setCmdk(true)}>
               <DIcon name="search" size={14} /> Search <kbd className="dx-kbd">⌘K</kbd>
             </button>

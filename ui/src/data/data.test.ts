@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { toInvestigation, type RunFiles } from './adapter'
 import { asRunning, loadSite } from './load'
 import { parseManifest, parseTrace } from './parse'
-import { agentSamplesSource, placeholderSource, type DataSource } from './sources'
+import type { DataSource } from './sources'
 import { VERDICT } from '../lib/labels'
 
 // Abhi's real sample runs (contract v0.1.0), copied into fixtures/agent-v0.1.
@@ -12,6 +12,26 @@ const FIXTURES = join(__dirname, '../../fixtures/agent-v0.1/runs')
 const REPRODUCED = 'run-20261024012543-6d5dfe'
 const NO_FAILURE = 'run-20261024010745-222e42'
 const traceText = (run: string) => readFileSync(join(FIXTURES, run, 'trace.jsonl'), 'utf8')
+
+/** The fixture folder as a data source, read straight from disk (tests only; the app never shows it). */
+function fixtureSource(): DataSource {
+  const root = join(__dirname, '../../fixtures/agent-v0.1')
+  const paths: string[] = []
+  const walk = (dir: string, rel: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isDirectory()) walk(join(dir, e.name), `${rel}${e.name}/`)
+      else if (/\.(json|jsonl)$/.test(e.name)) paths.push(`${rel}${e.name}`)
+    }
+  }
+  walk(root, '')
+  return {
+    name: 'fixtures/agent-v0.1/',
+    isPlaceholder: false,
+    list: () => paths,
+    readText: async (p) => readFileSync(join(root, p), 'utf8'),
+  }
+}
+const agentSamplesSource = fixtureSource()
 
 function files(text: string, extra: Partial<RunFiles> = {}): RunFiles {
   const parsed = parseTrace(text, 'trace.jsonl')
@@ -151,7 +171,7 @@ describe('loadSite', () => {
   })
 
   it('gives runs the manifest does not mention a case of their own', async () => {
-    const noManifest: DataSource = { ...agentSamplesSource, list: () => agentSamplesSource.list().filter((p) => p !== 'manifest.json') }
+    const noManifest: DataSource = { ...agentSamplesSource, list: () => agentSamplesSource.list().filter((p: string) => p !== 'manifest.json') }
     const { site } = await loadSite(noManifest)
     expect(site.cases.map((c) => c.label).sort()).toEqual([
       'Give svc_builder read access to the mirror schema',
@@ -159,19 +179,10 @@ describe('loadSite', () => {
     ])
   })
 
-  it('loads the placeholder files end to end, Domino runs before comparison runs', async () => {
-    const { site } = await loadSite(placeholderSource)
-    expect(site.isPlaceholder).toBe(true)
-    expect(site.cases.map((c) => c.id)).toEqual(['cloudflare', 'crowdstrike', 'surprise', 'safe'])
-    expect(site.cases.flatMap((c) => c.runs).every((r) => r.load.ok)).toBe(true)
-    expect(site.cases[0].runs.map((r) => r.runMode)).toEqual(['full', 'full', 'no_experiments'])
-    expect(site.warnings).toEqual([])
-  })
-
   it('keeps the site working when one run file is broken', async () => {
     const broken: DataSource = {
-      ...placeholderSource,
-      readText: (p) => (p === 'runs/run-placeholder-safe-1/trace.jsonl' ? Promise.resolve('{nope') : placeholderSource.readText(p)),
+      ...agentSamplesSource,
+      readText: (p: string) => (p === `runs/${NO_FAILURE}/trace.jsonl` ? Promise.resolve('{nope') : agentSamplesSource.readText(p)),
     }
     const { site } = await loadSite(broken)
     const all = site.cases.flatMap((c) => c.runs)
@@ -180,7 +191,7 @@ describe('loadSite', () => {
   })
 
   it('previews a run in progress by replaying only the first events', async () => {
-    const site = asRunning(await loadSite(placeholderSource), 5)
+    const site = asRunning(await loadSite(agentSamplesSource), 5)
     const latest = site.cases[0].runs[0]
     expect(latest.status).toBe('running')
     expect(latest.load.ok && latest.load.investigation.verdict).toBeNull()

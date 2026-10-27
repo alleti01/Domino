@@ -5784,3 +5784,95 @@ a.dx-rcell:hover {
 .dx-nav {
   flex: none;
 }
+
+/* ---------- Replay tab (the live-check player inside a report) ---------- */
+.dx-replay .dx-live-window {
+  display: flex;
+  flex-direction: column;
+  height: clamp(560px, calc(100vh - 230px), 820px);
+}
+
+.dx-replay .dx-live-head,
+.dx-replay .dx-live-stages,
+.dx-replay .dx-live-progress {
+  flex: none;
+}
+
+.dx-replay .dx-live-body {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.dx-replay .dx-live-left {
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+}
+
+.dx-replay .dx-live-path {
+  width: min(100%, 440px);
+}
+
+.dx-replay .dx-live-right {
+  overflow: hidden;
+}
+
+.dx-replay .dx-live-feed {
+  max-height: none;
+}
+
+.dx-replay .dx-live-result {
+  width: min(100%, 680px);
+}
+
+.dx-live-controls {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.dx-live-flag {
+  color: var(--dx-ok);
+  font-weight: 500;
+}
+
+.dx-nav-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--dx-ok);
+  font-family: var(--dx-mono);
+  font-size: 11px;
+}
+
+.dx-nav-live .dx-dot {
+  width: 7px;
+  height: 7px;
+}
+
+@media (max-width: 900px) {
+  .dx-replay .dx-live-window {
+    height: auto;
+  }
+
+  .dx-replay .dx-live-body {
+    grid-template-rows: none;
+  }
+
+  .dx-replay .dx-live-feed {
+    max-height: 360px;
+  }
+}
+
+.dx-proj-avatar.is-empty {
+  border: 1px dashed var(--dx-ink-4);
+  background: var(--dx-panel-2);
+  color: var(--dx-ink-3);
+}
+
+.dx-proj-empty {
+  padding: 4px 8px 8px;
+  color: var(--dx-ink-3);
+  font-size: 12.5px;
+}

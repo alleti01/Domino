@@ -11,9 +11,9 @@ import { defineConfig, type Plugin } from 'vite'
  *   GET api/domino/files          → { version, roots, files: [{ path, size, mtimeMs }] }
  *   GET api/domino/file?path=…    → the file's text
  *
- * Serves ../samples (manifest, frozen runs) and, when DOMINO_RUNS_DIR is set,
- * every top-level runs/<run_id>/ folder the agent writes there, e.g.
- *   DOMINO_RUNS_DIR=../agent/runs npm run dev
+ * Serves ../samples (the landing page's saved runs) and, when DOMINO_RUNS_DIR
+ * is set, every top-level runs/<run_id>/ folder in that project's runs folder.
+ * Each file says which it came from; the console reads only the project's.
  * The dashboard polls the listing and reloads when a file changes, so a run
  * the agent is writing shows up while it is still in progress. A static build
  * has no API and falls back to the runs bundled at build time.
@@ -62,7 +62,9 @@ function dominoApi(): Plugin {
       if (url.pathname.endsWith('/files')) {
         const list = [...files].map(([path, abs]) => {
           const st = statSync(abs)
-          return { path, size: st.size, mtimeMs: Math.round(st.mtimeMs) }
+          // Where the file came from: the repo's saved sample runs, or the connected project's runs folder.
+          const from = runsDir && abs.startsWith(runsDir) ? 'runs' : 'samples'
+          return { path, size: st.size, mtimeMs: Math.round(st.mtimeMs), from }
         })
         const version = createHash('sha1')
           .update(list.map((f) => `${f.path}:${f.size}:${f.mtimeMs}`).join('\n'))

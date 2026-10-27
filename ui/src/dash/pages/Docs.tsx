@@ -117,18 +117,21 @@ const PAGES: DocPage[] = [
         title: 'Run the console',
         body: (
           <>
-            <p>The console reads saved runs from the repository and needs no keys.</p>
             <Code lines={['cd ui', 'npm install', 'npm run dev', '# open http://localhost:5173']} />
+            <Note>With no project connected the console is empty; it never shows sample or placeholder data.</Note>
           </>
         ),
       },
       {
-        id: 'live',
-        title: 'Watch the agent live',
+        id: 'connect',
+        title: 'Connect a project',
         body: (
           <>
-            <p>Also watch the agent’s own output folder. Runs appear while they are being written and update every few seconds.</p>
-            <Code lines={['cd ui', 'npm run dev:live', '# same as DOMINO_RUNS_DIR=../agent/runs vite']} />
+            <p>
+              The console only shows runs from a connected project; there is no sample data. Until the npx command is ready, point the dev server at a
+              project’s runs folder. Runs appear as the agent writes them and update every few seconds.
+            </p>
+            <Code lines={['cd ui', 'DOMINO_RUNS_DIR=/path/to/project/runs npm run dev']} />
           </>
         ),
       },
@@ -194,6 +197,11 @@ const PAGES: DocPage[] = [
         body: <p>What the agent did, as milestones in order, with the model calls and raw events one click away.</p>,
       },
       {
+        id: 'replay-tab',
+        title: 'Replay',
+        body: <p>The check as it happened: the pipeline, the path, the sandbox runs and a feed of each step, replayed from the run’s recorded events.</p>,
+      },
+      {
         id: 'pr',
         title: 'PR comment',
         body: <p>The check and comment Domino would post. Copy as Markdown gives the exact text to paste into a pull request.</p>,
@@ -248,26 +256,26 @@ const PAGES: DocPage[] = [
   {
     id: 'live-check',
     group: 'Using the console',
-    title: 'Live check',
-    lede: 'What happens when a pull request opens, step by step.',
+    title: 'Live check and Replay',
+    lede: 'Watch a pull request while Domino checks it, or replay any past check.',
     sections: [
       {
-        id: 'what',
-        title: 'What it shows',
+        id: 'live',
+        title: 'Live check',
         body: (
           <p>
-            The pipeline stages, the dependency path drawing itself as Domino finds it, the sandbox runs, a readable feed of each step, then the result.
-            It moves through every change on a loop; pause, restart or pick a change at the top.
+            Appears in the sidebar, with a green count, only while the agent is writing a run. It shows the pipeline stages, the dependency path as Domino
+            finds it, the sandbox runs and a readable feed of each step, then the result, and keeps the result on screen when the run finishes.
           </p>
         ),
       },
       {
         id: 'replay',
-        title: 'Replay or live',
+        title: 'Replay',
         body: (
           <p>
-            It plays a recorded run’s real events in their real order, sped up, and says which run it is replaying. With <code>npm run dev:live</code>, a run
-            the agent is still writing plays as it arrives.
+            Every report has a Replay tab that plays that run’s recorded events in the same view, in their real order and sped up. Pause it, or replay
+            it from the start.
           </p>
         ),
       },
@@ -284,13 +292,12 @@ const PAGES: DocPage[] = [
         title: 'Run files',
         body: (
           <>
-            <p>Each run is a folder the agent writes. The console groups runs into changes by their change ID.</p>
+            <p>Each run is a folder the agent writes in the project’s runs folder. The console groups runs into changes by their change ID.</p>
             <Code
               label="Layout"
               lines={[
-                'samples/',
-                '  manifest.json            # names the changes (optional)',
-                '  runs/<run_id>/',
+                '<project runs folder>/',
+                '  <run_id>/',
                 '    trace.jsonl            # every event, in order',
                 '    summary.json           # verdict and counts',
                 '    bundle.json            # evidence bundle',
@@ -304,9 +311,9 @@ const PAGES: DocPage[] = [
         title: 'Live data API',
         body: (
           <>
-            <p>The dev server serves the run folders. The console checks the listing every 4 seconds and reloads when a file changes.</p>
+            <p>The dev server serves the connected project’s runs folder (DOMINO_RUNS_DIR). The console checks the listing every 4 seconds and reloads when a file changes.</p>
             <Code label="Endpoints" lines={['GET api/domino/files          # { version, roots, files }', 'GET api/domino/file?path=…    # one file’s text']} />
-            <Note>A static build has no API; it shows the runs bundled at build time.</Note>
+            <Note>A static build has no live connection, so its console stays empty.</Note>
           </>
         ),
       },
