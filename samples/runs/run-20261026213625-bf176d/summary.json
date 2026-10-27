@@ -1,0 +1,22 @@
+{
+  "run_id": "run-20261026213625-bf176d",
+  "change_id": "w-h9c5/change/0042",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader, expanding the reader's table access from the default schema to all tables in database r0. Experiment comparison shows: baseline loaded_entries=99 → candidate loaded_entries=198 (2x increase). worker-runtime max_entries=200 (row_id: w-h9c5/setting/worker-runtime.max_entries). The 198 loaded entries operate at 99% of the 200-entry limit, leaving only 2 entries of headroom. The meta-store rows_visible_to_builder also doubled from 99 to 198, confirming the grant expanded query scope. While 198 < 200 technically stays under the limit, the proximity is concerning.",
+  "model_prediction": "unsure",
+  "evidence_refs": [
+    "telemetry:qt-0003",
+    "x-251aab3cdabc49ef",
+    "x-f40892ba060344c6",
+    "x-1833518d0388442b"
+  ],
+  "model_calls": 20,
+  "experiments": 3,
+  "duration_ms": 127062,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

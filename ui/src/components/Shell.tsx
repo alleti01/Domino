@@ -3,6 +3,7 @@ import { PREVIEW_STATES, type PreviewState } from '../data/useSite'
 import { trapTab } from '../lib/focus'
 import { href, type Route } from '../lib/router'
 import { Icon, type IconName } from './Icon'
+import { LogoMark } from './LogoMark'
 
 const NAV: { label: string; href: string; icon: IconName; active: (r: Route) => boolean }[] = [
   { label: 'Investigations', href: href.cases, icon: 'list', active: (r) => r.name === 'cases-index' || r.name === 'case' },
@@ -13,10 +14,7 @@ const NAV: { label: string; href: string; icon: IconName; active: (r: Route) => 
 function Brand() {
   return (
     <a className="brand" href={href.cases} aria-label="Domino investigations">
-      <span className="brand-mark" aria-hidden="true">
-        <span />
-        <span />
-      </span>
+      <LogoMark className="brand-mark" size={19} />
       Domino
     </a>
   )

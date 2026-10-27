@@ -8,6 +8,9 @@ import './index.css'
 import './landing.css'
 import './motion.css'
 import './story.css'
+import '@fontsource-variable/geist'
+import '@fontsource-variable/geist-mono'
+import './giga.css'
 import App from './App.tsx'
 
 // The app decides where each page starts (top, or a ?section=), not the browser.

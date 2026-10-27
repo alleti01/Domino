@@ -1,0 +1,138 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026214926-89b259",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-n7v2/change/0291",
+    "world_id": "w-n7v2",
+    "title": "Content update: rule 0291 for template T7",
+    "files": [
+      "content/rules/T7/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T7/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f02\": \"m-0291-f02\",\n+    \"f05\": \"m-0291-f05\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T7\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Rule-0291 for template T7: safe - passes validation and integrates without breaking the content pipeline or interpreter",
+    "cause": "The experimental comparison between baseline (x-c1a26d5750494637) and candidate (x-8f4a3841aaca4d71) shows:\n- Baseline: rule-validator checked 3 rules, 0 rejected, exit_code=0\n- Candidate: rule-validator checked 4 rules (including rule-0291), 0 rejected, exit_code=0\n- Content-pipeline shipped 3 rules (baseline) vs 4 rules (candidate) successfully\n- Content-interpreter processed 50 events with 3/4 rules, 0 matches, exit_code=0 in both variants\nThe hypothesis that rule-0291 would fail due to field_count mismatch (template T7 requires 21 fields but rule-0291 specifies only f02/f05) is refuted by the experimental data showing 0 rejections and exit_code=0 in both baseline and candidate runs.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-c1a26d5750494637: baseline · workload default → all assertions passed",
+      "x-8f4a3841aaca4d71: candidate · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "- Experiments used default workload; behavior under other workloads not tested\n- The field_count contract check mechanism was not directly observable; refutation based on end-to-end experiment results\n- No test of edge cases with high event volumes or concurrent rule loads",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null,
+    "fix_verification": null
+  },
+  "causal_chain": [],
+  "experiments": [
+    {
+      "experiment_id": "x-c1a26d5750494637",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test baseline operation to understand normal metrics before applying the change",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-n7v2 baseline"
+    },
+    {
+      "experiment_id": "x-8f4a3841aaca4d71",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test with the change applied to see if rule-0291 causes any validation failures",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "490fb600429b71823a4207eb0f1bb3e4565bab113d342e950d7db6fe2a1baaca",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-n7v2 candidate"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Rule-0291 will fail rule-validator validation because it only specifies 2 criteria fields (f02, f05) while template T7 requires field_count=21, and the rule-validator checks field_count against the template",
+      "mechanism": "The rule-validator.validate interface checks the rule's field_count against template:T7's declared field_count=21. Rule-0291 has only 2 criteria fields (f02, f05), which likely results in field_count=2, failing the check against the required 21.",
+      "status": "refuted",
+      "evidence_for": []
+    }
+  ],
+  "cited_evidence": [],
+  "models": {
+    "calls": 19,
+    "failed": 1,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 17,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_jom1ylwv",
+      "req_skih69rq",
+      "req_knb521mw",
+      "req_pr0ggoyk",
+      "req_tvg0vrhv",
+      "req_7iqvwrdq",
+      "req_2dm2vl30",
+      "req_ymuppdit",
+      "req_xc0vzv23",
+      "req_81grgjco",
+      "req_4hhnqnl6",
+      "req_skzf6aar",
+      "req_kwuz43y4",
+      "req_cc01wfx6",
+      "req_87wox0mu",
+      "req_c84pqnjy",
+      "req_kiqct0nq",
+      "req_j4o0ctv5"
+    ],
+    "total_latency_ms": 115263,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 3,
+    "reads": 0,
+    "updates": 1
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 8,
+  "duration_ms": 140707
+}

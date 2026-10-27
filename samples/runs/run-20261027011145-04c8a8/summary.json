@@ -1,0 +1,25 @@
+{
+  "run_id": "run-20261027011145-04c8a8",
+  "change_id": "w-t3n6/change/0042",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "GRANT SELECT ON r0.* TO svc_bundle_reader makes previously implicit access explicit, causing bundle-builder to read 180 rows instead of 90, exceeding worker-runtime max_entries=150. The smallest mitigation is to replace GRANT SELECT ON r0.* with column-specific grants GRANT SELECT ON r0.column1, r0.column2, ... TO svc_bundle_reader where only the columns needed by bundle-builder are granted, preventing the row count from doubling from 90 to 180.",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "change_records:cr-0006",
+    "hash:1fe3f00ea2e0ae28",
+    "hash:52a2cb3aa42995b4",
+    "hash:38d37b6df1fde757",
+    "x-4a7e34873d28459c",
+    "x-0c166c111af146e5",
+    "db_catalog:ti-0019"
+  ],
+  "model_calls": 26,
+  "experiments": 7,
+  "duration_ms": 343022,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

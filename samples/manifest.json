@@ -8,28 +8,90 @@
       "label": "Shard grants (w-k7m2)",
       "kind": "practice",
       "description": "Released practice world. Synthetic data.",
-      "change_ids": ["w-k7m2/change/0042"]
+      "change_ids": [
+        "w-k7m2/change/0042"
+      ]
     },
     {
       "case_id": "w-h9c5",
       "label": "Shard grants (w-h9c5)",
       "kind": "practice",
       "description": "Released practice world. Synthetic data.",
-      "change_ids": ["w-h9c5/change/0042"]
+      "change_ids": [
+        "w-h9c5/change/0042"
+      ]
     },
     {
       "case_id": "w-g4k8",
       "label": "Rule 0291, template T4 (w-g4k8)",
       "kind": "practice",
       "description": "Released practice world. Synthetic data.",
-      "change_ids": ["w-g4k8/change/0291"]
+      "change_ids": [
+        "w-g4k8/change/0291"
+      ]
     },
     {
       "case_id": "w-r1z5",
       "label": "Rule 0291, template T7 (w-r1z5)",
       "kind": "practice",
       "description": "Released practice world. Synthetic data.",
-      "change_ids": ["w-r1z5/change/0291"]
+      "change_ids": [
+        "w-r1z5/change/0291"
+      ]
+    },
+    {
+      "case_id": "w-d2v4",
+      "label": "Shard grants (w-d2v4)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": [
+        "w-d2v4/change/0042"
+      ]
+    },
+    {
+      "case_id": "w-t3n6",
+      "label": "Shard grants (w-t3n6)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": [
+        "w-t3n6/change/0042"
+      ]
+    },
+    {
+      "case_id": "w-p4r8",
+      "label": "Shard grants (w-p4r8)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": [
+        "w-p4r8/change/0042"
+      ]
+    },
+    {
+      "case_id": "w-x3c9",
+      "label": "Rule 0291, template T7 (w-x3c9)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": [
+        "w-x3c9/change/0291"
+      ]
+    },
+    {
+      "case_id": "w-y6p3",
+      "label": "Rule 0291, template T7 (w-y6p3)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": [
+        "w-y6p3/change/0291"
+      ]
+    },
+    {
+      "case_id": "w-n7v2",
+      "label": "Rule 0291, template T7 (w-n7v2)",
+      "kind": "practice",
+      "description": "Released practice world. Synthetic data.",
+      "change_ids": [
+        "w-n7v2/change/0291"
+      ]
     }
   ]
 }

@@ -1,0 +1,236 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261027005412-e072a0",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-y6p3/change/0291",
+    "world_id": "w-y6p3",
+    "title": "Content update: rule 0291 for template T7",
+    "files": [
+      "content/rules/T7/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T7/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f02\": \"m-0291-f02\",\n+    \"f21\": \"m-0291-f21\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T7\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Change w-y6p3/change/0291 breaks: rule-0291 rejected by rule-validator with message \"fields ['f21'] beyond 20\"",
+    "cause": "The change adds rule-0291 with criteria on f02 and f21 for template T7. The dependency chain: change → rule-0291 interface → template:T7 (matches_on=f02,f21) → content-pipeline → rule-validator.validate. The rule-validator (ic-0045) checks the rule against template:T7's field_count=21. The rule-validator also enforces a inputs_supplied=20 constraint (ic-0051). Rule-0291 references field f21, which exceeds the 20-field limit enforced by the validator, causing rejection. Baseline experiment x-41215c45e02445e7 had 0 rejections; candidate experiment x-b62718f0eebc4918 rejected 1 rule with message \"rule-0291: rejected, fields ['f21'] beyond 20\". The rejected rule was held back by validation, so only 3 of 4 rules were shipped to the interpreter (exit_code=0, matches=0).",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-41215c45e02445e7: baseline · workload default → all assertions passed",
+      "x-b62718f0eebc4918: candidate · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "The investigator predicted a failure, but the experiments showed none under the tested conditions; read its explanation with caution.",
+      "The exact source of the \"20\" limit in the rejection message was not independently verified - it could be the validator's internal constraint",
+      "the inputs_supplied=20 contract (ic-0051/ic-0046)",
+      "or the template's field_count=21 (ic-0044). No test was run to isolate which specific contract triggered the rejection.",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null,
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "h1: rule-validator.validate (ic-0045) checks the rule's field references against its internal limit. The validator has a 20-field threshold; rule-0291 references f21, surpassing this limit and causing rejection. Template T7's field_count=21 (ic-0044) is the declared contract, but the validator enforces a stricter 20-limit.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0043",
+          "facts": "component=rule-0291, relation=instance_of, target=template:T7, contract_key=matches_on, contract_value=f02,f21"
+        }
+      ]
+    },
+    {
+      "edge": "h1: rule-validator.validate (ic-0045) checks the rule's field references against its internal limit. The validator has a 20-field threshold; rule-0291 references f21, surpassing this limit and causing rejection. Template T7's field_count=21 (ic-0044) is the declared contract, but the validator enforces a stricter 20-limit.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0044",
+          "facts": "component=template-registry, relation=declares, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    },
+    {
+      "edge": "h1: rule-validator.validate (ic-0045) checks the rule's field references against its internal limit. The validator has a 20-field threshold; rule-0291 references f21, surpassing this limit and causing rejection. Template T7's field_count=21 (ic-0044) is the declared contract, but the validator enforces a stricter 20-limit.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0045",
+          "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    },
+    {
+      "edge": "h1: rule-validator.validate (ic-0045) checks the rule's field references against its internal limit. The validator has a 20-field threshold; rule-0291 references f21, surpassing this limit and causing rejection. Template T7's field_count=21 (ic-0044) is the declared contract, but the validator enforces a stricter 20-limit.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-b62718f0eebc4918",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-41215c45e02445e7",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish normal operation baseline without the change to compare against candidate run",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-y6p3 baseline"
+    },
+    {
+      "experiment_id": "x-b62718f0eebc4918",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Run candidate with the change to observe if rule-0291 gets rejected or causes failures",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 1,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-y6p3 candidate"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Rule-0291 fails the rule-validator's field count check and is rejected from the pipeline because it references field f21, which exceeds the validator's internal limit of 20 fields, even though template T7 has field_count=21",
+      "mechanism": "rule-validator.validate (ic-0045) checks the rule's field references against its internal limit. The validator has a 20-field threshold; rule-0291 references f21, surpassing this limit and causing rejection. Template T7's field_count=21 (ic-0044) is the declared contract, but the validator enforces a stricter 20-limit.",
+      "status": "supported",
+      "evidence_for": [
+        "service_catalog:ic-0043",
+        "service_catalog:ic-0044",
+        "service_catalog:ic-0045",
+        "x-b62718f0eebc4918"
+      ]
+    },
+    {
+      "hypothesis_id": "h2",
+      "claim": "Content-interpreter will fail to evaluate rule-0291 because it expects inputs_supplied=20 (ic-0046) but rule-0291 only defines criteria for 2 fields (f02, f21), causing a mismatch in the number of inputs the interpreter can process",
+      "mechanism": "content-interpreter.load_rules (ic-0046) expects inputs_supplied=20 when evaluating template T7. The rule-0291 only specifies criteria for 2 fields. After the rule passes the rule-validator (if it does), the interpreter will encounter a mismatch between the expected 20 inputs and the 2 criteria fields provided, causing evaluation failure.",
+      "status": "refuted",
+      "evidence_for": [
+        "service_catalog:ic-0046",
+        "service_catalog:ic-0051"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "service_catalog:ic-0043",
+      "source": "service_catalog",
+      "facts": "component=rule-0291, relation=instance_of, target=template:T7, contract_key=matches_on, contract_value=f02,f21"
+    },
+    {
+      "row_id": "service_catalog:ic-0044",
+      "source": "service_catalog",
+      "facts": "component=template-registry, relation=declares, target=template:T7, contract_key=field_count, contract_value=21"
+    },
+    {
+      "row_id": "service_catalog:ic-0045",
+      "source": "service_catalog",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+    },
+    {
+      "row_id": "service_catalog:ic-0046",
+      "source": "service_catalog",
+      "facts": "component=content-interpreter.load_rules, relation=evaluates, target=template:T7, contract_key=inputs_supplied, contract_value=20"
+    },
+    {
+      "row_id": "service_catalog:ic-0051",
+      "source": "service_catalog",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=content-interpreter.load_rules, contract_key=inputs_supplied, contract_value=20"
+    }
+  ],
+  "models": {
+    "calls": 21,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 19,
+      "nvidia/nemotron-3-ultra-550b-a55b": 2
+    },
+    "request_ids": [
+      "req_o2spzi09",
+      "req_xxyh180t",
+      "req_qxzds3ey",
+      "req_h07u02k3",
+      "req_55wctimv",
+      "req_1t7ybqfs",
+      "req_7hkv9a1e",
+      "req_sf6ovkgi",
+      "req_xqrrc507",
+      "req_dr77o3kc",
+      "req_0lona8ez",
+      "req_w5yaauz9",
+      "req_o65stacv",
+      "req_csyn19n6",
+      "req_1a31oqxx",
+      "req_j50xe4un",
+      "req_7slsg0br",
+      "req_oti4uon7",
+      "req_1m2c7uvm",
+      "req_0bm6y8m7",
+      "req_ykqxbzum"
+    ],
+    "total_latency_ms": 257888,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 3,
+    "reads": 0,
+    "updates": 2
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 2,
+    "final": "approved",
+    "issues": [
+      {
+        "round": 1,
+        "statement": "The rule-validator (ic-0045) enforces an internal field count limit of 20 (despite template T7's declared field_count=21 in ic-0044).",
+        "problem": "contradicted: ic-0045 says rule-validator.validate checks against template:T7 with contract_key=field_count, contract_value=21. ic-0051 says rule-validator.validate checks against content-interpreter.load_rules with contract_key=inputs_supplied, contract_value=20. ic-0046 says content-interpreter.load_rules evaluates template:T7 with contract_key=inputs_supplied, contract_value=20. So the validator checks against template's field_count=21, but the interpreter only accepts inputs_supplied=20. The validator's internal limit is not explicitly stated as 20; it's the interpreter that has a 20-field limit. The explanation misattributes the 20-field limit to the validator."
+      }
+    ]
+  },
+  "queries": 8,
+  "duration_ms": 264283
+}

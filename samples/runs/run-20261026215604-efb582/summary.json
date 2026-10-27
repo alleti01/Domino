@@ -1,0 +1,23 @@
+{
+  "run_id": "run-20261026215604-efb582",
+  "change_id": "w-t3n6/change/0042",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader. The bundle-builder runs as svc_bundle_reader and queries metadata tables. Previously it saw 90 rows from default.* only; with the explicit shard grant it now sees 180 rows (90 from default.* + 90 from r0.*). worker-runtime has max_entries=150 (runtime_config:rc-0013). The candidate experiment (x-871b7056f0fe407b) shows loaded_entries=180 and exit_code=2 (\"fatal: bundle has 180 entries but the runtime preallocates 150; refusing to start\"). Baseline (x-1d8e89cff28b42b5) shows loaded_entries=90 and exit_code=0. The entry count increase from 90 to 180 exceeds the 150 limit contract, causing worker startup failure.",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-1d8e89cff28b42b5",
+    "x-871b7056f0fe407b",
+    "runtime_config:rc-0013",
+    "change_records:cr-0006",
+    "db_catalog:ag-0018"
+  ],
+  "model_calls": 19,
+  "experiments": 4,
+  "duration_ms": 103062,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

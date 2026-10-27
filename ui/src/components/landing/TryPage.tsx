@@ -1,34 +1,41 @@
 import type { SiteState } from '../../data/useSite'
 import { href } from '../../lib/router'
+import { caseCards } from './giga/data'
 
-// S1/S2 stub so the route and both "Try it yourself" buttons work. S4 builds
-// the change picker and the step-by-step replay here.
+// Pick a recorded change and open its investigation.
 export function TryPage({ state }: { state: SiteState }) {
-  const cases = state.status === 'ready' ? state.site.cases.filter((c) => c.runs[0]?.load.ok) : []
+  const cards = state.status === 'ready' ? caseCards(state.site.cases) : []
   return (
-    <div className="landing">
-      <section className="landing-section" aria-labelledby="try-title">
-        <p className="page-kicker">Try it yourself</p>
-        <h1 id="try-title">Pick a change and watch Domino investigate it.</h1>
-        <p className="landing-lede">
-          The step-by-step replay is the next build step. For now, each change opens its saved investigation.
+    <section className="g-try" aria-labelledby="try-title">
+      <div className="g-wrap">
+        <p className="g-label" style={{ marginBottom: 18 }}>
+          Try it yourself
         </p>
-        {state.status === 'loading' && <p className="muted">Loading changes…</p>}
-        <ul className="case-cards">
-          {cases.map((c) => {
-            const inv = c.runs[0].load.ok ? c.runs[0].load.investigation : null
-            return (
-              <li key={c.id} className="case-card">
-                <p className="small muted">{c.label}</p>
-                <h2>{inv?.change?.title ?? c.label}</h2>
-                <a className="button button-primary" href={href.case(c.id)}>
-                  Open the investigation
+        <h1 id="try-title" className="g-h2">
+          Pick a change. See what Domino found.
+        </h1>
+        <p className="g-lead">Each change opens its recorded investigation: the evidence, the runs and the verdict.</p>
+        {state.status === 'loading' && <p className="g-body">Loading changes…</p>}
+        <div className="g-cases" style={{ gridTemplateColumns: '1fr' }}>
+          <ul className="g-cases-list" aria-label="Recorded changes">
+            {cards.map((k) => (
+              <li key={k.id}>
+                <a href={href.case(k.id)} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 16px', padding: '18px 28px' }}>
+                  <span className="g-case-name" style={{ color: 'var(--g-ink)' }}>
+                    {k.title}
+                  </span>
+                  <span className={`g-case-num${k.failed ? ' g-fail' : ''}`}>
+                    {k.baseline}→{k.candidate}
+                  </span>
+                  <span className="g-case-sub">
+                    {k.verdictLabel} · {k.id}
+                  </span>
                 </a>
               </li>
-            )
-          })}
-        </ul>
-      </section>
-    </div>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
   )
 }

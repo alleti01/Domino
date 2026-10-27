@@ -1,0 +1,302 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026212645-5fe394",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-t3n6/change/0042",
+    "world_id": "w-t3n6",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Explicit shard grants double data exposure for svc_bundle_reader, exceeding worker-runtime startup limit",
+    "cause": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader. In the candidate run, this gave svc_bundle_reader access to r0.* tables in addition to the default database, doubling the rows visible from 90 to 180. The bundle-builder produced a bundle with 180 entries, and worker-runtime refused to start because it preallocates 150 entries, observing: \"bundle has 180 entries but the runtime preallocates 150; refusing to start\" (exit code 2).\n\nEvidence chain:\n- Baseline experiment x-d3fae9d9456d4975: 90 rows_visible_to_builder, 90 bundle-builder.entries, worker-runtime.exit_code=0 with GRANT SELECT ON default.* only\n- Candidate experiment x-e860ff8b8bf44ddf: 180 rows_visible_to_builder, 180 bundle-builder.entries, worker-runtime.exit_code=2 with both GRANT SELECT ON default.* and GRANT SELECT ON r0.* added\n- Second baseline x-f808dbc5c8844234: confirmed exit_code=0 with default-only grants\n- Dependency path: change → grants on database r0 → principal svc_bundle_reader → service bundle-builder → reads bundle_fields → artifact bundle.json → loaded by worker-runtime\n\nThe explicit shard grant doubles data exposure, causing the bundle size to exceed the worker-runtime preallocation limit of 150 entries.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-d3fae9d9456d4975: baseline · workload default → all assertions passed",
+      "x-e860ff8b8bf44ddf: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-a156d29e6aca4365: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-edb5eeb719ed4e00: control · workload default → all assertions passed",
+      "x-f808dbc5c8844234: baseline · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "Independent review was unavailable for this run.",
+      "The runtime_setting rc-0014 has setting_key=startup_timeout_s=30 (not a preallocation limit). The 150-entry preallocation limit was observed in the candidate experiment logs (\"bundle has 180 entries but the runtime preallocates 150\"); its originating setting_id was not retrieved before budget exhaustion. No direct observation of per-principal query limits in meta-store."
+    ],
+    "mitigation": {
+      "text": "Remove the GRANT SELECT ON r0.* line from migration 0042, or increase the worker-runtime preallocation limit to accommodate 180+ entries. The minimal fix is to omit the r0.* grant, keeping only the default.* grant that was in place before the change.",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0042 grants_to svc_bundle_reader",
+      "status": "observed",
+      "detail": "GRANT SELECT ON r0.*",
+      "evidence": [
+        {
+          "row_id": "change_records:cr-0006",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0018",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "svc_bundle_reader identity_of bundle-builder",
+      "status": "observed",
+      "detail": "service runs as svc_bundle_reader",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0009",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0018",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle-builder writes bundle.json",
+      "status": "observed",
+      "detail": "output_mode=as_returned",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0009",
+          "facts": ""
+        },
+        {
+          "row_id": "runtime_config:rc-0013",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle.json loaded_by worker-runtime",
+      "status": "observed",
+      "detail": "read at startup",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0013",
+          "facts": ""
+        },
+        {
+          "row_id": "pipeline_repo:jd-0009",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "worker-runtime configured_with worker-runtime.max_entries",
+      "status": "inferred",
+      "detail": "max_entries=150",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0013",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-d3fae9d9456d4975",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the change",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 90,
+        "bundle-builder.entries": 90,
+        "bundle-builder.bundle_bytes": 2839,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 90
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "b3b8d141271e49310f285d5cca0d9cf6d6058ecc7d3efade011407e2542efecf",
+          "bytes": 2839
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-t3n6 baseline"
+    },
+    {
+      "experiment_id": "x-e860ff8b8bf44ddf",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish candidate metrics WITH the change",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 180,
+        "bundle-builder.entries": 180,
+        "bundle-builder.bundle_bytes": 5629,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "837809d27294aa2e3271455bcedb1cf08cd6c82b71d600a41eb6cad6cd0de6ff",
+          "bytes": 5629
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-t3n6 candidate"
+    },
+    {
+      "experiment_id": "x-a156d29e6aca4365",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 180,
+        "bundle-builder.entries": 180,
+        "bundle-builder.bundle_bytes": 5629,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "837809d27294aa2e3271455bcedb1cf08cd6c82b71d600a41eb6cad6cd0de6ff",
+          "bytes": 5629
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-t3n6 candidate"
+    },
+    {
+      "experiment_id": "x-edb5eeb719ed4e00",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 90,
+        "bundle-builder.entries": 90,
+        "bundle-builder.bundle_bytes": 2839,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 90
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "b3b8d141271e49310f285d5cca0d9cf6d6058ecc7d3efade011407e2542efecf",
+          "bytes": 2839
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-t3n6 control"
+    },
+    {
+      "experiment_id": "x-f808dbc5c8844234",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Baseline to compare exit codes",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 90,
+        "bundle-builder.entries": 90,
+        "bundle-builder.bundle_bytes": 2839,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 90
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "b3b8d141271e49310f285d5cca0d9cf6d6058ecc7d3efade011407e2542efecf",
+          "bytes": 2839
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-t3n6 baseline"
+    }
+  ],
+  "hypotheses": [],
+  "cited_evidence": [],
+  "models": {
+    "calls": 26,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 25,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_1vw21xlw",
+      "req_hfr55wcu",
+      "req_7fhkcao2",
+      "req_re4k1ijy",
+      "req_m0f9vt68",
+      "req_g3aafuym",
+      "req_0bsgcxmw",
+      "req_uejg8aw7",
+      "req_6pwszj00",
+      "req_g1daisti",
+      "req_xdjitmzg",
+      "req_9epq1x8e",
+      "req_q3vx5c8w",
+      "req_rc65yz9t",
+      "req_s4unzgof",
+      "req_ha99ox72",
+      "req_q6q8eb2d",
+      "req_1ohwudwr",
+      "req_o3w8i9mw",
+      "req_9lo3abae",
+      "req_3qubx89c",
+      "req_shm0fw9q",
+      "req_0rhm05ij",
+      "req_nahcc497",
+      "req_hf9btsbp",
+      "req_aluxb1xz"
+    ],
+    "total_latency_ms": 174965,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 1,
+    "reads": 1,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 2,
+    "final": "unavailable",
+    "issues": [
+      {
+        "round": 1,
+        "statement": "The worker-runtime preallocates 150 entries (runtime_setting rc-0014).",
+        "problem": "unsupported: rc-0014 mentions startup_timeout_s=30, not a preallocation limit of 150 entries. The preallocation limit of 150 entries is mentioned in the candidate experiment logs but not in the retrieved runtime_config facts."
+      }
+    ]
+  },
+  "queries": 8,
+  "duration_ms": 181904
+}

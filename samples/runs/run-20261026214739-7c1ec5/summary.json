@@ -1,0 +1,20 @@
+{
+  "run_id": "run-20261026214739-7c1ec5",
+  "change_id": "w-k7m2/change/0042",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader, making the principal's access to ALL tables in database r0 explicit rather than implicit. Previously the reader had access only to bundle_fields (140 rows). With the explicit grant, bundle-builder reads 280 rows (from all tables in r0), exceeding worker-runtime.max_entries=200, causing worker-runtime.exit_code=2 and refusal to start.",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-f25cc122787342f8",
+    "x-7e3baa3f015549ba"
+  ],
+  "model_calls": 21,
+  "experiments": 4,
+  "duration_ms": 104619,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

@@ -1,0 +1,308 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261027005836-40ae23",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-g4k8/change/0291",
+    "world_id": "w-g4k8",
+    "title": "Content update: rule 0291 for template T4",
+    "files": [
+      "content/rules/T4/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T4/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f01\": \"m-0291-f01\",\n+    \"f13\": \"m-0291-f13\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T4\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Remove f13 from rule-0291 criteria to fix content-interpreter exit_code=3 failure",
+    "cause": "The change adds rule-0291 for template T4 with criteria f01 and f13. Contract ic-0006 specifies inputs_supplied=12 for content-interpreter.load_rules. Candidate experiment (x-0a62a89848144148) shows exit_code=3 with fatal error: \"rule rule-0291 read an input slot that does not exist (12 inputs supplied)\". The rule references f13 which maps to the 13th input slot, but only 12 slots are supplied (f01-f12). The fix is to remove f13 from rule-0291's criteria. Baseline experiment (x-f4b9e164c6374d16) with 3 rules having 2-3 fields each and exit_code=0 confirms the interpreter works when rules stay within 12 input slots.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-f4b9e164c6374d16: baseline · workload default → all assertions passed",
+      "x-0a62a89848144148: candidate · workload default → failed: interpreter_keeps_running",
+      "x-484f92bf9b1943ff: candidate · workload default → failed: interpreter_keeps_running",
+      "x-de826d8d819c42b5: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "The investigator predicted the change was safe, but the experiments reproduced a failure; its explanation is not reliable.",
+      "- No test of rule-0291 with f13 removed in the candidate experiment\n- Only default workload tested; other workloads may have different input expectations\n- Full template T4 field mapping not retrieved (f01-f13 assumed but not confirmed)"
+    ],
+    "mitigation": {
+      "text": "Remove the \"f13\" entry from rule-0291.json's criteria field, keeping only \"f01\". The corrected rule should be: {\"criteria\": {\"f01\": \"m-0291-f01\"}, \"rule_id\": \"rule-0291\", \"template\": \"T4\"}. This ensures the rule only references fields within the 12 input slots the interpreter supplies, preventing the exit_code=3 failure.",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0291 runs content-pipeline",
+      "status": "observed",
+      "detail": "validate, then ship to content-interpreter",
+      "evidence": [
+        {
+          "row_id": "change_records:ci-0002",
+          "facts": ""
+        },
+        {
+          "row_id": "service_catalog:ic-0001",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "content-pipeline calls rule-validator.validate",
+      "status": "observed",
+      "detail": "step=1",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "service_catalog:ic-0005",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "rule-validator.validate checks_against template:T4",
+      "status": "inferred",
+      "detail": "field_count=13",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0005",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-f4b9e164c6374d16",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the change to compare against candidate later",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5f59e65d7716793ef10080a23da89dd9549a46eb402b10a5cad38045ad3b2503",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 baseline"
+    },
+    {
+      "experiment_id": "x-0a62a89848144148",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Run with the proposed change w-g4k8/change/0291 to see what metrics differ from baseline",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "82051e42683154e94974e2e4adba93c8f4aa9422a7730d050d35ac6135cfc402",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 candidate"
+    },
+    {
+      "experiment_id": "x-484f92bf9b1943ff",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "82051e42683154e94974e2e4adba93c8f4aa9422a7730d050d35ac6135cfc402",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 candidate"
+    },
+    {
+      "experiment_id": "x-de826d8d819c42b5",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5f59e65d7716793ef10080a23da89dd9549a46eb402b10a5cad38045ad3b2503",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Rule-0291 for template T4 causes content-interpreter exit_code=3 failure because the rule specifies f13 in its criteria, but template T4 has inputs_supplied=12 (contract ic-0006). The error \"read an input slot that does not exist\" occurs because f13 references the 13th input slot which is not among the 12 supplied. The fix is to remove f13 from rule-0291's criteria, since the interpreter only processes 12 input slots (f01-f12). Existing rules for T4 (rule-0280, 0281, 0282) have only 2-3 fields and work fine, confirming the interpreter does not require all 13 template fields to be specified.",
+      "mechanism": "The rule-0291 criteria include f13, but contract ic-0006 specifies inputs_supplied=12 for content-interpreter.load_rules. When the interpreter evaluates rule-0291, it tries to access input slot 13 (for f13) but only 12 slots are supplied, causing exit_code=3 failure.",
+      "status": "supported",
+      "evidence_for": [
+        "hash:544be03ae594a583",
+        "hash:6533a5e617256f0a",
+        "hash:3b880a5288e62980",
+        "hash:418e69ae7f6df96e",
+        "hash:4bd9eafdf2faf482",
+        "hash:fd05169f843e0da0",
+        "hash:65acac5467212ec7",
+        "x-f4b9e164c6374d16",
+        "x-0a62a89848144148"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "hash:544be03ae594a583",
+      "source": "semantic_layer",
+      "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+    },
+    {
+      "row_id": "hash:6533a5e617256f0a",
+      "source": "semantic_layer",
+      "facts": "component=content-pipeline, relation=ships_to, target=content-interpreter.load_rules, contract_key=step, contract_value=2"
+    },
+    {
+      "row_id": "hash:3b880a5288e62980",
+      "source": "semantic_layer",
+      "facts": "component=rule-0291, relation=instance_of, target=template:T4, contract_key=matches_on, contract_value=f01,f13"
+    },
+    {
+      "row_id": "hash:418e69ae7f6df96e",
+      "source": "semantic_layer",
+      "facts": "component=template-registry, relation=declares, target=template:T4, contract_key=field_count, contract_value=13"
+    },
+    {
+      "row_id": "hash:4bd9eafdf2faf482",
+      "source": "semantic_layer",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=template:T4, contract_key=field_count, contract_value=13"
+    },
+    {
+      "row_id": "hash:fd05169f843e0da0",
+      "source": "semantic_layer",
+      "facts": "component=rule-0280, relation=instance_of, target=template:T4, contract_key=matches_on, contract_value=f02,f05"
+    },
+    {
+      "row_id": "hash:65acac5467212ec7",
+      "source": "semantic_layer",
+      "facts": "component=rule-0282, relation=instance_of, target=template:T4, contract_key=matches_on, contract_value=f04,f07,f09"
+    }
+  ],
+  "models": {
+    "calls": 19,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 17,
+      "nvidia/nemotron-3-ultra-550b-a55b": 2
+    },
+    "request_ids": [
+      "req_9e3e5j8f",
+      "req_uwkxhqyf",
+      "req_acsmi9aq",
+      "req_bgh38kyz",
+      "req_z420zjut",
+      "req_8845j87d",
+      "req_62zathjn",
+      "req_04not287",
+      "req_i4cubu75",
+      "req_t3a6oof1",
+      "req_ik83guuf",
+      "req_24w087mp",
+      "req_symcv3s5",
+      "req_lhay320n",
+      "req_mv8sfgmv",
+      "req_u05cvsox",
+      "req_5ipz9ss2",
+      "req_vxgxyi16",
+      "req_pdrovf30"
+    ],
+    "total_latency_ms": 194285,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 1,
+    "updates": 1
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 2,
+    "final": "approved",
+    "issues": [
+      {
+        "round": 1,
+        "statement": "Add the 10 missing criteria fields to rule-0291.json so that all 12 input slots for template T4 are populated.",
+        "problem": "unsupported: The explanation says template T4 has 13 fields and interpreter expects 12 input slots. The mitigation says to add 10 missing criteria fields to reach 12 input slots. But the rule currently has 2 fields (f01, f13). Adding 10 would make 12 fields, matching inputs_supplied=12. However, template has 13 fields (field_count=13). The discrepancy between 13 fields and 12 inputs is not explained. The mitigation might be correct if one field is not an input slot (e.g., an output or computed field), but this is not stated in evidence. The claim that adding 10 fields would satisfy inputs_supplied=12 is arithmetic: 2+10=12, but we don't know if those 10 are the correct fields (f02-f12, f14+). The evidence shows other rules for T4 have matches_on with different field counts: rule-0280 has f02,f05 (2 fields), rule-0281 has f01,f03 (2 fields), rule-0282 has f04,f07,f09 (3 fields). All existing rules have only 2-3 fields and baseline passes. So the interpreter does not require all 12 input slots to be populated by criteria; '"
+      },
+      {
+        "round": 1,
+        "statement": "The rule currently sets f01 and f13; add the remaining fields (f02-f12, f14+) that template T4 expects.",
+        "problem": "unsupported: Template T4 has field_count=13, so fields are likely f01 through f13. There is no f14+. The mitigation suggests adding f14+ which doesn't exist. Also, existing rules for T4 (rule-0280, 0281, 0282) have only 2-3 fields and work fine. So the interpreter does not require all fields to be specified in criteria."
+      },
+      {
+        "round": 1,
+        "statement": "Add the 10 missing criteria fields to rule-0291.json so that all 12 input slots for template T4 are populated. The rule currently sets f01 and f13; add the remaining fields (f02-f12, f14+) that template T4 expects. This would satisfy the inputs_supplied=12 contract (ic-0006) and allow the interpreter to process events without exit_code=3 failure.",
+        "problem": "mitigation would not avoid the failure: The mitigation proposes adding 10 missing criteria fields to reach 12 input slots. However, baseline shows 3 rules with only 2-3 fields each, and the interpreter processed 50 events with exit_code=0. The failure occurs only with rule-0291. The error says 'rule rule-0291 read an input slot that does not exist (12 inputs supplied)'. This suggests rule-0291 is trying to read an input slot beyond the 12 supplied, perhaps because it references f13 (the 13th field) but only 12 inputs are supplied. The rule has criteria f01 and f13. If inputs_supplied=12 corresponds to fields f01-f12, then f13 would be the 13th field and not supplied, causing the error. The fix would be to not use f13, or to ensure f13 is within the 12 inputs. Adding 10 more fields (f02-f12) would make criteria for f01-f12 (12 fields) but still include f13? The mitigation says add f02-f12, f14+ but f14+ doesn't exist. The actual fix might be to remove f13 from criteria or adjust the rule to only use fields within the 12 inputs. The mitigation as-sta"
+      }
+    ]
+  },
+  "queries": 7,
+  "duration_ms": 199643
+}

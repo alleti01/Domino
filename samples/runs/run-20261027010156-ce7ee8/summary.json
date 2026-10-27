@@ -1,0 +1,27 @@
+{
+  "run_id": "run-20261027010156-ce7ee8",
+  "change_id": "w-h9c5/change/0042",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The change GRANT SELECT ON r0.* to svc_bundle_reader doubled the rows visible to bundle-builder from 99 (baseline/control) to 198 (candidate). The worker-runtime max_entries limit is 200 (runtime_config:rc-0004). The candidate value of 198 is within the limit but dangerously close — any additional data access or slight increase could exceed 200, causing the worker to fail or truncate bundles.",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-fc1cafcadc5c4f27",
+    "x-b8decb76ce634ff4",
+    "x-030bca01d2d94a45",
+    "runtime_config:rc-0004",
+    "change_records:cr-0003",
+    "db_catalog:ti-0007",
+    "pipeline_repo:jd-0003",
+    "telemetry:qt-0003",
+    "db_catalog:ag-0008"
+  ],
+  "model_calls": 24,
+  "experiments": 3,
+  "duration_ms": 252742,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

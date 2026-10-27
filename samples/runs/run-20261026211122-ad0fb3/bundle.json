@@ -1,0 +1,295 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026211122-ad0fb3",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-k7m2/change/0042",
+    "world_id": "w-k7m2",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Explicit shard grants for svc_bundle_reader breaks worker-runtime: bundle exceeds max_entries=200",
+    "cause": "There are two identically-named bundle_fields tables: one in database r0 (140 columns) and one in database default (140 columns). The baseline experiment (x-b4312b498e574a2d) shows bundle-builder reads 140 entries. The candidate experiment (x-b5ebcd2a70e84c06) with GRANT SELECT ON r0.* TO svc_bundle_reader shows bundle-builder reads 280 entries — the grant makes r0.bundle_fields accessible in addition to the already-accessible default.bundle_fields, doubling the entry count. worker-runtime max_entries=200 is exceeded (280 > 200), causing exit code 2: \"fatal: bundle has 280 entries but the runtime preallocates 200; refusing to start\".",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-b4312b498e574a2d: baseline · workload default → all assertions passed",
+      "x-b5ebcd2a70e84c06: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-bb8aa4b8f30b4954: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-583cdc694d3044af: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "Reviewer (nvidia/nemotron-3-ultra-550b-a55b) flagged: \"The grant makes r0.bundle_fields accessible in addition to the already-accessible default.bundle_fields, doubling the entry count.\": The explanation correctly identifies the cause, but the proposed mitigation (change GRANT to ON r0.bundle_fields only) would not fix the issue because svc_bundle_reader would still have access to both default.bundle_fields (via existing GRANT SELECT ON default.*) and r0.bundle_fields (via new GRANT SELECT ON r0.bundle_fields). The entry count would remain 280. To fix, either the default.* grant must be removed/restricted, or the query must be changed to only read from one database.",
+      "Only tested with default workload; other tables in r0 or default might also be affected if bundle-builder queries them."
+    ],
+    "mitigation": {
+      "text": "Change the GRANT from ON r0.* to ON r0.bundle_fields only, so bundle-builder retains explicit access for per-principal query limits and audit logging but only reads the single bundle_fields table (140 entries, within the 200-entry limit).",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0042 grants_to svc_bundle_reader",
+      "status": "observed",
+      "detail": "GRANT SELECT ON r0.*",
+      "evidence": [
+        {
+          "row_id": "change_records:cr-0004",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "svc_bundle_reader identity_of bundle-builder",
+      "status": "observed",
+      "detail": "service runs as svc_bundle_reader",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle-builder writes bundle.json",
+      "status": "observed",
+      "detail": "output_mode=as_returned",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        },
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle.json loaded_by worker-runtime",
+      "status": "observed",
+      "detail": "read at startup",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": ""
+        },
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "worker-runtime configured_with worker-runtime.max_entries",
+      "status": "inferred",
+      "detail": "max_entries=200",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-b4312b498e574a2d",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the change to compare against candidate",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 baseline"
+    },
+    {
+      "experiment_id": "x-b5ebcd2a70e84c06",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test candidate variant with the explicit shard grants",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
+    },
+    {
+      "experiment_id": "x-bb8aa4b8f30b4954",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
+    },
+    {
+      "experiment_id": "x-583cdc694d3044af",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Explicit GRANT SELECT ON r0.* TO svc_bundle_reader causes bundle-builder to read ALL tables in database r0 (not just bundle_fields), doubling bundle entries from 140 to 280, exceeding worker-runtime max_entries limit of 200 and causing exit code 2",
+      "mechanism": "The grant on r0.* gives svc_bundle_reader/bundle-builder SELECT on every table in database r0. bundle-builder reads r0.bundle_fields (140 cols) plus now also reads additional tables from r0, doubling the entry count. worker-runtime loads the bundle and checks max_entries=200; 280 > 200 causes fatal exit.",
+      "status": "open",
+      "evidence_for": [
+        "x-b4312b498e574a2d",
+        "x-b5ebcd2a70e84c06"
+      ]
+    }
+  ],
+  "cited_evidence": [],
+  "models": {
+    "calls": 23,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 21,
+      "nvidia/nemotron-3-ultra-550b-a55b": 2
+    },
+    "request_ids": [
+      "req_7ch5rwfi",
+      "req_3dlto5ba",
+      "req_jrqcefi1",
+      "req_5rqhgiz8",
+      "req_cgpv67fb",
+      "req_l9ie7v96",
+      "req_o0bt4ncj",
+      "req_935fusiy",
+      "req_wn4fhtmx",
+      "req_q831gjq2",
+      "req_5j1jrdpn",
+      "req_l8sn8vem",
+      "req_inib2u80",
+      "req_m1um72jr",
+      "req_zmwqtr4x",
+      "req_y3rjr81u",
+      "req_zwqy83nu",
+      "req_aebu65e7",
+      "req_7unkmezy",
+      "req_qegjk9uf",
+      "req_8zrb5uq0",
+      "req_i27yalhd",
+      "req_llwmgewr"
+    ],
+    "total_latency_ms": 212875,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 1,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 2,
+    "final": "flagged",
+    "issues": [
+      {
+        "round": 1,
+        "statement": "The grant ON r0.* allows access to all tables in r0, causing the bundle-builder to read 280 rows (140 from bundle_fields + 140 from another table? Or doubled visibility?).",
+        "problem": "unsupported: No direct evidence shows which tables are being read to produce 280 rows. The experiment log says 'read 280 rows for table bundle_fields' but that seems contradictory. The telemetry shows 140 rows for bundle_fields query. The doubling might be due to seeing the same table in multiple databases (default and r0) after the grant."
+      },
+      {
+        "round": 1,
+        "statement": "The explanation says 'bundle entries doubled from 140 (baseline) to 280' but does not fully explain why the grant causes exactly double. The experiment log says 'bundle-builder: read 280 rows for table bundle_fields' which suggests it's reading the same table but seeing double the rows. This could be because the grant gives access to both default.bundle_fields and r0.bundle_fields (if they exist), but the evidence doesn't confirm there are two bundle_fields tables. The telemetry shows 140 rows for the query on bundle_fields. The doubling might be due to the grant making visible rows in both default and r0 databases. However, the evidence doesn't explicitly confirm this mechanism.",
+        "problem": "The exact mechanism of doubling is not fully explained or evidenced. The claim that grant gives access to ALL tables in r0 is correct, but the doubling to exactly 280 (2x140) suggests it might be seeing the same table in two databases, not multiple tables in r0. The column counts show bundle_fields has 140 columns, another table has 12, another 8. If it were reading other tables, the total might not be exactly 280."
+      },
+      {
+        "round": 2,
+        "statement": "The grant makes r0.bundle_fields accessible in addition to the already-accessible default.bundle_fields, doubling the entry count.",
+        "problem": "The explanation correctly identifies the cause, but the proposed mitigation (change GRANT to ON r0.bundle_fields only) would not fix the issue because svc_bundle_reader would still have access to both default.bundle_fields (via existing GRANT SELECT ON default.*) and r0.bundle_fields (via new GRANT SELECT ON r0.bundle_fields). The entry count would remain 280. To fix, either the default.* grant must be removed/restricted, or the query must be changed to only read from one database."
+      }
+    ]
+  },
+  "queries": 8,
+  "duration_ms": 221435
+}

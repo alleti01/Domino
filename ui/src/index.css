@@ -537,25 +537,8 @@ input[type='search']:hover {
 }
 
 .brand-mark {
-  position: relative;
-  width: 16px;
-  height: 18px;
-}
-
-.brand-mark span {
-  position: absolute;
-  bottom: 0;
-  width: 7px;
-  height: 16px;
-  border: 1.5px solid currentColor;
-  border-radius: 1px;
-}
-
-.brand-mark span:last-child {
-  left: 8px;
-  background: currentColor;
-  transform: rotate(18deg);
-  transform-origin: 0 100%;
+  flex: none;
+  color: #f08a32;
 }
 
 .topnav-tabs {

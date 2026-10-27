@@ -57,6 +57,10 @@ export interface StoryData {
   reviewerModel: string | null
   /** Evidence rows cited per source system, in first-seen order. */
   rowsBySource: { source: string; rows: number }[]
+  /** One stated fact per source system, from the causal chain: e.g. runtime_config → "max_entries=200". */
+  facts: { source: string; text: string }[]
+  /** What the data layer states about the inferred link, e.g. "max_entries=200". */
+  assumptionDetail: string | null
   evidence: { rows: number; calls: number; nemotron: number; memory: number; durationMs: number | null }
 }
 
@@ -132,6 +136,26 @@ export function storyData(show: Showcase): StoryData | null {
     review: inv.review?.outcome ?? null,
     reviewerModel: inv.review?.reviewerModel ?? null,
     rowsBySource: [...bySource].map(([source, ids]) => ({ source, rows: ids.size })),
+    facts: (() => {
+      // What each system holds on the path, with the value the data states where there is one
+      // (the change's statement, the limit's setting).
+      const into = new Map(links.map((l, i) => [l.to, inv.chain.causal[i]?.detail ?? null]))
+      const firstDetail = inv.chain.causal[0]?.detail ?? null
+      const bySystem = new Map<string, string[]>()
+      path.forEach((n, i) => {
+        if (!n.source) return
+        const detail = i === 0 ? firstDetail : n.kind === 'setting' || n.kind === 'limit' ? into.get(i) : null
+        const value = detail?.match(/=\s*(\S+)\s*$/)?.[1]
+        const name = i === 0 ? `Change ${n.label}` : shortName(n)
+        const text = value ? `${name}: ${value}` : detail ? `${name}: ${detail}` : name
+        bySystem.set(n.source, [...(bySystem.get(n.source) ?? []), text])
+      })
+      return [...bySystem].map(([source, items]) => ({ source, text: items.join(', ') }))
+    })(),
+    assumptionDetail: (() => {
+      const link = inv.chain.causal.find((l) => l.status === 'inferred')
+      return link?.detail ?? null
+    })(),
     evidence: {
       rows: rows.size,
       calls: inv.receipts.length,

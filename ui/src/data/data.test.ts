@@ -253,7 +253,9 @@ describe('real live runs in samples/', () => {
     const { samplesSource } = await import('./sources')
     const { site } = await loadSite(samplesSource)
     expect(site.isPlaceholder).toBe(false)
-    expect(site.cases.map((c) => c.id)).toEqual(['w-k7m2', 'w-h9c5', 'w-g4k8', 'w-r1z5'])
+    expect(site.cases.map((c) => c.id)).toEqual(['w-k7m2', 'w-h9c5', 'w-g4k8', 'w-r1z5', 'w-d2v4', 'w-t3n6', 'w-p4r8', 'w-x3c9', 'w-y6p3', 'w-n7v2'])
+    // Three repeats per world, newest first.
+    for (const c of site.cases) expect(c.runs).toHaveLength(3)
     const invs = site.cases.map((c) => {
       const r = c.runs[0]
       if (!r.load.ok) throw new Error(r.load.error)
@@ -265,8 +267,8 @@ describe('real live runs in samples/', () => {
       expect(inv.receipts.length).toBeGreaterThan(0)
     }
     const byCase = Object.fromEntries(invs.map((i) => [i.caseId, i]))
-    expect(byCase['w-g4k8'].review?.outcome).toBe('flagged')
-    expect(byCase['w-g4k8'].review?.issues.length).toBeGreaterThan(0)
+    expect(byCase['w-h9c5'].review?.outcome).toBe('flagged')
+    expect(byCase['w-h9c5'].review?.issues.length).toBeGreaterThan(0)
     expect(byCase['w-k7m2'].review?.outcome).toBe('approved')
     // Print anything odd in the real data so it's visible in test output.
     for (const inv of invs) if (inv.warnings.length) console.log(inv.caseId, inv.warnings)
@@ -313,7 +315,8 @@ describe('landing 3D story on the real flagship run', () => {
       'candidate:fail',
       'control:pass',
     ])
-    expect(story.hypothesis?.status).toBe('supported')
+    // The run left its hypothesis open; the verdict comes from the judge, not from it.
+    expect(story.hypothesis?.status).toBe('open')
     expect(story.hypothesis?.claim.endsWith('.')).toBe(true)
     expect(story.verdict).toEqual({ verdict: 'reproduced_failure', decidedBy: 'deterministic_judge' })
     // The scene's short names; full identifiers stay in the page text.
@@ -362,11 +365,13 @@ describe('overview filtering', () => {
     const { samplesSource } = await import('./sources')
     const { filterCases, latestState } = await import('../lib/report')
     const { site } = await loadSite(samplesSource)
-    expect(site.cases.map(latestState)).toEqual(['reproduced_failure', 'no_failure_observed', 'reproduced_failure', 'no_failure_observed'])
-    expect(filterCases(site.cases, '', 'reproduced_failure').map((c) => c.id)).toEqual(['w-k7m2', 'w-g4k8'])
-    expect(filterCases(site.cases, 'shard', 'all').map((c) => c.id)).toEqual(['w-k7m2', 'w-h9c5'])
-    expect(filterCases(site.cases, 'template t7', 'all').map((c) => c.id)).toEqual(['w-r1z5'])
-    expect(filterCases(site.cases, 'shard', 'no_failure_observed').map((c) => c.id)).toEqual(['w-h9c5'])
+    const R = 'reproduced_failure'
+    const N = 'no_failure_observed'
+    expect(site.cases.map(latestState)).toEqual([R, N, R, N, R, R, N, R, N, N])
+    expect(filterCases(site.cases, '', R).map((c) => c.id)).toEqual(['w-k7m2', 'w-g4k8', 'w-d2v4', 'w-t3n6', 'w-x3c9'])
+    expect(filterCases(site.cases, 'shard', 'all').map((c) => c.id)).toEqual(['w-k7m2', 'w-h9c5', 'w-d2v4', 'w-t3n6', 'w-p4r8'])
+    expect(filterCases(site.cases, 'template t7', 'all').map((c) => c.id)).toEqual(['w-r1z5', 'w-x3c9', 'w-y6p3', 'w-n7v2'])
+    expect(filterCases(site.cases, 'shard', N).map((c) => c.id)).toEqual(['w-h9c5', 'w-p4r8'])
     expect(filterCases(site.cases, 'nothing like this', 'all')).toEqual([])
   })
 })
@@ -436,7 +441,7 @@ describe('experiment instrument', () => {
       '2 of 2 candidate runs failed runtime_starts_with_bundle: the repeat agrees.',
       'With the change undone, the control passed every check.',
     ])
-    const calm = instrumentNotes(inv('w-h9c5'), 'meta-store.rows_visible_to_builder')
+    const calm = instrumentNotes(inv('w-p4r8'), 'meta-store.rows_visible_to_builder')
     expect(calm[1]).toBe('The candidate run passed every check.')
     expect(calm[2]).toBe('No control run (change undone) was recorded.')
   })

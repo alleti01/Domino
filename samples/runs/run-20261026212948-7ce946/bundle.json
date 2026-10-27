@@ -1,0 +1,269 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026212948-7ce946",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-x3c9/change/0291",
+    "world_id": "w-x3c9",
+    "title": "Content update: rule 0291 for template T7",
+    "files": [
+      "content/rules/T7/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T7/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f02\": \"m-0291-f02\",\n+    \"f21\": \"m-0291-f21\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T7\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Rule 0291 for template T7 will break content-interpreter with exit code 3",
+    "cause": "The new rule-0291 adds only 2 criteria fields (f02, f21) for template T7. However, the content-interpreter contract (ic-0036) requires inputs_supplied=20, and the rule-validator contract (ic-0035) requires field_count=21. When the candidate experiment runs, the interpreter encounters rule-0291 which references input slots that do not exist in its sparse 2-field criteria structure, causing exit_code=3 with the fatal error: \"rule rule-0291 read an input slot that does not exist (20 inputs supplied)\". The baseline (exit_code=0) processes 3 rules successfully with 50 events.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-ffdbc2eac6c74c97: baseline · workload default → all assertions passed",
+      "x-64468c5b981e4a10: candidate · workload default → failed: interpreter_keeps_running",
+      "x-2e2b7991393347e2: candidate · workload default → failed: interpreter_keeps_running",
+      "x-a498394c3b2746d8: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "The experiments used the default workload; other workloads with different input schemas might exhibit different behavior. The rule-validator's field_count=21 check and interpreter's inputs_supplied=20 requirement were not modified to accommodate the sparse rule."
+    ],
+    "mitigation": {
+      "text": "Add 18 more criteria fields to rule-0291 so the rule has 20+ input slots matching the interpreter's inputs_supplied=20 contract, or update the interpreter contract (ic-0036) to accept 2 inputs instead of 20.",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0291 runs content-pipeline",
+      "status": "observed",
+      "detail": "validate, then ship to content-interpreter",
+      "evidence": [
+        {
+          "row_id": "change_records:ci-0008",
+          "facts": "item_kind=runs_component, item_ref=content-pipeline, item_detail=validate, then ship to content-interpreter"
+        },
+        {
+          "row_id": "service_catalog:ic-0031",
+          "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+        }
+      ]
+    },
+    {
+      "edge": "content-pipeline calls rule-validator.validate",
+      "status": "observed",
+      "detail": "step=1",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0031",
+          "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+        },
+        {
+          "row_id": "service_catalog:ic-0035",
+          "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    },
+    {
+      "edge": "rule-validator.validate checks_against template:T7",
+      "status": "inferred",
+      "detail": "field_count=21",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0035",
+          "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-ffdbc2eac6c74c97",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test baseline behavior without the change",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 baseline"
+    },
+    {
+      "experiment_id": "x-64468c5b981e4a10",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test candidate behavior with the change",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5be2c2051191257025c141dfffb26a18b5e5764c3287cebcf544b9f3cc98d841",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 candidate"
+    },
+    {
+      "experiment_id": "x-2e2b7991393347e2",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5be2c2051191257025c141dfffb26a18b5e5764c3287cebcf544b9f3cc98d841",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 candidate"
+    },
+    {
+      "experiment_id": "x-a498394c3b2746d8",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The new rule-0291 for template T7 has only 2 criteria (f02, f21) but the content-interpreter expects 20 inputs_supplied, causing a slot mismatch",
+      "mechanism": "The rule-validator contract (ic-0035) requires field_count=21 for template T7, while the content-interpreter contract (ic-0036) requires inputs_supplied=20. The new rule only defines 2 criteria fields, so when the interpreter runs, it finds that rule-0291 references input slots that don't exist in its sparse criteria structure.",
+      "status": "open",
+      "evidence_for": [
+        "service_catalog:ic-0035",
+        "service_catalog:ic-0036",
+        "x-64468c5b981e4a10"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "change_records:ci-0008",
+      "source": "change_records",
+      "facts": "item_kind=runs_component, item_ref=content-pipeline, item_detail=validate, then ship to content-interpreter"
+    },
+    {
+      "row_id": "service_catalog:ic-0031",
+      "source": "service_catalog",
+      "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+    },
+    {
+      "row_id": "service_catalog:ic-0035",
+      "source": "service_catalog",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+    },
+    {
+      "row_id": "service_catalog:ic-0036",
+      "source": "service_catalog",
+      "facts": "component=content-interpreter.load_rules, relation=evaluates, target=template:T7, contract_key=inputs_supplied, contract_value=20"
+    }
+  ],
+  "models": {
+    "calls": 18,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 17,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_vabqaxfi",
+      "req_e3qo2086",
+      "req_pvbs087u",
+      "req_wg3r5n07",
+      "req_qrblllcx",
+      "req_ttnsvmkm",
+      "req_yjg2mckb",
+      "req_9wbao4r2",
+      "req_m55w1o35",
+      "req_dxdv70rg",
+      "req_f3jyaqf2",
+      "req_31c9by2y",
+      "req_e1cysf36",
+      "req_lvy82p8c",
+      "req_1gtphlzp",
+      "req_cker3zwt",
+      "req_m59nk1lk",
+      "req_ytnsgjq4"
+    ],
+    "total_latency_ms": 77272,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 1,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 7,
+  "duration_ms": 85607
+}

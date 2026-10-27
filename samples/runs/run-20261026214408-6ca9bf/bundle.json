@@ -1,0 +1,289 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026214408-6ca9bf",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-g4k8/change/0291",
+    "world_id": "w-g4k8",
+    "title": "Content update: rule 0291 for template T4",
+    "files": [
+      "content/rules/T4/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T4/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f01\": \"m-0291-f01\",\n+    \"f13\": \"m-0291-f13\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T4\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Rule 0291 for template T4 causes content-interpreter to fail with exit_code=3 — only 2 of 13 fields specified",
+    "cause": "The change adds rule-0291 specifying only 2 criteria fields (f01, f13) out of template T4's 13 total fields. The rule-validator validates against field_count=13 but does not reject incomplete criteria (0 rejected in candidate run). However, content-interpreter.load_rules expects 12 inputs supplied (contract ic-0006) and fails with exit_code=3 because rule-0291 only references 2 fields, creating a slot mismatch: \"rule rule-0291 read an input slot that does not exist (12 inputs supplied)\". The measured values: baseline exit_code=0 → candidate exit_code=3; the 12-input expectation (ic-0006) vs. 2-field rule coverage causes the failure.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-b425b96fdeab4001: baseline · workload default → all assertions passed",
+      "x-fe24690298c94256: candidate · workload default → failed: interpreter_keeps_running",
+      "x-f992ddee353f4cdc: candidate · workload default → failed: interpreter_keeps_running",
+      "x-e5dbf558df6f4df9: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "- The rule-validator's criteria completeness check was not inspected; it may also need adjustment\n- No experiment tested a corrected rule with all 13 fields to confirm the fix eliminates the exit_code=3"
+    ],
+    "mitigation": {
+      "text": "Update rule-0291.json to include all 13 criteria fields (f01 through f12, f13) matching template T4's field_count=13, or reduce the template's expected inputs_supplied to match the 2 fields the rule provides. The minimal change is to add the missing fields f02-f12 to rule-0291.json's criteria object.",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0291 runs content-pipeline",
+      "status": "observed",
+      "detail": "validate, then ship to content-interpreter",
+      "evidence": [
+        {
+          "row_id": "change_records:ci-0002",
+          "facts": ""
+        },
+        {
+          "row_id": "service_catalog:ic-0001",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "content-pipeline calls rule-validator.validate",
+      "status": "observed",
+      "detail": "step=1",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "service_catalog:ic-0005",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "rule-validator.validate checks_against template:T4",
+      "status": "inferred",
+      "detail": "field_count=13",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0005",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-b425b96fdeab4001",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test baseline: how many rules are normally checked and rejected without the change",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5f59e65d7716793ef10080a23da89dd9549a46eb402b10a5cad38045ad3b2503",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 baseline"
+    },
+    {
+      "experiment_id": "x-fe24690298c94256",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test candidate: what happens with rule-0291 added - check if validator rejects it and what interpreter does",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "82051e42683154e94974e2e4adba93c8f4aa9422a7730d050d35ac6135cfc402",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 candidate"
+    },
+    {
+      "experiment_id": "x-f992ddee353f4cdc",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "82051e42683154e94974e2e4adba93c8f4aa9422a7730d050d35ac6135cfc402",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 candidate"
+    },
+    {
+      "experiment_id": "x-e5dbf558df6f4df9",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5f59e65d7716793ef10080a23da89dd9549a46eb402b10a5cad38045ad3b2503",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-g4k8 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The rule-validator will reject rule-0291 because it only specifies 2 criteria fields (f01, f13) but template T4 requires all 13 fields to be present/validated, causing the validation to fail due to incomplete criteria coverage.",
+      "mechanism": "rule-validator.validate checks_against template:T4 with field_count=13 (contract ic-0005). The new rule has only 2 of 13 required fields in its criteria, so the validator may flag it as incomplete.",
+      "status": "open",
+      "evidence_for": [
+        "hash:4bd9eafdf2faf482",
+        "hash:418e69ae7f6df96e"
+      ]
+    },
+    {
+      "hypothesis_id": "h2",
+      "claim": "The content-interpreter will misinterpret or misapply rule-0291 because it only provides criteria for f01 and f13 out of the 13 expected fields, leading to incorrect evaluation results when processing incoming events that have values for the other 11 fields.",
+      "mechanism": "content-interpreter.load_rules evaluates template:T4 with inputs_supplied=12 (contract ic-0006). The incomplete criteria means 11 fields lack explicit rule guidance, which could cause default or incorrect handling.",
+      "status": "open",
+      "evidence_for": [
+        "hash:58dde46a25326ebe",
+        "hash:544be03ae594a583"
+      ]
+    },
+    {
+      "hypothesis_id": "h3",
+      "claim": "The content-interpreter fails with exit_code=3 when processing rule-0291 because it reads an input slot that does not exist - the rule specifies criteria only for f01 and f13 but the template expects 12 inputs, causing a slot mismatch.",
+      "mechanism": "content-interpreter.load_rules evaluates template:T4 with inputs_supplied=12 (contract ic-0006). The new rule only defines criteria for f01 and f13 from the 13-field template, creating a slot mismatch when 12 inputs are supplied but the rule only references 2 fields.",
+      "status": "open",
+      "evidence_for": [
+        "hash:58dde46a25326ebe",
+        "hash:544be03ae594a583",
+        "x-fe24690298c94256"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "hash:4bd9eafdf2faf482",
+      "source": "semantic_layer",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=template:T4, contract_key=field_count, contract_value=13"
+    },
+    {
+      "row_id": "hash:418e69ae7f6df96e",
+      "source": "semantic_layer",
+      "facts": "component=template-registry, relation=declares, target=template:T4, contract_key=field_count, contract_value=13"
+    },
+    {
+      "row_id": "hash:58dde46a25326ebe",
+      "source": "semantic_layer",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=content-interpreter.load_rules, contract_key=inputs_supplied, contract_value=20"
+    },
+    {
+      "row_id": "hash:544be03ae594a583",
+      "source": "semantic_layer",
+      "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+    }
+  ],
+  "models": {
+    "calls": 18,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 17,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_r7yakwpj",
+      "req_7ckafkfd",
+      "req_1yz5wd76",
+      "req_ydnsq4uc",
+      "req_12m7o5df",
+      "req_34amvv8w",
+      "req_bh19fj3e",
+      "req_b96dxmih",
+      "req_gwwtyx1y",
+      "req_dsjlnzkn",
+      "req_95bqei51",
+      "req_bg0kjdhf",
+      "req_y5ixoah8",
+      "req_eqywhnm8",
+      "req_unoxg9od",
+      "req_3e4zk6l4",
+      "req_9mjnbmmj",
+      "req_678406ss"
+    ],
+    "total_latency_ms": 91251,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 4,
+    "reads": 1,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 7,
+  "duration_ms": 99315
+}

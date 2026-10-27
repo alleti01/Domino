@@ -1,0 +1,20 @@
+{
+  "run_id": "run-20261026211122-ad0fb3",
+  "change_id": "w-k7m2/change/0042",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "There are two identically-named bundle_fields tables: one in database r0 (140 columns) and one in database default (140 columns). The baseline experiment (x-b4312b498e574a2d) shows bundle-builder reads 140 entries. The candidate experiment (x-b5ebcd2a70e84c06) with GRANT SELECT ON r0.* TO svc_bundle_reader shows bundle-builder reads 280 entries — the grant makes r0.bundle_fields accessible in addition to the already-accessible default.bundle_fields, doubling the entry count. worker-runtime max_entries=200 is exceeded (280 > 200), causing exit code 2: \"fatal: bundle has 280 entries but the runtime preallocates 200; refusing to start\".",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-b4312b498e574a2d",
+    "x-b5ebcd2a70e84c06"
+  ],
+  "model_calls": 23,
+  "experiments": 4,
+  "duration_ms": 221435,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

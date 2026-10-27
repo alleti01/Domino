@@ -1,0 +1,322 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261027010609-8df9af",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-k7m2/change/0042",
+    "world_id": "w-k7m2",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Explicit shard grant for svc_bundle_reader causes bundle overflow and worker-runtime startup failure",
+    "cause": "The proposed change adds GRANT SELECT ON r0.* TO svc_bundle_reader. This gives the bundle-builder reader access to the r0 shard database in addition to the default database. In the candidate run, the bundle-builder read 280 rows total (140 from default + 140 from r0), producing a bundle with 280 entries (8731 bytes). The worker-runtime has a preallocation limit that causes it to refuse to start when the bundle exceeds the limit; the experiment output stated \"fatal: bundle has 280 entries but the runtime preallocates 200; refusing to start\". Baseline run with only the default grant produced 140 entries and exit code 0.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-60022a0bf75a4008: baseline · workload default → all assertions passed",
+      "x-f331165128f04633: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-360bb0b1a9924aaf: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-d796fa1f71e746a7: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "The experiment world uses a default workload and may not capture all production deployment configurations. The runtime preallocation limit was observed in experiment output but its exact source configuration row could not be verified within query budget."
+    ],
+    "mitigation": {
+      "text": "Do not apply the explicit r0 grant (revert the change), or increase the worker-runtime preallocation limit to >=280 entries, or modify the bundle-builder query to not read from the r0 database. Restricting the grant to specific columns would not help because the SELECT query returns one row per column (140 rows from each database), so column-level grants do not reduce the row count that determines bundle size.",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0042 grants_to svc_bundle_reader",
+      "status": "observed",
+      "detail": "GRANT SELECT ON r0.*",
+      "evidence": [
+        {
+          "row_id": "change_records:cr-0004",
+          "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": "grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT"
+        }
+      ]
+    },
+    {
+      "edge": "svc_bundle_reader identity_of bundle-builder",
+      "status": "observed",
+      "detail": "service runs as svc_bundle_reader",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": "grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT"
+        }
+      ]
+    },
+    {
+      "edge": "bundle-builder writes bundle.json",
+      "status": "observed",
+      "detail": "output_mode=as_returned",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        },
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle.json loaded_by worker-runtime",
+      "status": "observed",
+      "detail": "read at startup",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": ""
+        },
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "worker-runtime configured_with worker-runtime.max_entries",
+      "status": "inferred",
+      "detail": "max_entries=200",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-60022a0bf75a4008",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Compare baseline (no explicit shard grant) vs candidate with the change to see what metrics differ",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 baseline"
+    },
+    {
+      "experiment_id": "x-f331165128f04633",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Compare baseline vs candidate with the change to see what metrics differ",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
+    },
+    {
+      "experiment_id": "x-360bb0b1a9924aaf",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
+    },
+    {
+      "experiment_id": "x-d796fa1f71e746a7",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The explicit shard grant GRANT SELECT ON r0.* TO svc_bundle_reader causes the bundle-builder to read 280 rows (from both default and r0 databases) instead of 140, producing a bundle with 280 entries that exceeds the worker-runtime preallocation limit of 200, causing worker-runtime to exit with code 2 and fail to start.",
+      "mechanism": "The change adds an explicit GRANT SELECT ON r0.* TO svc_bundle_reader. This allows the bundle-builder query to read from r0 database in addition to default, doubling the rows from 140 to 280. The larger bundle (280 entries) exceeds the worker-runtime preallocation limit of 200, causing startup failure.",
+      "status": "open",
+      "evidence_for": [
+        "change_records:cr-0004",
+        "db_catalog:ag-0010",
+        "db_catalog:ti-0010",
+        "db_catalog:ti-0011",
+        "x-60022a0bf75a4008",
+        "x-f331165128f04633"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "change_records:cr-0004",
+      "source": "change_records",
+      "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+    },
+    {
+      "row_id": "db_catalog:ag-0010",
+      "source": "db_catalog",
+      "facts": "grant=ag-0010, principal=svc_bundle_reader, database=default, privilege=SELECT"
+    },
+    {
+      "row_id": "db_catalog:ti-0010",
+      "source": "db_catalog",
+      "facts": "table=default.bundle_fields, database=default, table_name=bundle_fields, column_count=140"
+    },
+    {
+      "row_id": "db_catalog:ti-0011",
+      "source": "db_catalog",
+      "facts": "table=r0.bundle_fields, database=r0, table_name=bundle_fields, column_count=140"
+    }
+  ],
+  "models": {
+    "calls": 21,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 19,
+      "nvidia/nemotron-3-ultra-550b-a55b": 2
+    },
+    "request_ids": [
+      "req_y8ci071s",
+      "req_hmvutj5n",
+      "req_30hlne1z",
+      "req_u7ezdo4g",
+      "req_blh9dbzj",
+      "req_qryqgi4l",
+      "req_b3170jzr",
+      "req_xlhbg3bp",
+      "req_1lmaoixn",
+      "req_5xiz1tza",
+      "req_qs4os8x8",
+      "req_hibjfvys",
+      "req_ksykhfax",
+      "req_onn06p41",
+      "req_abz2cyrh",
+      "req_c4zxz37p",
+      "req_yucajmad",
+      "req_uw4sk0v9",
+      "req_1j69ioou",
+      "req_lvvow85w",
+      "req_hk64syhf"
+    ],
+    "total_latency_ms": 205413,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 1,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 2,
+    "final": "approved",
+    "issues": [
+      {
+        "round": 1,
+        "statement": "The worker-runtime has a preallocation limit of 200 entries (rowid runtime_config:rc-0007)",
+        "problem": "unsupported: runtime_config:rc-0007 mentions output_mode=as_returned but does not specify a preallocation limit of 200 entries"
+      },
+      {
+        "round": 1,
+        "statement": "Restrict the explicit grant to only the columns/tables needed, e.g. GRANT SELECT ON r0.safe_column TO svc_bundle_reader",
+        "problem": "unsupported: No evidence about specific columns that would reduce row count; the query selects from bundle_fields table which has 140 columns in both databases"
+      },
+      {
+        "round": 1,
+        "statement": "The smallest targeted fix is to modify the grant to exclude columns that would cause the bundle to exceed the runtime preallocation limit",
+        "problem": "unsupported: The bundle size is determined by row count (entries), not columns; the query returns 140 rows from each database, not columns"
+      },
+      {
+        "round": 1,
+        "statement": "Restrict the explicit grant to only the columns/tables needed, e.g. GRANT SELECT ON r0.safe_column TO svc_bundle_reader; or adjust the worker-runtime preallocation limit to >=280 entries. The smallest targeted fix is to modify the grant to exclude columns that would cause the bundle to exceed the runtime preallocation limit.",
+        "problem": "mitigation would not avoid the failure: The mitigation suggests restricting columns, but the issue is row count from two databases (140 rows each = 280 entries). The query SELECT name, type FROM system.columns WHERE table = 'bundle_fields' returns one row per column, so 140 columns = 140 rows per database. Granting on specific columns wouldn't reduce rows returned by this query. The only fixes are: 1) don't grant on r0 (revert change), 2) increase preallocation limit to >=280, or 3) modify the query to not read from r0."
+      }
+    ]
+  },
+  "queries": 8,
+  "duration_ms": 211972
+}

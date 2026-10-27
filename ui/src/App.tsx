@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CaseEntry, RunEntry, SiteData } from './types'
 import { useSite, type PreviewState } from './data/useSite'
 import { useLocation, type Route } from './lib/router'
-import { startSmoothScroll, stopSmoothScroll } from './lib/smoothScroll'
+import { stopSmoothScroll } from './lib/smoothScroll'
 import { CasesView } from './components/CasesView'
 import { EvidencePanel } from './components/EvidencePanel'
 import { InvestigationView } from './components/InvestigationView'
@@ -11,7 +11,7 @@ import { Shell } from './components/Shell'
 import { EmptyView, ErrorView, LoadingView, NotFoundView } from './components/StateViews'
 import { UnderTheHoodView } from './components/UnderTheHoodView'
 import { LandingPage } from './components/landing/LandingPage'
-import { AnnouncementBar, SiteFooter, SiteNav } from './components/landing/SiteChrome'
+import { Announcement, SiteFooter, SiteNav } from './components/landing/SiteChrome'
 import { TryPage } from './components/landing/TryPage'
 
 /** The case and run a case route points at; latest run when ?run is absent. */
@@ -71,11 +71,8 @@ export default function App() {
 
   // Smooth scrolling on the landing pages only; the dashboard scrolls natively.
   const landing = isLanding(route)
-  useEffect(() => {
-    if (!landing) return
-    startSmoothScroll()
-    return stopSmoothScroll
-  }, [landing])
+  // Native scrolling everywhere: the landing page's pinned sections drive their own playback.
+  useEffect(() => stopSmoothScroll, [landing])
 
   const skipLink = (
     <button type="button" className="skip-link" onClick={() => mainRef.current?.focus()}>
@@ -85,9 +82,9 @@ export default function App() {
 
   if (landing) {
     return (
-      <div className="site">
+      <div className="g">
         {skipLink}
-        <AnnouncementBar />
+        <Announcement />
         <SiteNav />
         <main id="main" ref={mainRef} tabIndex={-1} className="site-main">
           {route.name === 'try' ? <TryPage state={state} /> : <LandingPage state={state} section={route.section} />}

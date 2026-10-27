@@ -1,0 +1,24 @@
+{
+  "run_id": "run-20261026214549-b1206c",
+  "change_id": "w-h9c5/change/0042",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The change GRANT SELECT ON r0.* TO svc_bundle_reader adds r0.* access on top of the existing default.* implicit access. Experiments show rows_visible_to_builder doubled from 99 (baseline) to 198 (candidate), and bundle_bytes doubled from 3118 to 6187. worker-runtime.exit_code remained 0 in both variants, indicating the runtime still starts successfully after the change. No interface contract or limit value was retrieved, but the observable metrics show the system operates correctly with the expanded access.",
+  "model_prediction": "safe",
+  "evidence_refs": [
+    "x-55a730f7998e44ee",
+    "x-61f860b4f9924857",
+    "hash:5e1939dfcb00c14c",
+    "hash:d3fadc7913777c84",
+    "hash:1fb97c4a7eea05e4",
+    "hash:f6df76e3420d0ca0"
+  ],
+  "model_calls": 22,
+  "experiments": 2,
+  "duration_ms": 105958,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

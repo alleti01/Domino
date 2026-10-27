@@ -2,80 +2,77 @@ import { HACKATHON, REPO_URL } from '../../config'
 import { href } from '../../lib/router'
 import { scrollToSection } from '../../lib/scroll'
 import { useNavState } from '../../hooks/useNavState'
-import { Arrow, ArrowLink } from './Motion'
+import { LogoMark } from '../LogoMark'
 
-// Everything except GitHub scrolls within the landing page.
 const NAV: { label: string; to: string; section?: string; external?: boolean }[] = [
   { label: 'How it works', to: href.landing('how'), section: 'how' },
   { label: 'Cases', to: href.landing('cases'), section: 'cases' },
-  { label: 'Built with', to: href.landing('built-with'), section: 'built-with' },
-  { label: 'FAQ', to: href.landing('faq'), section: 'faq' },
-  { label: 'GitHub', to: REPO_URL, external: true },
+  { label: 'Results', to: href.results },
+  { label: 'System proof', to: href.underTheHood },
 ]
 
-function Wordmark() {
+function Caret() {
   return (
-    <a className="wordmark" href={href.home} aria-label="Domino home page">
-      <span className="wordmark-tiles" aria-hidden="true">
-        <span />
-        <span />
-      </span>
+    <svg className="g-caret" viewBox="0 0 8 8" aria-hidden="true">
+      <path d="M1 2.5 4 5.5 7 2.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  )
+}
+
+export function Wordmark() {
+  return (
+    <a className="g-logo" href={href.home} aria-label="Domino home page">
+      <LogoMark className="g-logo-mark" size={21} />
       Domino
     </a>
   )
 }
 
-/** Thin strip above the nav: what this site is, and where the write-up lives. */
-export function AnnouncementBar() {
+/** One line above the nav, like a release note. */
+export function Announcement() {
   return (
-    <div className="announce">
-      <p>
-        <span className="announce-label">Hackathon 2026</span>
-        <span>Domino is our entry for Track 1: Solving Fragmented Intelligence.</span>
-      </p>
-      <ArrowLink className="announce-link" href={`${REPO_URL}#readme`} external>
-        Read the README
-      </ArrowLink>
+    <div className="g-announce">
+      <b>New</b>
+      <span>Fix testing: Domino can re-run the sandbox with its own proposed fix applied.</span>
+      <a href={`${REPO_URL}#readme`} target="_blank" rel="noreferrer">
+        Read more<span className="visually-hidden"> (opens in a new tab)</span>
+      </a>
     </div>
   )
 }
 
-/** Transparent nav: hides on the way down, returns on the way up, inverts over dark sections. */
 export function SiteNav() {
-  const { hidden, scrolled, theme } = useNavState()
+  const { scrolled } = useNavState()
   return (
-    <header className={`site-nav${hidden ? ' is-hidden' : ''}${scrolled ? ' is-scrolled' : ''} on-${theme}`}>
-      <nav className="site-nav-inner" aria-label="Main">
+    <header className={`g-nav${scrolled ? ' is-scrolled' : ''}`}>
+      <nav className="g-wrap g-nav-inner" aria-label="Main">
         <Wordmark />
-        <ul className="site-nav-links">
+        <ul className="g-nav-links">
           {NAV.map((item) => (
             <li key={item.label}>
-              {item.external ? (
-                <a href={item.to} target="_blank" rel="noreferrer">
-                  {item.label}
-                  <span className="visually-hidden"> (opens in a new tab)</span>
-                </a>
-              ) : (
-                <a
-                  href={item.to}
-                  onClick={(e) => {
-                    // Same link clicked again: the URL won't change, so scroll ourselves.
-                    if (item.section && window.location.hash === item.to) {
-                      e.preventDefault()
-                      scrollToSection(item.section, { smooth: true })
-                    }
-                  }}
-                >
-                  {item.label}
-                </a>
-              )}
+              <a
+                href={item.to}
+                onClick={(e) => {
+                  if (item.section && window.location.hash === item.to) {
+                    e.preventDefault()
+                    scrollToSection(item.section, { smooth: true })
+                  }
+                }}
+              >
+                {item.label}
+                {item.section && <Caret />}
+              </a>
             </li>
           ))}
         </ul>
-        <a className="btn btn-ink btn-sm site-nav-cta" href={href.cases}>
-          Open the dashboard
-          <Arrow />
-        </a>
+        <div className="g-nav-actions">
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            GitHub<span className="visually-hidden"> (opens in a new tab)</span>
+          </a>
+          <a className="g-btn g-btn-accent" href={href.cases}>
+            Open the dashboard
+          </a>
+        </div>
       </nav>
     </header>
   )
@@ -83,35 +80,61 @@ export function SiteNav() {
 
 export function SiteFooter() {
   return (
-    <footer className="site-footer">
-      <div className="site-footer-inner">
-        <div className="site-footer-brand">
-          <Wordmark />
-          <p>{HACKATHON}</p>
+    <footer className="g-footer">
+      <div className="g-wrap">
+        <div className="g-footer-grid">
+          <div>
+            <Wordmark />
+            <p className="g-body">Finds what a change would break before it ships, with the evidence and the runs to prove it.</p>
+          </div>
+          <div>
+            <h3>Product</h3>
+            <ul>
+              <li>
+                <a href={href.cases}>Dashboard</a>
+              </li>
+              <li>
+                <a href={href.try}>Try it yourself</a>
+              </li>
+              <li>
+                <a href={href.results}>Results</a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>Proof</h3>
+            <ul>
+              <li>
+                <a href={href.underTheHoodAt('nemotron')}>Nemotron receipts</a>
+              </li>
+              <li>
+                <a href={href.underTheHoodAt('zetaris')}>Semantic layer</a>
+              </li>
+              <li>
+                <a href={href.underTheHoodAt('meterless')}>World Model</a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>Project</h3>
+            <ul>
+              <li>
+                <a href={REPO_URL} target="_blank" rel="noreferrer">
+                  GitHub<span className="visually-hidden"> (opens in a new tab)</span>
+                </a>
+              </li>
+              <li>
+                <a href={`${REPO_URL}#readme`} target="_blank" rel="noreferrer">
+                  README<span className="visually-hidden"> (opens in a new tab)</span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
-        <ul className="site-footer-links">
-          <li>
-            <a href={href.try}>Try it yourself</a>
-          </li>
-          <li>
-            <a href={href.cases}>Dashboard</a>
-          </li>
-          <li>
-            <a href={href.results}>Results</a>
-          </li>
-          <li>
-            <a href={href.underTheHood}>Under the hood</a>
-          </li>
-          <li>
-            <a href={REPO_URL} target="_blank" rel="noreferrer">
-              GitHub<span className="visually-hidden"> (opens in a new tab)</span>
-            </a>
-          </li>
-        </ul>
-        <p className="site-footer-note">
-          All cases are synthetic worlds that recreate failure mechanisms from public incidents in isolated simulations.
-          Domino does not claim it would have prevented those incidents.
-        </p>
+        <div className="g-footer-base">
+          <span>{HACKATHON}</span>
+          <span>Synthetic systems only. No claim about real incidents.</span>
+        </div>
       </div>
     </footer>
   )

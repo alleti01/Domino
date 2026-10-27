@@ -1,0 +1,24 @@
+{
+  "run_id": "run-20261026214138-a57802",
+  "change_id": "w-d2v4/change/0042",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "The change adds GRANT SELECT ON r0.* and r1.* to svc_bundle_reader. Before the change, svc_bundle_reader had implicit access only to the default database (60 bundle_fields rows). After the change, explicit grants extend read access to r0 and r1 bundle_fields tables as well (180 total rows). This causes bundle-builder to read 180 rows (vs 60 baseline), producing a 5629-byte bundle (vs 1909 bytes). worker-runtime has a preallocated limit of 160 entries, but the new bundle contains 180 entries, causing runtime startup failure with exit_code 2: \"bundle has 180 entries but the runtime preallocates 160\".",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-b1a066ee11e44e7a",
+    "x-67d23842d4df4f5c",
+    "db_catalog:ti-0002",
+    "db_catalog:ti-0003",
+    "runtime_config:rc-0001",
+    "runtime_config:rc-0002"
+  ],
+  "model_calls": 16,
+  "experiments": 4,
+  "duration_ms": 145604,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 1,
+  "cache_hits": 0,
+  "fix": null
+}
