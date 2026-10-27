@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check:secrets": "node scripts/check-secrets.mjs ../samples fixtures src",
-    "prebuild": "npm run check:secrets"
+    "prebuild": "npm run check:secrets",
+    "dev:live": "DOMINO_RUNS_DIR=../agent/runs vite"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

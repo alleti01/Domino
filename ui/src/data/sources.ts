@@ -60,3 +60,41 @@ export const placeholderSource: DataSource = {
 export function defaultSource(): DataSource {
   return samplesSource.list().some((p) => p.endsWith('/trace.jsonl')) ? samplesSource : placeholderSource
 }
+
+// ---------- Live: the dev server's data API (see vite.config.ts) ----------
+
+export interface LiveListing {
+  version: string
+  roots: { samples: string; runs: string | null }
+  files: { path: string; size: number; mtimeMs: number }[]
+}
+
+/** The dev server's file listing, or null when there is no API (static build) or it is unreachable. */
+export async function fetchListing(signal?: AbortSignal): Promise<LiveListing | null> {
+  try {
+    const res = await fetch('api/domino/files', { cache: 'no-store', signal })
+    if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return null
+    const body = (await res.json()) as LiveListing
+    return Array.isArray(body.files) ? body : null
+  } catch {
+    return null
+  }
+}
+
+/** Files served live by the dev server, read on demand. */
+export function liveSource(listing: LiveListing): DataSource {
+  const paths = listing.files.map((f) => f.path)
+  return {
+    name: [listing.roots.samples, listing.roots.runs]
+      .filter((r): r is string => !!r)
+      .map((r) => `${r.split('/').slice(-2).join('/')}/`)
+      .join(' + '),
+    isPlaceholder: false,
+    list: () => paths,
+    async readText(path) {
+      const res = await fetch(`api/domino/file?path=${encodeURIComponent(path)}`, { cache: 'no-store' })
+      if (!res.ok) throw new LoadError(`${path}: HTTP ${res.status}`)
+      return res.text()
+    },
+  }
+}

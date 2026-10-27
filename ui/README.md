@@ -11,29 +11,34 @@ npm run build    # static build in ui/dist; open from any folder or static host
 ```
 
 ## Pages
+The landing page (`#/`, `#/try`) sells; the console proves. The console (`src/dash/`) is laid out like an infrastructure console (grouped sidebar, breadcrumb bar, summary strips, dense tables, detail rails) in the landing page's palette, with colour used only for status. Every figure is computed from the loaded runs.
+
 | URL | Page |
 |---|---|
-| `#/` | Landing page: hero and four chapters around one 3D object built from a saved run (connect the facts → find the assumption → test it and revert it → inspect the result), then two contrasting outcomes, a "Built with" strip linking to the sponsor proof, a short FAQ (verdict meanings, who decides, synthetic data, running it locally) and the call to action |
-| `#/try` | Try it yourself (step-by-step replay: next build step) |
-| `#/cases` | Investigations: a catalog of framed panels, one per case, each with its change, latest verdict, a miniature of that run's real dependency graph (the verdict's path picked out), its deciding baseline/candidate/control reading, runs and Inspect / PR preview; search and filter by latest verdict |
-| `#/cases/<case_id>` | Report for the case's latest run, opening on the Summary tab: readouts (verdict and judge rule, sandbox runs, execution, explanation review), the dependency map with its inspector, the experiment instrument, then the model's attributed explanation, what remains uncertain and any unverified mitigation |
-| `#/cases/<case_id>?run=<run_id>` | Report for a specific run (also reachable from the run switcher in the report header) |
-| `#/cases/<case_id>?section=<tab>` | One report tab: `context` (change and dependency path), `hypotheses`, `experiments`, `audit` (event timeline). Older section links still work and open the tab that holds them: `change`, `chain` → context; `verdict` → summary; `trace`, `receipts` → audit trail |
-| `#/cases/<case_id>/pr` | PR preview: the same run as the check and comment Domino would post (nothing is posted) |
-| `#/results` | Results, kept in four groups: recorded outcomes, published expected verdicts, measured metrics, and comparisons with simpler methods (each shows a pending state until it has data). `?section=outcomes`, `expected`, `metrics` or `baselines` scrolls to one |
-| `#/under-the-hood` | System proof, one tab per sponsor technology with its role and recorded proof: `?section=nemotron` (receipt log via Nightshift, the default), `zetaris` (queries, rows cited, sources/USL/data quality once exported), `meterless` (World Model reads, writes and updates) |
-| any report + `&evidence=<id>` | Opens that evidence in the inspector (docked beside the report from 1280px, a dialog below that; Escape closes it). IDs belong to the run being shown, e.g. `evidence=e7%23B-002` |
+| `#/` | Landing page (see below) |
+| `#/try` | Try it yourself (step-by-step replay) |
+| `#/overview` | Console home: key numbers, every change with its latest verdict and repeat agreement, recent runs, verdict mix, model routing, what needs attention |
+| `#/cases` | Investigations: one row per change; filter by latest verdict or "needs attention", search, sort; deciding measurement and review status per row |
+| `#/runs` | Every saved run, newest first; filter by result and mode |
+| `#/cases/<case_id>[?run=<run_id>]` | Investigation report, Summary tab: the verdict once, the deciding measurement as bars against the limit, three trust checks (repeats agree, explanation reviewed, model calls on Nemotron), the path as a short strip, and the evidence, full explanation, reviewer findings and scope collapsed one click away |
+| `…?section=evidence` | Dependency map (top-to-bottom, verdict path or full context, selectable), links table, data-quality findings, hypotheses, and the change with its diff |
+| `…?section=experiments` | Baseline / candidate / reverted on aligned rows with plain-language names, then each sandbox run with rationale, checks, logs, artifacts and its reproduce command |
+| `…?section=activity` | Every model call with its Nightshift receipt, every trace event, errors, World Model memory operations |
+| `#/cases/<case_id>/pr` | PR comment preview (nothing is posted) |
+| `#/results` | Recorded outcomes per repeat, measured metrics (once the scorecard is exported), comparison with simpler methods |
+| `#/under-the-hood?section=nemotron\|zetaris\|meterless` | Platform: model calls by model and by run; semantic layer sources and rows cited (plus sources, USL and DQ once `zetaris.json` exists); World Model operations |
+| any page + `&evidence=<id>` | Evidence drawer for that ID in the run on screen; Esc or Back closes it |
 
-Evidence IDs (`e7`, or `e7#B-002` for one Zetaris row) are only unique within a run, so evidence links always sit on a case/run URL.
+Older `?section=` names still land on the right tab: `path`, `context`, `chain`, `change`, `hypotheses` → evidence; `models`, `receipts`, `timeline`, `audit`, `trace` → activity; `verdict` → summary. Search everything with ⌘K or `/`. Explanations of how things work sit behind ⓘ icons instead of in the page. In dev builds, Ctrl+Shift+D shows the UI-state switcher.
 
-## Dashboard visuals
-- **Dependency map** (`components/report/DependencyMap.tsx`, layout in `lib/graph.ts`): the semantic-layer graph around the change, in columns by dependency depth with the verdict's path along the middle row. Observed links are solid, inferred dashed, unresolved dotted; the change is the ivory tile. Selecting a component or link highlights its connections and shows its source rows beside the map. *Path / Full context* and *Map / List* switch what is drawn and how; narrow screens start on the path as one column. With no path in the verdict, nothing is drawn as a failure path.
-- **3D view** (`components/report/Graph3D.tsx`, lazy-loaded; placement in `lib/graph.ts`): the same graph as domino tiles on a reference grid, columns by dependency depth, the verdict's path on the front lane and context in lanes behind and in front. It is the default on wide screens when WebGL works; phones start on 2D. Fit, focus, reset, rotate and zoom buttons; drag rotates within bounds, the wheel scrolls the page. Labels are HTML buttons, so they stay readable and keyboard-selectable. It renders only on demand, stops offscreen, and falls back to 2D with a notice if WebGL is missing or the context is lost. 3D, 2D, List and the inspector share one selection.
-- **Follow path**: steps through the verdict's links with their status and cited rows; inferred links stay dashed, unresolved ones stop at a marked gap. Labelled as an illustration of a saved run. Play is off under reduced motion.
-- **Recorded experiment** (Summary): choosing a run in the instrument or beside the map shows its checks and observations in both. The saved runs don't tie checks to components, so no component is marked as failing.
-- **Experiment instrument** (`components/report/Instrument.tsx`): every sandbox run on one aligned scale for a chosen observation, beside each check's pass/fail and the run's outcome. Missing arms are shown as not recorded; the cited limit is listed, not drawn.
+## Live data
+`npm run dev` serves `../samples/` through a small API on the dev server (`vite.config.ts`), and the console polls it every 4 s: a run that changes on disk updates on screen without a reload, and a trace still being written shows as in progress. To watch the agent's own output folder as well:
 
-In dev builds, the top bar has a **Dev** control (hidden in production) that shows the loading, empty, error and run-in-progress states.
+```bash
+npm run dev:live    # DOMINO_RUNS_DIR=../agent/runs
+```
+
+The sidebar shows the connection (Live, with the folders watched, or Snapshot). A static build has no API and shows the runs bundled at build time.
 
 ## Landing page scene
 The opening of `#/` is one 3D object (`src/components/landing/story/`, React Three Fiber on three.js, geometry built in code, no model files): the flagship saved run's dependency path as domino-shaped components standing on a plinth, the proposed change in ivory at the front. It unfolds into the connected path, closes in on the inferred link, runs baseline / candidate / control in a sandbox, and re-forms with the component that broke laid beside it. Every name, link, measurement and run comes from that run (the first case that reproduced a failure); the arrangement itself is illustrative and the page says so.

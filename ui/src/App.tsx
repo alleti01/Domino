@@ -3,16 +3,10 @@ import type { CaseEntry, RunEntry, SiteData } from './types'
 import { useSite, type PreviewState } from './data/useSite'
 import { useLocation, type Route } from './lib/router'
 import { stopSmoothScroll } from './lib/smoothScroll'
-import { CasesView } from './components/CasesView'
-import { EvidencePanel } from './components/EvidencePanel'
-import { InvestigationView } from './components/InvestigationView'
-import { ScorecardView } from './components/ScorecardView'
-import { Shell } from './components/Shell'
-import { EmptyView, ErrorView, LoadingView, NotFoundView } from './components/StateViews'
-import { UnderTheHoodView } from './components/UnderTheHoodView'
 import { LandingPage } from './components/landing/LandingPage'
 import { Announcement, SiteFooter, SiteNav } from './components/landing/SiteChrome'
 import { TryPage } from './components/landing/TryPage'
+import { Dashboard } from './dash/Dashboard'
 
 /** The case and run a case route points at; latest run when ?run is absent. */
 function resolveRun(site: SiteData, route: Route): { caseEntry?: CaseEntry; run?: RunEntry } {
@@ -30,10 +24,20 @@ function pageTitle(route: Route, caseEntry?: CaseEntry) {
       return 'Try it yourself · Domino'
     case 'cases-index':
       return 'Investigations · Domino'
+    case 'overview':
+      return 'Overview · Domino'
+    case 'runs':
+      return 'Runs · Domino'
+    case 'live':
+      return 'Live check · Domino'
+    case 'docs':
+      return 'Docs · Domino'
+    case 'changelog':
+      return 'Changelog · Domino'
     case 'results':
       return 'Results · Domino'
     case 'under-the-hood':
-      return 'System proof · Domino'
+      return 'Platform · Domino'
     case 'case':
       return caseEntry ? `${caseEntry.label} · Domino` : 'Domino'
     default:
@@ -94,41 +98,5 @@ export default function App() {
     )
   }
 
-  let content
-  if (state.status === 'loading') content = <LoadingView />
-  else if (state.status === 'error') content = <ErrorView message={state.message} />
-  else {
-    const s = state.site
-    switch (route.name) {
-      case 'cases-index':
-        content = s.cases.length === 0 ? <EmptyView /> : <CasesView site={s} />
-        break
-      case 'results':
-        content = <ScorecardView scorecard={s.scorecard!} cases={s.cases} section={route.section} />
-        break
-      case 'under-the-hood':
-        content = <UnderTheHoodView site={s} section={route.section} />
-        break
-      case 'case':
-        if (!caseEntry) content = s.cases.length === 0 ? <EmptyView /> : <NotFoundView what="Case" />
-        else if (!run) content = caseEntry.runs.length === 0 ? <EmptyView /> : <NotFoundView what="Run" />
-        else content = <InvestigationView cases={s.cases} caseEntry={caseEntry} run={run} view={route.view} section={route.section} />
-        break
-      default:
-        content = <NotFoundView what="Page" />
-    }
-  }
-
-  const inv = run?.load.ok ? run.load.investigation : null
-
-  return (
-    <div className={`app${site && loc.evidenceId ? ' has-inspector' : ''}`}>
-      {skipLink}
-      <Shell route={route} preview={preview} onPreview={setPreview} />
-      <main id="main" ref={mainRef} tabIndex={-1} className="app-main">
-        {content}
-      </main>
-      {site && loc.evidenceId && <EvidencePanel key={`${route.name === 'case' ? route.caseId : ''}:${run?.runId ?? ''}`} id={loc.evidenceId} inv={inv} />}
-    </div>
-  )
+  return <Dashboard loc={loc} state={state} preview={preview} onPreview={setPreview} caseEntry={caseEntry} run={run} />
 }

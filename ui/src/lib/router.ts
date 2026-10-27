@@ -9,6 +9,11 @@ export type Route =
   | { name: 'home'; section: string | null }
   | { name: 'try' }
   | { name: 'cases-index' }
+  | { name: 'overview' }
+  | { name: 'runs' }
+  | { name: 'live'; caseId: string | null }
+  | { name: 'docs'; page: string | null }
+  | { name: 'changelog' }
   | { name: 'case'; caseId: string; view: ReportView; runId: string | null; section: string | null }
   | { name: 'results'; section: string | null }
   | { name: 'under-the-hood'; section: string | null }
@@ -34,6 +39,11 @@ export function parseHash(hash: string): AppLocation {
   if (seg.length === 0) route = { name: 'home', section: params.get('section') }
   else if (seg[0] === 'try' && seg.length === 1) route = { name: 'try' }
   else if (seg[0] === 'cases' && seg.length === 1) route = { name: 'cases-index' }
+  else if (seg[0] === 'overview' && seg.length === 1) route = { name: 'overview' }
+  else if (seg[0] === 'runs' && seg.length === 1) route = { name: 'runs' }
+  else if (seg[0] === 'live' && seg.length === 1) route = { name: 'live', caseId: params.get('case') }
+  else if (seg[0] === 'docs' && seg.length <= 2) route = { name: 'docs', page: seg[1] ?? null }
+  else if (seg[0] === 'changelog' && seg.length === 1) route = { name: 'changelog' }
   else if (seg[0] === 'results' && seg.length === 1) route = { name: 'results', section: params.get('section') }
   else if (seg[0] === 'under-the-hood' && seg.length === 1) {
     route = { name: 'under-the-hood', section: params.get('section') }
@@ -64,6 +74,11 @@ export const href = {
   landing: (section: string) => build('/', { section }),
   try: '#/try',
   cases: '#/cases',
+  overview: '#/overview',
+  runs: '#/runs',
+  live: (caseId?: string | null) => build('/live', { case: caseId }),
+  docs: (page?: string) => (page ? `#/docs/${page}` : '#/docs'),
+  changelog: '#/changelog',
   results: '#/results',
   underTheHood: '#/under-the-hood',
   /** A section of Under the hood: nemotron, zetaris or meterless. */

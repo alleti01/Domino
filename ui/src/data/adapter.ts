@@ -48,6 +48,9 @@ const stepId = (e: TraceEvent) => `step-${e.seq}`
 
 /** "step_3" → "Step 3", "plan_experiment" → "Plan experiment". */
 export function purposeLabel(purpose: string): string {
+  const step = purpose.match(/^step_(\d+)$/)
+  if (step) return `Reasoning step ${step[1]}`
+  if (purpose === 'review') return 'Explanation review'
   const s = purpose.replace(/_/g, ' ').trim()
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
@@ -77,19 +80,19 @@ function splitBullets(lines: string[]): string[] {
 function eventTitle(e: TraceEvent): string {
   switch (e.type) {
     case 'run_started':
-      return `Run started: ${e.change.title}`
+      return `Started investigating: ${e.change.title}`
     case 'change_parsed':
-      return 'Change parsed'
+      return 'Read the change'
     case 'usl_query':
       return e.purpose || 'Semantic layer query'
     case 'dependency_path':
-      return `Dependency path: ${e.path.nodes.length} components, ${e.path.edges.length} links`
+      return `Found the dependency path: ${e.path.nodes.length} components, ${e.path.edges.length} links`
     case 'hypothesis':
       return `Hypothesis ${e.hypothesis_id}: ${e.status}`
     case 'experiment_requested':
-      return `Experiment requested: ${e.request.variant}`
+      return `Asked for a ${e.request.variant} run in the sandbox`
     case 'experiment_result':
-      return `Experiment ${e.result.experiment_id} (${e.result.request.variant}) finished`
+      return `${e.result.request.variant.charAt(0).toUpperCase()}${e.result.request.variant.slice(1)} run finished`
     case 'revision':
       return e.what_changed
     case 'memory':
@@ -97,7 +100,7 @@ function eventTitle(e: TraceEvent): string {
     case 'model_call':
       return `${purposeLabel(e.purpose)}${e.outcome === 'failed' ? ' (failed)' : ''}`
     case 'verdict':
-      return 'Verdict decided'
+      return 'Judge decided the verdict'
     case 'review':
       return `Review round ${e.round}: ${e.outcome.replace('_', ' ')}${e.issues.length ? `, ${e.issues.length} issue${e.issues.length > 1 ? 's' : ''}` : ''}`
     case 'error':
@@ -335,7 +338,11 @@ export function toInvestigation(files: RunFiles, meta: CaseMeta & { isPlaceholde
   // ----- Status -----
   const errors = of('error').map((e) => ({ stepId: stepId(e), stage: e.stage, message: e.message, recoverable: e.recoverable }))
   let status: RunStatus = finished ? 'complete' : 'running'
-  if (errors.some((e) => !e.recoverable) && !verdict) status = 'failed'
+  // The agent logs an unrecoverable model error and then retries the step, so
+  // an unfinished trace has only failed if it stops on such an error.
+  const tail = events[events.length - 1]
+  const stoppedOnError = tail?.type === 'error' && !tail.recoverable
+  if (errors.some((e) => !e.recoverable) && !verdict && (finished || stoppedOnError)) status = 'failed'
   if (summary?.outage) status = 'outage'
 
   // ----- Trace -----
