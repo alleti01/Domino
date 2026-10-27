@@ -263,7 +263,7 @@ def main() -> int:
     missing = [m for m in modes if m not in runners and m not in imports]
     if missing:
         print(f"Skipping {missing}: pass --agent-cmd to run the agent modes.")
-        modes = [m for m in modes if m in runners]
+        modes = [m for m in modes if m in runners or m in imports]
 
     stamp = time.strftime("%Y%m%d-%H%M%S")
     out_dir = ROOT / "runs" / "scorecard" / stamp
