@@ -36,6 +36,21 @@ and run the candidate with it moved once each way (`params.overrides`). The caus
 outcome flips the way the chain predicts. That run is a fix candidate for `judgeFix` (§5 of the agent
 contract), so it costs nothing extra. Runs take about 0.25 s each.
 
+## P4. Keep only the overrides the fix needs
+After `judgeFix` verifies a fix with more than one override, code (not the model) drops each override once
+and re-runs the candidate with the rest. An override is needed if dropping it makes the candidate fail.
+Report only the needed set as the fix, and list the others as "not needed: the candidate passes without it".
+
+- Re-verify the reduced set the usual way (candidate twice, baseline once) before reporting it.
+- If more than one override is needed, report them all; if several each fix it alone, keep the one the
+  cause chain (P1) points at and list the others as alternatives.
+- Prefer the override that changes the metric the chain names back to its baseline value over one that
+  only raises a limit, and say which kind each override is (removes the cause / adds headroom).
+- Cost: one run per override, about 0.25 s each.
+
+**Why:** a bundled fix can hide which change mattered. A reviewer could apply the one that only raises a
+limit, which passes while the cause stays in place.
+
 ## Measuring it
 Anish re-runs the scorecard on the practice worlds after any change (modes D and E, 3 repeats). The
 held-out world stays out of tuning: its results are only used for the final run.
