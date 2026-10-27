@@ -89,14 +89,28 @@ export async function trimFix(o: {
     if (r) runs.push(r);
     return r;
   };
-  // Every metric the change moved. A fix removes the cause only if all of them return to baseline; if some stay
-  // moved while the checks pass, it only adds headroom (e.g. more workers absorb added latency that is still there).
-  const moved = o.baseline ? Object.keys(o.failing.observations).filter((m) => String(o.baseline!.observations[m]) !== String(o.failing.observations[m])) : [];
-  const kindOf = (r: ExperimentResult | null): FixTrim["kinds"][string] =>
-    !r || !o.baseline || !moved.length ? "undetermined" : moved.every((m) => String(r.observations[m]) === String(o.baseline!.observations[m])) ? "removes_cause" : "adds_headroom";
+  const same = (r: ExperimentResult, other: ExperimentResult, m: string) => String(r.observations[m]) === String(other.observations[m]);
+  // Kinds are judged on the metrics an override can move. The change stays applied in every fix run, so a metric
+  // it moves directly (the first hop of the chain) never returns to baseline whatever the override: if no single
+  // override moves a metric away from its failing value, it is the change's own effect and is left out.
+  // removes_cause: every remaining moved metric returns to baseline. adds_headroom: the checks pass while some stay
+  // moved (e.g. more workers absorb added latency that is still there). Otherwise, or if nothing remains: undetermined.
+  const kindsFrom = (singles: Map<string, ExperimentResult | null>): FixTrim["kinds"] => {
+    const baseline = o.baseline;
+    const runsAlone = [...singles.values()].filter((r): r is ExperimentResult => !!r);
+    const moved = baseline ? Object.keys(o.failing.observations).filter((m) => !same(o.failing, baseline, m)) : [];
+    const movable = moved.filter((m) => runsAlone.some((r) => !same(r, o.failing, m)));
+    const kindOf = (r: ExperimentResult | null): FixTrim["kinds"][string] => {
+      if (!r || !baseline || !movable.length) return "undetermined";
+      if (movable.every((m) => same(r, baseline, m))) return "removes_cause";
+      return passes(r) ? "adds_headroom" : "undetermined";
+    };
+    return Object.fromEntries([...singles].map(([k, r]) => [k, kindOf(r)]));
+  };
 
   if (keys.length < 2) {
-    const kinds = Object.fromEntries(keys.map((k) => [k, kindOf(o.fullCandidate ?? null)])) as FixTrim["kinds"];
+    // One override: its full-fix run is the only single-override run, so this costs no extra runs.
+    const kinds = kindsFrom(new Map(keys.map((k) => [k, o.fullCandidate ?? null])));
     return { kept: { ...o.overrides }, trim: { proposed: { ...o.overrides }, not_needed: [], alternatives: [], kinds, experiments: [] }, verified: null, runs };
   }
   const alone = new Map<string, ExperimentResult | null>();
@@ -105,7 +119,7 @@ export async function trimFix(o: {
     if (!r) return null; // data layer unavailable: keep the verified fix as it was
     alone.set(k, r);
   }
-  const kinds = Object.fromEntries(keys.map((k) => [k, kindOf(alone.get(k)!)])) as FixTrim["kinds"];
+  const kinds = kindsFrom(alone);
   const trim: FixTrim = { proposed: { ...o.overrides }, not_needed: [], alternatives: [], kinds, experiments: [] };
 
   // Keep preference: removes the cause, then named in the cause chain, then fixes it alone. Drop the rest first.

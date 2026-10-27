@@ -195,7 +195,7 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
       const t = fv.trim;
       if (t) {
         // Only what was measured: did every metric the change moved return to its baseline value with this override alone?
-        const kind = { removes_cause: "every measured effect of the change returns to baseline", adds_headroom: "the change's measured effects remain; the system tolerates them", undetermined: "" } as const;
+        const kind = { removes_cause: "removes the cause: what the failure moved returns to baseline", adds_headroom: "adds headroom: the checks pass while the failure's effects stay", undetermined: "" } as const;
         const kept = Object.entries(fv.overrides).map(([k, v]) => `\`${k}=${v}\`${kind[t.kinds[k] ?? "undetermined"] ? ` (${kind[t.kinds[k]!]})` : ""}`);
         const dropped = (ks: string[]) => ks.map((k) => `\`${k}=${t.proposed[k]}\``).join(", ");
         if (t.not_needed.length || t.alternatives.length) {

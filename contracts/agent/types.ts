@@ -93,7 +93,8 @@ export interface FixTrim {
   proposed: Record<string, string | number | boolean>; // what the investigator proposed
   not_needed: string[]; // targets dropped: the candidate passes without them and they do not fix it alone
   alternatives: string[]; // targets dropped that fix the failure on their own
-  /** removes_cause: every metric the change moved returns to its baseline value; adds_headroom: some stay moved but the checks pass */
+  /** Judged on the moved metrics some single override can move (the change's own direct effect is left out):
+   *  removes_cause: all of them return to baseline; adds_headroom: the checks pass while some stay moved; else undetermined */
   kinds: Record<string, "removes_cause" | "adds_headroom" | "undetermined">;
   experiments: string[]; // the extra runs, by experiment id
 }
