@@ -5,6 +5,7 @@ import type { CaseEntry, Investigation, SiteData } from '../../../types'
 import type { LoopData } from './Loop'
 import { VERDICT, isNemotron } from '../../../lib/labels'
 import { experimentSummary, flagship, showcases, type Showcase } from '../../../lib/showcase'
+import { cap, plainMeasure, plainSource, plainTitle, plainUnit } from './plain'
 
 export interface CaseCard {
   id: string
@@ -15,6 +16,8 @@ export interface CaseCard {
   baseline: string
   candidate: string
   measure: string
+  /** A short noun for the measure, e.g. "records read". */
+  unit: string
   limit: number | null
   failed: boolean
   runs: number
@@ -35,13 +38,14 @@ export function caseCards(cases: CaseEntry[]): CaseCard[] {
     const latest = inv.verdict?.verdict ?? null
     return {
       id: caseEntry.id,
-      title: inv.change?.title ?? caseEntry.label,
+      title: plainTitle(inv.change?.title ?? caseEntry.label),
       label: caseEntry.label,
       verdict: latest,
       verdictLabel: latest === 'reproduced_failure' ? 'Reproduced failure' : latest === 'no_failure_observed' ? 'No failure observed' : latest ? VERDICT[latest].label : 'No verdict',
       baseline: fmt(x?.baseline),
       candidate: fmt(x?.candidate),
-      measure: x ? plain(x.key) : 'Open the report',
+      measure: x ? cap(plainMeasure(x.key)) : 'Open the report',
+      unit: x ? plainUnit(x.key) : '',
       limit: x?.limit?.value ?? null,
       failed: latest === 'reproduced_failure',
       runs: verdicts.length,
@@ -173,7 +177,7 @@ export function flowData(inv: Investigation | null): FlowData {
     baseline: num(x?.baseline),
     candidate: num(x?.candidate),
     limit: x?.limit?.value ?? null,
-    measure: x ? plain(x.key) : '',
+    measure: x ? cap(plainMeasure(x.key)) : '',
     failed: !!x?.candidateFailed,
   }
 }
@@ -199,7 +203,7 @@ export function loopData(site: SiteData): LoopData {
   const sources = [...bySource]
     .sort((a, b) => b[1].size - a[1].size)
     .slice(0, 3)
-    .map(([name, items]) => ({ name: name.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()), items: [...items] }))
+    .map(([name, items]) => ({ name: cap(plainSource(name)), items: [...items] }))
   const num = (v: unknown) => (typeof v === 'number' ? v : Number.isFinite(Number(v)) ? Number(v) : 0)
   const lanes = shows.slice(0, 5).map(({ caseEntry, inv }) => {
     const x = experimentSummary(inv)
@@ -215,7 +219,89 @@ export function loopData(site: SiteData): LoopData {
     baseline: num(x?.baseline) || 100,
     candidate: num(x?.candidate) || 160,
     limit: x?.limit?.value ?? null,
-    measure: x ? plain(x.key) : '',
+    measure: x ? cap(plainMeasure(x.key)) : '',
     failed: !!x?.candidateFailed,
+  }
+}
+
+/* ---------- Measured facts for the results and stack sections ---------- */
+
+export interface SiteFacts {
+  worlds: number
+  runs: number
+  /** Worlds whose every recorded run reached the same verdict. */
+  steady: number
+  reproduced: number
+  noFailure: number
+  inconclusive: number
+  calls: number
+  /** Calls that reached a model (the rest failed at the provider and were retried). */
+  answeredCalls: number
+  failedCalls: number
+  nemotronCalls: number
+  medianCalls: number | null
+  medianSeconds: number | null
+  approved: number
+  flagged: number
+  reviewUnavailable: number
+  /** Source systems the semantic layer joined, most used first. */
+  sources: string[]
+  investigator: string | null
+  reviewer: string | null
+}
+
+const median = (xs: number[]) => {
+  if (!xs.length) return null
+  const s = [...xs].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+}
+
+/** Short model names: "nvidia/nemotron-3.5-lightning-30b-a3b" → "Nemotron 3.5 Lightning". */
+export function modelName(id: string | null) {
+  if (!id) return null
+  const m = (id.split('/').pop() ?? id).match(/^nemotron-([\d.]+)-([a-z]+)/i)
+  return m ? `Nemotron ${m[1]} ${m[2].charAt(0).toUpperCase()}${m[2].slice(1)}` : (id.split('/').pop() ?? id)
+}
+
+export function siteFacts(site: SiteData): SiteFacts {
+  const invs: Investigation[] = []
+  let steady = 0
+  for (const c of site.cases) {
+    const ok = c.runs.flatMap((r) => (r.load.ok ? [r.load.investigation] : []))
+    invs.push(...ok)
+    const vs = new Set(ok.map((i) => i.verdict?.verdict ?? null))
+    if (ok.length > 0 && vs.size === 1) steady++
+  }
+  const count = (v: string) => invs.filter((i) => i.verdict?.verdict === v).length
+  const receipts = invs.flatMap((i) => i.receipts)
+  const byModel = new Map<string, number>()
+  for (const r of receipts) if (r.routedModel) byModel.set(r.routedModel, (byModel.get(r.routedModel) ?? 0) + 1)
+  const reviewers = new Map<string, number>()
+  for (const i of invs) if (i.review?.reviewerModel) reviewers.set(i.review.reviewerModel, (reviewers.get(i.review.reviewerModel) ?? 0) + 1)
+  const top = (m: Map<string, number>) => [...m].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  const reviewer = top(reviewers)
+  const investigator = top(new Map([...byModel].filter(([k]) => k !== reviewer))) ?? top(byModel)
+  const sourceUse = new Map<string, number>()
+  for (const i of invs) for (const n of i.chain.nodes) for (const r of n.refs) if (r.source) sourceUse.set(r.source, (sourceUse.get(r.source) ?? 0) + 1)
+  return {
+    worlds: site.cases.length,
+    runs: invs.length,
+    steady,
+    reproduced: count('reproduced_failure'),
+    noFailure: count('no_failure_observed'),
+    inconclusive: count('inconclusive'),
+    calls: receipts.length,
+    answeredCalls: receipts.filter((r) => r.outcome === 'ok').length,
+    failedCalls: receipts.filter((r) => r.outcome !== 'ok').length,
+    nemotronCalls: receipts.filter((r) => r.outcome === 'ok' && isNemotron(r.routedModel ?? '')).length,
+    medianCalls: median(invs.map((i) => i.receipts.length)),
+    medianSeconds: median(invs.flatMap((i) => (i.durationMs != null ? [i.durationMs / 1000] : []))),
+    approved: invs.filter((i) => i.review?.outcome === 'approved').length,
+    flagged: invs.filter((i) => i.review?.outcome === 'flagged').length,
+    reviewUnavailable: invs.filter((i) => !i.review || (i.review.outcome !== 'approved' && i.review.outcome !== 'flagged')).length,
+    sources: [...sourceUse].sort((a, b) => b[1] - a[1]).map(([s]) => plainSource(s)),
+    investigator: modelName(investigator),
+    reviewer: modelName(reviewer),
   }
 }

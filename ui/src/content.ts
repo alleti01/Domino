@@ -11,7 +11,7 @@ export const HEADLINE = ['Find what breaks', 'before you ship.']
 export const ONE_LINER = 'Find what breaks before you ship.'
 
 export const HERO_SUB =
-  'Domino tests a proposed change against the systems around it and shows what would break, with the evidence, before you deploy.'
+  'Change one thing, and Domino tests it against your whole pipeline in a throwaway copy. You see what breaks before it ships.'
 
 export const PITCH =
   'A change can be correct on its own and still break something two systems away. Domino reads a proposed change, joins the code, data and runtime facts around it, runs the experiment that would expose a hidden failure, and shows you the proof.'

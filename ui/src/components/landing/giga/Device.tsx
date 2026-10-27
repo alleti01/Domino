@@ -79,34 +79,6 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
     return () => removeEventListener('resize', fit)
   }, [])
 
-  // Lights down: as the hero scrolls away the room dims and only the lamps stay
-  // lit. --dark runs 0 → 1 on an S-curve; the materials read it.
-  useEffect(() => {
-    const el = hero.current
-    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let raf = 0
-    let night = false
-    const read = () => {
-      raf = 0
-      // Desktop: the composition's first 800 px. Phones: the last part of the hero.
-      const s = Number(frame.current?.style.getPropertyValue('--s') || 1)
-      const narrow = innerWidth < 1024
-      const start = narrow ? el.offsetHeight * 0.6 : 60 * s
-      const span = narrow ? el.offsetHeight * 0.4 : 740 * s
-      const t = Math.min(1, Math.max(0, (scrollY - start) / span))
-      const dark = t * t * (3 - 2 * t)
-      el.style.setProperty('--dark', dark.toFixed(4))
-      if (dark > 0.6 !== night) el.classList.toggle('is-night', (night = dark > 0.6))
-    }
-    const on = () => (raf ||= requestAnimationFrame(read))
-    read()
-    addEventListener('scroll', on, { passive: true })
-    return () => {
-      removeEventListener('scroll', on)
-      cancelAnimationFrame(raf)
-    }
-  }, [])
-
   // Power-on: background, words, blueprint, parts, content, typing, warm-up.
   // A layout effect, so the first frame is set before the browser paints.
   useLayoutEffect(() => {
@@ -200,33 +172,43 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
                   <li key={k.id}>
                     <button type="button" aria-pressed={i === pick} onClick={() => setPick(i)} title={k.title}>
                       <span>{k.title}</span>
-                      <span className="d-log-id">{k.kind === 'Database migration' ? 'DB migration' : 'Content rule'}</span>
+                      <span className={`d-log-id ${k.kind === 'Database migration' ? 'is-db' : 'is-rule'}`}>{k.kind === 'Database migration' ? 'DB migration' : 'Content rule'}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             ) : (
-              <dl className="d-ev">
-                <div>
-                  <dt>Change</dt>
-                  <dd>{sc.change}</dd>
-                </div>
-                <div>
-                  <dt>{sc.measure.label}</dt>
-                  <dd>
-                    {sc.measure.without} → {sc.measure.with}
-                    {sc.measure.limit != null && <span> · limit {sc.measure.limit}</span>}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Verdict</dt>
-                  <dd className={sc.result.failed ? 'is-fail' : undefined}>{sc.result.failed ? 'Reproduced failure' : 'No failure observed'}</dd>
-                </div>
-                <div>
-                  <dt>Runs</dt>
-                  <dd>{c ? `${c.agreeing} of ${c.runs} agree` : `${sc.stats.sandboxRuns} sandbox runs`}</dd>
-                </div>
-              </dl>
+              <div className="d-ev-wrap">
+                <p className="d-ev-title">What Domino found</p>
+                <dl className="d-ev">
+                  <div>
+                    <dt>The test</dt>
+                    <dd>{sc.testShort}</dd>
+                  </div>
+                  {(['without', 'with'] as const).map((arm) => {
+                    const r = sc.runs.find((x) => x.arm === arm && !x.again)
+                    const failed = !!r && r.results.some((ok) => !ok)
+                    return (
+                      <div key={arm}>
+                        <dt>{arm === 'without' ? 'Without the change' : 'With the change'}</dt>
+                        <dd className={failed ? 'is-fail' : undefined}>
+                          <span className="d-ev-mark" aria-hidden="true">
+                            {failed ? '✕' : '✓'}
+                          </span>
+                          {r ? r.note.charAt(0).toUpperCase() + r.note.slice(1) : 'Not run'}
+                        </dd>
+                      </div>
+                    )
+                  })}
+                  <div>
+                    <dt>Verdict</dt>
+                    <dd className={sc.result.failed ? 'is-fail' : undefined}>
+                      <b>{sc.result.failed ? 'Breaks' : 'No failure seen'}</b>
+                      {c && c.runs > 1 ? <span> · same answer in {c.agreeing} of {c.runs} repeat runs</span> : null}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             )}
             <div className="d-hello">
               <p>Pick a change. Press Run to see what it breaks.</p>

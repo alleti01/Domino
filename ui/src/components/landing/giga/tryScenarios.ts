@@ -28,6 +28,8 @@ export interface Scenario {
   change: string
   file: string
   test: string
+  /** The test in a few words, for the hero's Evidence view. */
+  testShort: string
   checks: string[]
   /** The path the semantic layer found, from the change to what it reaches. */
   path: string[]
@@ -61,6 +63,7 @@ export const SCENARIOS: Scenario[] = [
       'Migration 0042 gives the bundle reader service explicit read access to the shard databases, so query limits and audit logging apply to it.',
     file: 'db/migrations/0042_reader_shard_grants.sql',
     test: 'Build the config bundle and start the workers three ways: without the migration, with it, and with it rolled back.',
+    testShort: 'Build the config bundle, then start the workers',
     checks: DB_CHECKS,
     path: ['Migration 0042', 'Shard database r0', 'Bundle reader service', 'Bundle builder', 'bundle.json', 'Workers (limit 200)'],
     queries: 8,
@@ -91,6 +94,7 @@ export const SCENARIOS: Scenario[] = [
     change: 'The same migration 0042, on a system whose databases hold fewer columns.',
     file: 'db/migrations/0042_reader_shard_grants.sql',
     test: 'Build the config bundle and start the workers three ways: without the migration, with it, and with it rolled back.',
+    testShort: 'Build the config bundle, then start the workers',
     checks: DB_CHECKS,
     path: ['Migration 0042', 'Shard database r0', 'Bundle reader service', 'Bundle builder', 'bundle.json', 'Workers (limit 200)'],
     queries: 8,
@@ -120,6 +124,7 @@ export const SCENARIOS: Scenario[] = [
     change: 'Adds detection rule 0291 for template T4. It passed validation in CI.',
     file: 'content/rules/T4/rule-0291.json',
     test: 'Validate the rule, ship it, and feed 50 events through the content interpreter: without the rule, with it, and with it removed.',
+    testShort: 'Ship the rule, then feed 50 events to the interpreter',
     checks: RULE_CHECKS,
     path: ['Rule 0291', 'Template T4', 'Content pipeline', 'Rule validator', 'Content interpreter'],
     queries: 7,
@@ -150,6 +155,7 @@ export const SCENARIOS: Scenario[] = [
     change: 'Adds detection rule 0291 for template T7. It passed validation in CI.',
     file: 'content/rules/T7/rule-0291.json',
     test: 'Validate the rule, ship it, and feed 50 events through the content interpreter, without the rule and with it.',
+    testShort: 'Ship the rule, then feed 50 events to the interpreter',
     checks: RULE_CHECKS,
     path: ['Rule 0291', 'Template T7', 'Content pipeline', 'Rule validator', 'Content interpreter'],
     queries: 5,

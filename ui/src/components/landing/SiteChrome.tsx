@@ -5,9 +5,10 @@ import { useNavState } from '../../hooks/useNavState'
 import { LogoMark } from '../LogoMark'
 
 const NAV: { label: string; to: string; section?: string; external?: boolean }[] = [
-  { label: 'How it works', to: href.landing('how'), section: 'how' },
+  { label: 'How it works', to: href.landing('steps'), section: 'steps' },
+  { label: 'Live check', to: href.landing('how'), section: 'how' },
   { label: 'Cases', to: href.landing('cases'), section: 'cases' },
-  { label: 'Results', to: href.results },
+  { label: 'Results', to: href.landing('results'), section: 'results' },
   { label: 'System proof', to: href.underTheHood },
 ]
 
@@ -32,11 +33,9 @@ export function Wordmark() {
 export function Announcement() {
   return (
     <div className="g-announce">
-      <b>New</b>
-      <span>Fix testing: Domino can re-run the sandbox with its own proposed fix applied.</span>
-      <a href={`${REPO_URL}#readme`} target="_blank" rel="noreferrer">
-        Read more<span className="visually-hidden"> (opens in a new tab)</span>
-      </a>
+      <b>Track 1</b>
+      <span>Every verdict on this site comes from a recorded live run on synthetic systems.</span>
+      <a href={href.results}>See the results</a>
     </div>
   )
 }
@@ -85,7 +84,7 @@ export function SiteFooter() {
         <div className="g-footer-grid">
           <div>
             <Wordmark />
-            <p className="g-body">Finds what a change would break before it ships, with the evidence and the runs to prove it.</p>
+            <p className="g-body">Finds what a change would break before it ships, with the source rows and sandbox runs behind every verdict.</p>
           </div>
           <div>
             <h3>Product</h3>

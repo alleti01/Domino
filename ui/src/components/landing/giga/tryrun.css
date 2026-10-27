@@ -689,3 +689,83 @@
     animation: none;
   }
 }
+
+/* ---- The hero's list tags and Evidence view (Device.tsx) ---- */
+
+.d-log .d-log-id {
+  align-self: center;
+  padding: 0 8px;
+  border-radius: 5px;
+  font: 500 10.5px/22px var(--g-mono);
+  letter-spacing: 0.04em;
+  color: rgb(31 29 27 / 0.78);
+  background: rgb(31 29 27 / 0.07);
+  box-shadow: inset 0 0 0 0.5px rgb(31 29 27 / 0.12);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.d-log .d-log-id.is-rule {
+  color: #9a4c0c;
+  background: rgb(255 167 86 / 0.2);
+  box-shadow: inset 0 0 0 0.5px rgb(240 138 50 / 0.35);
+}
+
+.d-log button[aria-pressed='true'] .d-log-id {
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 0.5px rgb(31 29 27 / 0.14),
+    0 1px 2px rgb(31 29 27 / 0.08);
+}
+
+.d-ev-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.d-ev-title {
+  margin: 14px 0 2px;
+  font: 500 14px/20px var(--g-sans);
+  color: var(--g-ink);
+}
+
+.d-ev-wrap .d-ev > div {
+  grid-template-columns: 140px 1fr;
+  padding: 10px 0;
+}
+
+.d-ev-wrap .d-ev dd {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.d-ev-wrap .d-ev dd b {
+  font-weight: 550;
+}
+
+.d-ev-mark {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(31 29 27 / 0.08);
+  font: 700 9.5px/1 var(--g-sans);
+  color: var(--g-ink) !important;
+  transform: translateY(2px);
+}
+
+.d-ev dd.is-fail .d-ev-mark {
+  background: var(--g-fail);
+  color: #fff !important;
+}
+
+@media (max-width: 1023px) {
+  .d-ev-wrap .d-ev > div {
+    grid-template-columns: 112px 1fr;
+  }
+}

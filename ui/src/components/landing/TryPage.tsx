@@ -28,7 +28,7 @@ export function TryPage({ state }: { state: SiteState }) {
                     {k.baseline}→{k.candidate}
                   </span>
                   <span className="g-case-sub">
-                    {k.verdictLabel} · {k.id}
+                    {k.verdictLabel} · {k.label}
                   </span>
                 </a>
               </li>

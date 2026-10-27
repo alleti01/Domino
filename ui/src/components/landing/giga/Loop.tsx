@@ -5,8 +5,9 @@
 //            change: the control stays flat, the candidate climbs past the stated limit.
 // A small 3D projection with a keyframed camera; scroll drives the story with holds per chapter.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { href } from '../../../lib/router'
+import { navigating } from '../../../lib/scroll'
 import type { CaseCard } from './data'
 
 export interface LoopData {
@@ -64,14 +65,23 @@ const chapterAt = (p: number) => (p < 0.265 ? 0 : p < 0.645 ? 1 : 2)
 // The chapter title covers the scene briefly as each chapter begins.
 const coverAt = (p: number) =>
   Math.max(smoother(span(p, 0.035, 0.06)) * (1 - smoother(span(p, 0.11, 0.16))), smoother(span(p, 0.265, 0.29)) * (1 - smoother(span(p, 0.325, 0.37))), smoother(span(p, 0.645, 0.67)) * (1 - smoother(span(p, 0.705, 0.75))))
+// The fastest the scene may advance, in story lengths per second (~5.5 s end to end).
+const MAX_SPEED = 0.2
+// How far the page may run ahead of the drawn scene, and where the story ends.
+const LEAD = 0.02
+const END_AT = 1.08
 const STOPS = [0.12, 0.44, 0.93]
 const CHAPTERS = [
-  { key: 'connect', title: 'Connect.', sub: 'Join what every system knows about the change.' },
-  { key: 'test', title: 'Test.', sub: 'Run it with the change, without it, and undone.' },
-  { key: 'decide', title: 'Decide.', sub: 'Code reads the runs. The model only explains.' },
+  { key: 'connect', title: 'Connect.', sub: 'Find every part of the pipeline the change touches.' },
+  { key: 'test', title: 'Test.', sub: 'Run it with and without the change.' },
+  { key: 'decide', title: 'Decide.', sub: 'Code says what broke.' },
 ]
 
-export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
+export function Loop({ data: fresh, cards }: { data: LoopData; cards: CaseCard[] }) {
+  // The page re-renders when the site data is re-checked; rebuild the scene only
+  // when the data itself changes, so the animation never restarts mid-scroll.
+  const key = JSON.stringify(fresh)
+  const data = useMemo(() => JSON.parse(key) as LoopData, [key])
   const sectionRef = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -308,11 +318,35 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
     let target = 0
     let velocity = 0
     let tween: { from: number; to: number; start: number } | null = null
+    // While the scene is on screen the page may not run ahead of it: scrolling
+    // is held to just past what has been drawn, in either direction, so the
+    // story always plays through at its own pace. A big jump (a nav link) passes.
+    let lastY = scrollY
     const read = () => {
       const r = section.getBoundingClientRect()
       const travel = Math.max(1, section.offsetHeight - stage.offsetHeight * (1 + HOLD))
       const pin = parseFloat(getComputedStyle(stage).top) || 0
-      target = clamp((pin - r.top) / travel, 0, 1.08)
+      const raw = (pin - r.top) / travel
+      const jump = Math.abs(scrollY - lastY) > innerHeight * 2.5
+      lastY = scrollY
+      if (!reduce && !tween && !jump && !navigating() && raw > -0.25 && raw < END_AT + 0.6) {
+        let held = raw
+        if (raw > progress + LEAD && progress < END_AT - 0.002) held = progress + LEAD
+        else if (raw < progress - LEAD && progress > 0.002) held = progress - LEAD
+        if (held !== raw) {
+          const y = scrollY + (held - raw) * travel
+          scrollTo({ top: y, behavior: 'instant' as ScrollBehavior })
+          lastY = y
+          target = clamp(held, 0, END_AT)
+          return
+        }
+      }
+      if (jump) {
+        // Jumped across the section: skip ahead without drawing every frame.
+        progress = clamp(raw, 0, END_AT)
+        velocity = 0
+      }
+      target = clamp(raw, 0, END_AT)
     }
     const titles = [...stage.querySelectorAll<HTMLElement>('.l2-title')]
     const buttons = [...stage.querySelectorAll<HTMLButtonElement>('[data-step]')]
@@ -353,7 +387,12 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
     addEventListener('pointermove', onMove, { passive: true })
     addEventListener('scroll', read, { passive: true })
     addEventListener('wheel', () => (tween = null), { passive: true })
-    read()
+    // On load, start wherever the page already is; never pull it back.
+    {
+      const travel = Math.max(1, section.offsetHeight - stage.offsetHeight * (1 + HOLD))
+      const pin = parseFloat(getComputedStyle(stage).top) || 0
+      progress = target = clamp((pin - section.getBoundingClientRect().top) / travel, 0, END_AT)
+    }
 
     // ---- Draw ----
     let arrivedAt = 0
@@ -552,7 +591,7 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
           const a = { ...project(ROW_X0, laneY(0) + 40, 0) }
           const z = { ...project(TODAY, laneY(0) + 40, 0) }
           const axis = smooth(span(rowsOn, 0.65, 1)) * 0.8
-          label('Baseline rows · one line per run', a.x, a.y, axis, MUTED, 11)
+          label('Records before the change · one line per run', a.x, a.y, axis, MUTED, 11)
           label('Added by the change', z.x, z.y, axis, FAIL, 11, 'right')
         }
       }
@@ -599,7 +638,7 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
           if (shown >= 0) {
             const b = beads[shown]
             const c = b.hot ? FAIL : LANE_COLORS[b.lane % LANE_COLORS.length]
-            tip.innerHTML = `<b>Row ${b.n} of ${b.of} · run ${b.run} of ${b.runs}</b><span><i style="background:rgb(${c})"></i>${lanes[b.lane].name} · ${b.hot ? 'added by the change' : 'baseline'}</span>`
+            tip.innerHTML = `<b>Row ${b.n} of ${b.of} · run ${b.run} of ${b.runs}</b><span><i style="background:rgb(${c})"></i>${lanes[b.lane].name} · ${b.hot ? 'added by the change' : 'there before the change'}</span>`
           }
         }
       } else if (shown >= 0) level = Math.min(1, level + dtd * rate)
@@ -690,8 +729,8 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
           ctx.fill()
           const done = smooth(span(p, 0.93, 1))
           const cq = { ...project(head, control(), 0) }
-          label(`control ${base}`, cq.x + 12, cq.y + 22, done * ink, INK, 13)
-          label(`candidate ${cand}${data.failed ? ' · failed' : ''}`, tip.x - 12, tip.y - 16, done * ink, data.failed ? FAIL : ACCENT, 14, 'right')
+          label(`change undone: ${base}`, cq.x + 12, cq.y + 22, done * ink, INK, 13)
+          label(`with the change: ${cand}${data.failed ? ' · broke' : ''}`, tip.x - 12, tip.y - 16, done * ink, data.failed ? FAIL : ACCENT, 14, 'right')
         }
         ctx.fillStyle = `rgba(${INK},${ink})`
         ctx.beginPath()
@@ -699,7 +738,7 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
         ctx.fill()
         label('the change', fork.x, fork.y + 26, ink, MUTED, 12, 'center')
         const hq = { ...project(TODAY * 0.5, 0, 0) }
-        label(`baseline ${base}`, hq.x, hq.y - 14, ink * (1 - smooth(span(p, 0.95, 1))), INK, 13, 'center')
+        label(`before the change: ${base}`, hq.x, hq.y - 14, ink * (1 - smooth(span(p, 0.95, 1))), INK, 13, 'center')
         if (data.measure) {
           const mq = { ...project(0, 0, 0) }
           label(data.measure, mq.x, mq.y + 40, ink * 0.8, MUTED, 12)
@@ -724,9 +763,14 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
         if (k >= 1) tween = null
       } else {
         // Ease toward the scroll position, like a damped spring.
-        const a = (target - progress) * 60 - velocity * 14
-        velocity += a * dt
-        progress += velocity * dt
+        // A steady follower with a speed cap: however fast the page scrolls, the
+        // scene moves at most MAX_SPEED of its length per second, easing only
+        // over the last bit, so every frame of it is drawn.
+        const gap = target - progress
+        const speed = Math.min(MAX_SPEED, Math.abs(gap) * 12 + 0.02)
+        const moved = Math.sign(gap) * Math.min(Math.abs(gap), speed * dt)
+        progress += moved
+        velocity = dt > 0 ? moved / dt : 0
         if (reduce) progress = target
       }
       lens.x += (lens.tx - lens.x) * Math.min(1, dt * 9)
@@ -756,11 +800,11 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
             The loop
           </p>
           <h2 id="l2-title" className="g-h2">
-            Turn scattered facts
+            One change.
             <br />
-            into one tested answer.
+            Your whole pipeline.
           </h2>
-          <p className="g-body">Connect every system a change touches, test it in a sandbox, and let code decide what broke.</p>
+          <p className="g-body">Watch one change move through every part of an app, and see where it breaks.</p>
         </header>
         <canvas ref={canvasRef} className="l2-canvas" role="img" aria-label="Animation: source systems join into Domino, measured rows from each case are tested in a sandbox, and the candidate run climbs past its limit while the control stays flat." />
         <div className="l2-titles" aria-hidden="true">
@@ -781,7 +825,7 @@ export function Loop({ data, cards }: { data: LoopData; cards: CaseCard[] }) {
         </p>
         <div className="l2-tip" aria-hidden="true" />
         <div className="l2-end" aria-hidden="true">
-          <p>The verdict goes back on the pull request.</p>
+          <p>The answer goes into a report for the pull request.</p>
           <span>The next change begins.</span>
         </div>
         <footer className="l2-foot">
