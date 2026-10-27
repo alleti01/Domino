@@ -5,7 +5,7 @@
 //   3. Scorecard runs     (Anish ↔ agent):   InvestigateCommand, RunSummary
 // Change a field only by agreement; bump CONTRACT_VERSION when you do.
 
-export const CONTRACT_VERSION = "0.1.0";
+export const CONTRACT_VERSION = "0.2.0"; // 0.2.0: ChangeRequest.source, bundle cause_chain + change.source (additive)
 
 // ───────────────────────────── 1. Worlds & evidence (Anish → agent) ─────────────────────────────
 
@@ -17,6 +17,18 @@ export interface ChangeRequest {
   description: string;
   diff: string; // unified diff (SQL / config / code / schema)
   files: string[];
+  source?: ChangeSource; // where the change came from, when it was not picked by hand (never shown to the model)
+}
+
+/** A pull request that Domino matched to this change (see agent/src/pr.ts). */
+export interface ChangeSource {
+  kind: "pull_request";
+  repo: string; // "owner/name"
+  number: number;
+  url: string;
+  title: string;
+  head_sha: string;
+  folder: string; // the folder of the PR that domino.json maps to this system, e.g. "orders-a/"
 }
 
 /** One row returned by Zetaris, with provenance so every claim can cite it. */
@@ -202,7 +214,7 @@ export interface EvidenceBundle {
   run_id: string;
   replay: boolean;
   mode: RunMode;
-  change: { change_id: string; world_id: string; title: string; files: string[]; diff: string };
+  change: { change_id: string; world_id: string; title: string; files: string[]; diff: string; source: ChangeSource | null };
   verdict: {
     verdict: Verdict;
     headline: string;
@@ -214,6 +226,10 @@ export interface EvidenceBundle {
     fix_verification: FixVerification | null;
   };
   causal_chain: Array<{ edge: string; status: "observed" | "inferred"; detail: string | null; evidence: Array<{ row_id: string; facts: string }> }>;
+  /** The cause as cited hops from the change to the outcome (P1/P2); each cite resolved to what it shows. */
+  cause_chain: Array<{ claim: string; cites: Array<{ cite: string; refs: Array<{ ref: string; kind: "row" | "experiment"; facts: string }> }> }>;
+  /** passed: every hop cited and the chain reaches the outcome; failed: kept only what was cited; absent: no chain. */
+  cause_chain_check: "passed" | "failed" | "absent";
   experiments: Array<{
     experiment_id: string;
     variant: "baseline" | "candidate" | "control";

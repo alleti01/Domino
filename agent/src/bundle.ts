@@ -4,6 +4,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { EvidenceBundle, ExperimentResult, TraceEvent } from "../../contracts/agent/types.js";
+import { refsIn } from "./chain.js";
 import { rowFact } from "./facts.js";
 
 export function buildBundle(events: TraceEvent[]): EvidenceBundle {
@@ -65,6 +66,21 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
   const okCalls = calls.filter((c) => c.outcome === "ok");
   const memory = ev.filter((e) => e.type === "memory");
 
+  // The cited cause chain, each cite resolved to the row facts or experiment results it points at.
+  const expFacts = new Map<string, string>(experiments.map((x) => [
+    x.experiment_id,
+    `${x.variant}${x.fix_overrides ? " + fix" : ""}: ${Object.entries(x.observations).slice(0, 6).map(([k, v]) => `${k}=${v}`).join(", ")}${x.failed_assertions.length ? `; failed ${x.failed_assertions.map((a) => a.name).join(", ")}` : "; all checks passed"}`,
+  ]));
+  const known = (id: string) => facts.has(id) || expFacts.has(id);
+  const cause_chain: EvidenceBundle["cause_chain"] = (verdict.cause_chain ?? []).map((h: { claim: string; cites: string[] }) => ({
+    claim: h.claim,
+    cites: h.cites.map((cite) => ({
+      cite,
+      refs: refsIn(cite, known).map((ref) => (expFacts.has(ref) ? { ref, kind: "experiment" as const, facts: expFacts.get(ref)! } : { ref, kind: "row" as const, facts: factOf(ref) })),
+    })),
+  }));
+  const chainFailed = (verdict.limitations ?? []).some((l: string) => l.includes("did not pass Domino's citation check"));
+
   const citedIds = new Set<string>([...verdict.causal_chain.flatMap((c: any) => c.refs), ...[...hyps.values()].flatMap((h) => h.evidence_for)]);
 
   return {
@@ -72,7 +88,7 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
     run_id: start.run_id,
     replay: Boolean(start.replay),
     mode: start.mode,
-    change: { change_id: start.change.change_id, world_id: start.change.world_id, title: start.change.title, files: start.change.files, diff: start.change.diff },
+    change: { change_id: start.change.change_id, world_id: start.change.world_id, title: start.change.title, files: start.change.files, diff: start.change.diff, source: start.change.source ?? null },
     verdict: {
       verdict: verdict.verdict,
       headline: verdict.headline,
@@ -84,6 +100,8 @@ export function buildBundle(events: TraceEvent[]): EvidenceBundle {
       fix_verification: verdict.fix_verification ?? null,
     },
     causal_chain: verdict.causal_chain.map((c: any) => ({ edge: c.edge, status: c.status, detail: c.detail ?? null, evidence: c.refs.map((id: string) => ({ row_id: id, facts: factOf(id) })) })),
+    cause_chain,
+    cause_chain_check: chainFailed ? "failed" : cause_chain.length ? "passed" : "absent",
     experiments,
     hypotheses: [...hyps.values()].map((h) => ({ hypothesis_id: h.hypothesis_id, claim: h.claim, mechanism: h.mechanism, status: h.status, evidence_for: h.evidence_for })),
     cited_evidence: [...citedIds].filter((id) => facts.get(id)?.facts).map((id) => ({ row_id: id, ...facts.get(id)! })),
@@ -130,8 +148,15 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
   const out: string[] = [];
   out.push(`### ${HEADLINES[b.verdict.verdict]}`);
   if (b.replay) out.push(`> Replayed from a recorded run (no live model or data layer).`);
+  const src = b.change.source;
+  if (src) out.push(`<sub>Pull request [#${src.number}](${src.url}) at \`${src.head_sha.slice(0, 7)}\`, matched to the modelled change \`${short(b.change.change_id)}\` for \`${src.folder}\`.</sub>`);
   out.push(`**${b.change.title}**: ${b.verdict.headline}`);
-  if (cause) out.push(`\n${cause}`);
+  if (b.cause_chain.length) {
+    out.push(`\n**Why, step by step**${b.cause_chain_check === "passed" ? " (every step cites evidence from this run)" : ""}`);
+    b.cause_chain.forEach((h, i) => out.push(`${i + 1}. ${h.claim}${h.cites.length ? ` <sub>${h.cites.map((c) => `\`${c.cite}\``).join(" · ")}</sub>` : ""}`));
+  } else if (cause) {
+    out.push(`\n${cause}`);
+  }
 
   if (b.causal_chain.length) {
     out.push(`\n**How the change reaches the failure** (joined across sources in the semantic layer)`);

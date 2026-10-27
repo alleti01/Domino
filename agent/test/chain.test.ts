@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ExperimentResult } from "../../contracts/agent/types.js";
 import { type ChatModel, investigate } from "../src/agent.js";
+import { writeBundle } from "../src/bundle.js";
 import { checkChain, names, renderChain } from "../src/chain.js";
 import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
 import type { ChatRequest, ChatResult } from "../src/llm/nightshift.js";
@@ -146,6 +147,15 @@ describe("the finish tool enforces the chain", () => {
     const verdict = (await readFile(join(out, s.run_id, "trace.jsonl"), "utf8")).split("\n").filter(Boolean).map((l) => JSON.parse(l)).find((e) => e.type === "verdict");
     expect(verdict.cause_chain).toEqual(good);
     expect(verdict.limitations.join(" ")).not.toContain("citation check");
+    // P4: the bundle carries the chain with every cite resolved to what it shows, for the dashboard and report.
+    await writeBundle(join(out, s.run_id), s.cause_claim);
+    const bundle = JSON.parse(await readFile(join(out, s.run_id, "bundle.json"), "utf8"));
+    expect(bundle.cause_chain_check).toBe("passed");
+    expect(bundle.cause_chain[1].cites[0]).toMatchObject({ cite: "x2: loader.loads_input", refs: [{ ref: "x2", kind: "experiment" }] });
+    expect(bundle.cause_chain[1].cites[0].refs[0].facts).toContain("failed loader.loads_input");
+    expect(bundle.change.source).toBeNull();
+    const report = await readFile(join(out, s.run_id, "report.md"), "utf8");
+    expect(report).toContain("**Why, step by step** (every step cites evidence from this run)");
   });
 
   it("after one repair, keeps only the cited hops and says the check failed", async () => {
@@ -157,5 +167,6 @@ describe("the finish tool enforces the chain", () => {
     expect(s.cause_claim).toBe(renderChain([good[1]!]));
     const verdict = (await readFile(join(out, s.run_id, "trace.jsonl"), "utf8")).split("\n").filter(Boolean).map((l) => JSON.parse(l)).find((e) => e.type === "verdict");
     expect(verdict.limitations.join(" ")).toContain("did not pass Domino's citation check");
+    expect((await writeBundle(join(out, s.run_id), s.cause_claim)).cause_chain_check).toBe("failed");
   });
 });
