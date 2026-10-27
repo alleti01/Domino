@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TraceEvent } from "../../contracts/agent/types.js";
 import { type ChatModel, investigate } from "../src/agent.js";
-import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { StubEvidence, StubWorlds, stubChain } from "../src/fakes/stubWorld.js";
 import type { ChatRequest, ChatResult } from "../src/llm/nightshift.js";
 
 const LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b";
@@ -16,7 +16,7 @@ const reply = (model: string, calls: Array<{ name: string; args: unknown }>): Ch
   attempts: 1,
   latencyMs: 1,
 });
-const finish = (claim: string) => ({ name: "finish", args: { headline: "loader rejects items.list", prediction: "breaks", cause_claim: claim, mitigation: "filter the read to one schema", evidence: ["l1"], supported_hypothesis_ids: [], limitations: [] } });
+const finish = (claim: string) => ({ name: "finish", args: { cause_chain: stubChain({ claim: claim }), headline: "loader rejects items.list", prediction: "breaks", cause_claim: claim, mitigation: "filter the read to one schema", evidence: ["l1"], supported_hypothesis_ids: [], limitations: [] } });
 
 class TwoModelScript implements ChatModel {
   requests: ChatRequest[] = [];
@@ -58,7 +58,7 @@ describe("independent reviewer", () => {
     // the reviewer's complaint reached the investigator
     const revisionPrompt = model.requests[5]!.messages.find((m) => m.role === "user" && m.content?.includes("independent reviewer"));
     expect(revisionPrompt?.content).toContain("no evidence of memory use");
-    expect(summary.cause_claim).toBe("entries double from 30 to 60, past the loader's max_items of 50");
+    expect(summary.cause_claim).toContain("entries double from 30 to 60, past the loader's max_items of 50");
     expect(summary.verdict).toBe("reproduced_failure");
     expect(summary.all_calls_nemotron).toBe(true);
 

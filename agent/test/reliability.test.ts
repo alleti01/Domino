@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { type ChatModel, investigate } from "../src/agent.js";
-import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { StubEvidence, StubWorlds, stubChain } from "../src/fakes/stubWorld.js";
 import { type ChatResult, NightshiftError } from "../src/llm/nightshift.js";
 
 const NEMOTRON = "nvidia/nemotron-3.5-lightning-30b-a3b";
@@ -102,7 +102,7 @@ describe("reliability", () => {
     const steps = [
       [{ name: "get_dependency_path", args: { entity: "svc_reports" } }],
       [{ name: "run_experiment", args: { variant: "candidate", observe: ["consumer_status"], hypothesis_ids: [], rationale: "t" } }],
-      [{ name: "finish", args: { headline: "breaks", prediction: "breaks", cause_claim: "c", mitigation: "m", evidence: ["g2"], supported_hypothesis_ids: [], limitations: [] } }],
+      [{ name: "finish", args: { cause_chain: stubChain({ change: "stub-chg-2", check: "loader.consumer_status" }), headline: "breaks", prediction: "breaks", cause_claim: "c", mitigation: "m", evidence: ["g2"], supported_hypothesis_ids: [], limitations: [] } }],
     ];
     const summary = await investigate({
       changeId: "stub-chg-2", // the safe stub change

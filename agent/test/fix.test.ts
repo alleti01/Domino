@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { type ChatModel, investigate } from "../src/agent.js";
 import { buildBundle } from "../src/bundle.js";
-import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { StubEvidence, StubWorlds, stubChain } from "../src/fakes/stubWorld.js";
 import { parseOverrides } from "../src/fix.js";
 import { judgeFix } from "../src/judge.js";
 import type { ChatResult } from "../src/llm/nightshift.js";
@@ -30,7 +30,7 @@ const scripted = (steps: Array<Array<{ name: string; args: unknown }>>): ChatMod
 });
 const investigation = [
   [{ name: "run_experiment", args: { variant: "candidate", observe: ["artifact_entries", "consumer_status"], hypothesis_ids: [], rationale: "test" } }],
-  [{ name: "finish", args: { headline: "Loader rejects items.list", prediction: "breaks", cause_claim: "60 entries exceed max_items 50", mitigation: "raise the loader limit", evidence: ["x2"], supported_hypothesis_ids: [], limitations: [] } }],
+  [{ name: "finish", args: { cause_chain: stubChain({ claim: "60 entries exceed max_items 50" }), headline: "Loader rejects items.list", prediction: "breaks", cause_claim: "60 entries exceed max_items 50", mitigation: "raise the loader limit", evidence: ["x2"], supported_hypothesis_ids: [], limitations: [] } }],
 ];
 const run = async (steps: Array<Array<{ name: string; args: unknown }>>) => {
   const out = await mkdtemp(join(tmpdir(), "domino-fix-"));
@@ -90,7 +90,7 @@ describe("verified fixes", () => {
 
 describe("finish robustness (seen live with Nemotron)", () => {
   const experiment = [{ name: "run_experiment", args: { variant: "candidate", observe: ["consumer_status"], hypothesis_ids: [], rationale: "test" } }];
-  const finishWith = (extra: Record<string, unknown>) => [{ name: "finish", args: { headline: "Loader rejects", prediction: "breaks", cause_claim: "60 > 50", supported_hypothesis_ids: [], limitations: [], ...extra } }];
+  const finishWith = (extra: Record<string, unknown>) => [{ name: "finish", args: { cause_chain: stubChain({ claim: "60 > 50" }), headline: "Loader rejects", prediction: "breaks", cause_claim: "60 > 50", supported_hypothesis_ids: [], limitations: [], ...extra } }];
   const go = async (steps: Array<Array<{ name: string; args: unknown }>>) => {
     const out = await mkdtemp(join(tmpdir(), "domino-finish-"));
     return investigate({ changeId: "stub-chg-1", mode: "full", outDir: out, model: scripted([experiment, ...steps]), evidence: new StubEvidence(), worlds: new StubWorlds() });
@@ -98,13 +98,13 @@ describe("finish robustness (seen live with Nemotron)", () => {
 
   it("rescues the real ids from a mangled evidence string", async () => {
     const s = await go([finishWith({ mitigation: "raise the limit", evidence: '["x1": baseline rows=30, "x2": candidate rows=60]' }), fix("loader.max_items", "120")]);
-    expect(s.cause_claim).toBe("60 > 50");
+    expect(s.cause_claim).toContain("60 > 50");
     expect(s.evidence_refs).toEqual(expect.arrayContaining(["x1", "x2"]));
   });
 
   it("keeps a mitigation proposed in an earlier, rejected finish", async () => {
     const s = await go([finishWith({ mitigation: "raise the limit", evidence: ["nothing-retrieved"] }), finishWith({ evidence: ["x2"] }), fix("loader.max_items", "120")]);
-    expect(s.cause_claim).toBe("60 > 50");
+    expect(s.cause_claim).toContain("60 > 50");
     expect(s.fix).toBe("verified");
   });
 });
@@ -122,11 +122,11 @@ describe("last-chance finish (seen live: 2 of 30 runs ended with no explanation)
 
   it("accepts an explanation without a mitigation on the last attempt, rather than none", async () => {
     const experiment = [{ name: "run_experiment", args: { variant: "candidate", observe: ["consumer_status"], hypothesis_ids: [], rationale: "t" } }];
-    const noMitigation = [{ name: "finish", args: { headline: "Loader rejects", prediction: "breaks", cause_claim: "60 entries exceed 50", evidence: ["x2"], supported_hypothesis_ids: [], limitations: [] } }];
+    const noMitigation = [{ name: "finish", args: { cause_chain: stubChain({ claim: "60 entries exceed 50" }), headline: "Loader rejects", prediction: "breaks", cause_claim: "60 entries exceed 50", evidence: ["x2"], supported_hypothesis_ids: [], limitations: [] } }];
     const idle = Array.from({ length: 19 }, () => [{ name: "inspect_world_model", args: {} }]);
     const out = await mkdtemp(join(tmpdir(), "domino-last-"));
     const s = await investigate({ changeId: "stub-chg-1", mode: "full", outDir: out, model: scripted([experiment, ...idle, noMitigation, noMitigation]), evidence: new StubEvidence(), worlds: new StubWorlds() });
-    expect(s.cause_claim).toBe("60 entries exceed 50");
+    expect(s.cause_claim).toContain("60 entries exceed 50");
     const events = (await readFile(join(out, s.run_id, "trace.jsonl"), "utf8")).trim().split("\n").map((l) => JSON.parse(l));
     expect(events.find((e) => e.type === "verdict").limitations).toContain("No mitigation was proposed.");
   });

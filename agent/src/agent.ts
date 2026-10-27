@@ -257,7 +257,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
         tested = `\nThe harness ran the comparison you did not run:\n${results.map((r) => `[${r.experiment_id}] ${r.request.variant}: ${Object.entries(r.observations).map(([k, v]) => `${k}=${v}`).join(", ")}; ${r.assertions.filter((a) => !a.passed).map((a) => `FAILED ${a.name} (${a.detail})`).join("; ") || "all assertions passed"}`).join("\n")}`;
       }
       gateway.allowFinishUntested = true;
-      messages.push({ role: "user", content: `${why}${tested}\nCall finish now: explain what the evidence and experiments show, cite the rows and experiments, propose a mitigation if it breaks, and list what you could not test.` });
+      messages.push({ role: "user", content: `${why}${tested}\nCall finish now: write cause_chain from the change to the outcome, citing the rows and experiments for every hop, propose a mitigation if it breaks, and list what you could not test.` });
       for (let attempt = 0; attempt < 2 && !gateway.finished; attempt++) {
         step++;
         const result = await callModel({ purpose: `step_${step}_finish`, messages, tools: toolSpecs(opts.mode, ["finish"]), toolChoice: "required", ...(opts.investigatorModel ? { model: opts.investigatorModel } : {}) });
@@ -395,6 +395,7 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
     tested: judgement.tested,
     limitations: [...reviewNotes, ...(gateway.finished?.limitations ?? []), ...judgement.reasons.filter((r) => verdict !== "reproduced_failure" || !r.startsWith("Baseline passed")), ...(outage ? ["Model service outage during the run: this result says nothing about the change."] : []), ...(cacheHits ? [`${cacheHits} model answer(s) came from Nightshift's cache.`] : [])],
     decided_by: "deterministic_judge",
+    ...(gateway.finished?.cause_chain?.length ? { cause_chain: gateway.finished.cause_chain } : {}),
     ...(gateway.finished?.mitigation && verdict === "reproduced_failure" ? { mitigation: gateway.finished.mitigation } : {}),
     ...(fixVerification && verdict === "reproduced_failure" ? { fix_verification: fixVerification } : {}),
   });

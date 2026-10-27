@@ -205,3 +205,12 @@ export class StubWorlds implements WorldsAdapter {
     };
   }
 }
+
+/** A cited cause chain for scripted finishes against the stub world (P1). */
+export function stubChain(opts: { change?: string; exp?: string; check?: string; claim?: string } = {}) {
+  const { change = "stub-chg-1", exp = "x2", check = "loader.loads_input" } = opts;
+  return [
+    { claim: `${change} widens what svc_builder reads`, cites: [exp] },
+    { claim: opts.claim ?? `builder rows go 30 → 60, past max_items 50, so ${check} changes in the candidate`, cites: [`${exp}: ${check}`] },
+  ];
+}

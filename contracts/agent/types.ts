@@ -148,6 +148,7 @@ export type TraceEvent = TraceBase &
         tested: string[]; // exactly what was tested
         limitations: string[];
         decided_by: "deterministic_judge"; // the model never sets the verdict
+        cause_chain?: Array<{ claim: string; cites: string[] }>; // the explanation as cited hops, checked by code
         mitigation?: string; // suggested by the model
         fix_verification?: FixVerification; // whether that fix, applied in the world, actually held
       }

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TraceEvent } from "../../contracts/agent/types.js";
 import { type ChatModel, investigate } from "../src/agent.js";
-import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { StubEvidence, StubWorlds, stubChain } from "../src/fakes/stubWorld.js";
 import type { ChatRequest, ChatResult } from "../src/llm/nightshift.js";
 import { CassetteOutOfDate, Player, Recorder } from "../src/replay.js";
 
@@ -12,7 +12,7 @@ const NEMOTRON = "nvidia/nemotron-3.5-lightning-30b-a3b";
 const script = [
   [{ name: "get_dependency_path", args: { entity: "svc_builder" } }],
   [{ name: "run_experiment", args: { variant: "candidate", observe: ["consumer_status"], hypothesis_ids: [], rationale: "test" } }],
-  [{ name: "finish", args: { headline: "loader rejects", prediction: "breaks", cause_claim: "wider read: 60 entries exceed 50", mitigation: "filter by schema", evidence: ["l1"], supported_hypothesis_ids: [], limitations: [] } }],
+  [{ name: "finish", args: { cause_chain: stubChain(), headline: "loader rejects", prediction: "breaks", cause_claim: "wider read: 60 entries exceed 50", mitigation: "filter by schema", evidence: ["l1"], supported_hypothesis_ids: [], limitations: [] } }],
   [{ name: "propose_fix", args: { overrides: [{ target: "builder.schema_filter", value: "main" }], mitigation: "filter by schema" } }],
 ];
 const scripted = (): ChatModel => {

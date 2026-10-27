@@ -8,6 +8,7 @@ import type { ToolSpec } from "./llm/nightshift.js";
 import type { InvestigationWorld } from "./engines/worldModel.js";
 import type { InvestigationState } from "./state.js";
 import type { TraceWriter } from "./trace.js";
+import { type ChainHop, checkChain, renderChain } from "./chain.js";
 import { quantities } from "./numbers.js";
 
 export interface Budgets {
@@ -20,7 +21,7 @@ export interface Budgets {
 
 export const DEFAULT_BUDGETS: Budgets = { max_steps: 20, max_model_calls: 26, max_ms: 10 * 60_000, max_experiments: 10, max_queries: 8 };
 
-type JsonType = "string" | "number" | "boolean" | "string[]" | "object";
+type JsonType = "string" | "number" | "boolean" | "string[]" | "object" | "hops";
 interface ToolDef {
   name: string;
   description: string;
@@ -112,12 +113,13 @@ const TOOLS: ToolDef[] = [
     args: {
       headline: { type: "string", description: "One line for the pull-request comment", required: true },
       prediction: { type: "string", description: "breaks | safe | unsure", required: true, enum: ["breaks", "safe", "unsure"] },
-      cause_claim: {
-        type: "string",
+      cause_chain: {
+        type: "hops",
         description:
-          "Walk the chain with the measured numbers: what the change does → which value changes (baseline → candidate, from the experiments) → which limit or contract it meets (value and the row that states it) → which check failed. If safe: the numbers that keep it within limits.",
+          "The cause as ordered hops from the change to the outcome, one link per hop: what the change does → each component it reaches and the setting, limit or contract that component holds → which value changes (baseline → candidate) → the check that failed. If nothing failed, end where the chain stops: the metric that stayed within its limit, baseline vs candidate. Every hop cites row_ids / experiment_ids from this run; cite an experiment as \"<experiment_id>: <metric> <baseline> → <candidate>\". Code checks every cite, and the explanation is written from this chain.",
         required: true,
       },
+      cause_claim: { type: "string", description: "Optional: one sentence summing up the chain" },
       evidence: {
         type: "string[]",
         description: "row_ids / experiment_ids behind your explanation, for a breaking AND a safe verdict: the specific facts (values, limits, settings) your reasoning depends on",
@@ -154,7 +156,13 @@ export function toolSpecs(mode: RunMode, only?: string[]): ToolSpec[] {
             k,
             a.type === "string[]"
               ? { type: "array", items: { type: "string" }, description: a.description }
-              : { type: a.type, description: a.description, ...(a.enum ? { enum: a.enum } : {}) },
+              : a.type === "hops"
+                ? {
+                    type: "array",
+                    description: a.description,
+                    items: { type: "object", properties: { claim: { type: "string" }, cites: { type: "array", items: { type: "string" } } }, required: ["claim", "cites"] },
+                  }
+                : { type: a.type, description: a.description, ...(a.enum ? { enum: a.enum } : {}) },
           ]),
         ),
         required: Object.entries(t.args).filter(([, a]) => a.required).map(([k]) => k),
@@ -170,11 +178,14 @@ function validate(def: ToolDef, args: Record<string, unknown>): Record<string, u
   for (const [key, spec] of Object.entries(def.args)) {
     let value = args[key];
     if (value === undefined || value === null || value === "") {
-      if (spec.required && spec.type !== "string[]") throw new ToolError(`Missing required argument "${key}"`);
-      if (spec.type === "string[]") value = [];
+      if (spec.required && spec.type !== "string[]" && spec.type !== "hops") throw new ToolError(`Missing required argument "${key}"`);
+      if (spec.type === "string[]" || spec.type === "hops") value = [];
       else continue;
     }
-    if (spec.type === "string[]") {
+    if (spec.type === "hops") {
+      if (typeof value === "string") value = JSON.parse(value);
+      if (!Array.isArray(value)) throw new ToolError(`"${key}" must be an array of {claim, cites} hops`);
+    } else if (spec.type === "string[]") {
       if (typeof value === "string") value = value.split(",").map((s) => s.trim()).filter(Boolean);
       if (!Array.isArray(value) || value.some((v) => typeof v !== "string")) throw new ToolError(`"${key}" must be an array of strings`);
     } else if (spec.type === "number") {
@@ -214,6 +225,7 @@ export interface FinishArgs {
   headline: string;
   prediction: "breaks" | "safe" | "unsure";
   cause_claim?: string;
+  cause_chain?: ChainHop[];
   evidence: string[];
   mitigation?: string;
   supported_hypothesis_ids: string[];
@@ -292,6 +304,9 @@ export class ToolGateway {
   /** Statements the independent reviewer flagged; a revision must not repeat them. */
   flagged: string[] = [];
   private chainPushed = false;
+  private citePushed = false;
+  /** Rows on dependency-path links that start or end at the change: where a cause chain begins. */
+  readonly changeRows = new Set<string>();
   private revisionPushed = false;
   private readonly sqlSeen = new Map<string, string>();
 
@@ -379,6 +394,7 @@ export class ToolGateway {
         for (const e of path.edges) {
           for (const id of e.row_ids?.length ? e.row_ids : [e.row_id]) {
             state.seenRows.set(id, { source: e.source, query_id: "path" });
+            if (e.from === changeId || e.to === changeId) this.changeRows.add(id);
             // A path row is only known through the link it supports: say so, rather than pass the link's detail off as the row's content.
             if (!state.rowFacts.has(id)) state.rowFacts.set(id, `supports link ${e.from} ${e.relation} ${e.to}${e.detail ? ` (${e.detail})` : ""}`);
           }
@@ -474,12 +490,37 @@ export class ToolGateway {
         } else if (args.prediction === "breaks" && !args.mitigation) {
           throw new ToolError("prediction is breaks, so propose a mitigation: the smallest change that would avoid the failure. Call finish again with it.");
         }
+        // P1/P2: the cause is a cited chain from the change to the outcome; code checks it and writes the prose.
+        const chain = checkChain(args.cause_chain, {
+          changeId,
+          changeRows: this.changeRows,
+          isKnownRef: (r) => state.isKnownRef(r),
+          rowFact: (r) => state.rowFacts.get(r),
+          experiments: state.experiments,
+        });
+        if (chain.problems.length && !this.citePushed && !this.lastResort) {
+          this.citePushed = true;
+          throw new ToolError(
+            `cause_chain failed the citation check: ${chain.problems.map((p, i) => `${i + 1}) ${p}`).join("; ")}. ` +
+              `Write cause_chain as ordered hops [{claim, cites}] from the change to ${chain.target}; every hop cites row_ids / experiment_ids this run returned. Call finish again.`,
+          );
+        }
+        if (chain.hops.length) {
+          args.cause_chain = chain.hops;
+          args.cause_claim = renderChain(chain.hops);
+          args.evidence = [...(args.evidence ?? []), ...chain.refs];
+        } else {
+          delete args.cause_chain;
+        }
+        if (chain.problems.length) {
+          args.limitations = [...(args.limitations ?? []), `The cause chain did not pass Domino's citation check: ${chain.problems.join("; ")}.`];
+        }
         if (args.prediction === "breaks" && !this.chainPushed && !this.lastResort) {
           const measured = measuredNumbers(state.experiments);
           if (measured.size && !quantities(`${args.cause_claim ?? ""} ${args.headline ?? ""}`).some((n) => measured.has(n))) {
             this.chainPushed = true;
             throw new ToolError(
-              `Walk the chain in cause_claim with the numbers the experiments measured (${[...measured].slice(0, 8).join(", ")}): what the change does → which value changes (baseline → candidate) → which limit or contract it meets (with the row that states it) → which check failed. Call finish again.`,
+              `Walk the chain in cause_chain with the numbers the experiments measured (${[...measured].slice(0, 8).join(", ")}): what the change does → which value changes (baseline → candidate) → which limit or contract it meets (with the row that states it) → which check failed. Call finish again.`,
             );
           }
         }
@@ -512,6 +553,7 @@ export class ToolGateway {
   setFlagged(statements: string[]) {
     this.flagged = statements.map((x) => x.trim()).filter(Boolean);
     this.revisionPushed = false;
+    this.citePushed = false;
   }
 
   /** "worker-runtime" → "w-k7m2/service/worker-runtime" when exactly one seen id ends that way. */

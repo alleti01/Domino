@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { TraceEvent } from "../../contracts/agent/types.js";
 import { type ChatModel, investigate } from "../src/agent.js";
 import { parseChange } from "../src/change.js";
-import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { StubEvidence, StubWorlds, stubChain } from "../src/fakes/stubWorld.js";
 import type { ChatRequest, ChatResult } from "../src/llm/nightshift.js";
 import { checkReadOnlySql } from "../src/tools.js";
 
@@ -65,7 +65,7 @@ describe("investigation loop", () => {
       [{ name: "run_experiment", args: { variant: "baseline", observe: ["artifact_entries", "consumer_status"], hypothesis_ids: ["h1"], rationale: "reference" } }],
       [{ name: "run_experiment", args: { variant: "candidate", observe: ["artifact_entries", "consumer_status"], hypothesis_ids: ["h1"], rationale: "test" } }],
       [{ name: "update_hypothesis", args: { hypothesis_id: "h1", status: "supported", note: "candidate failed" } }],
-      [{ name: "finish", args: { headline: "Loader rejects the build output", prediction: "breaks", cause_claim: "the grant duplicates the read: 30 → 60 rows, past max_items 50", mitigation: "filter by schema", evidence: ["l1"], supported_hypothesis_ids: ["h1"], limitations: [] } }],
+      [{ name: "finish", args: { cause_chain: stubChain(), headline: "Loader rejects the build output", prediction: "breaks", cause_claim: "the grant duplicates the read: 30 → 60 rows, past max_items 50", mitigation: "filter by schema", evidence: ["l1"], supported_hypothesis_ids: ["h1"], limitations: [] } }],
     ]);
 
     const summary = await investigate({ changeId: "stub-chg-1", mode: "full", outDir: out, model, evidence: new StubEvidence(), worlds: new StubWorlds() });
@@ -73,7 +73,7 @@ describe("investigation loop", () => {
     expect(summary.verdict).toBe("reproduced_failure");
     expect(summary.model_prediction).toBe("breaks");
     expect(summary.all_calls_nemotron).toBe(true);
-    expect([...summary.evidence_refs].sort()).toEqual(["l1", "s1"]); // invented ref dropped
+    expect([...summary.evidence_refs].sort()).toEqual(["l1", "s1", "x2"]); // invented ref dropped; the chain's cites count as evidence
     // model ran baseline + candidate; harness added a repeat candidate + a control
     expect(summary.experiments).toBe(4);
 

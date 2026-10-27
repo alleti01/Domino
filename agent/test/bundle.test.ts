@@ -5,14 +5,14 @@ import { describe, expect, it } from "vitest";
 import type { EvidenceBundle } from "../../contracts/agent/types.js";
 import { type ChatModel, investigate } from "../src/agent.js";
 import { writeBundle } from "../src/bundle.js";
-import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { StubEvidence, StubWorlds, stubChain } from "../src/fakes/stubWorld.js";
 import type { ChatResult } from "../src/llm/nightshift.js";
 
 const NEMOTRON = "nvidia/nemotron-3.5-lightning-30b-a3b";
 const steps = [
   [{ name: "get_dependency_path", args: { entity: "svc_builder" } }],
   [{ name: "run_experiment", args: { variant: "candidate", observe: ["artifact_entries", "consumer_status"], hypothesis_ids: [], rationale: "test" } }],
-  [{ name: "finish", args: { headline: "Loader rejects items.list", prediction: "breaks", cause_claim: "wider read doubles entries 30 → 60, past max_items 50", mitigation: "filter the builder query to one schema", evidence: ["l1", "s1"], supported_hypothesis_ids: [], limitations: [] } }],
+  [{ name: "finish", args: { cause_chain: stubChain(), headline: "Loader rejects items.list", prediction: "breaks", cause_claim: "wider read doubles entries 30 → 60, past max_items 50", mitigation: "filter the builder query to one schema", evidence: ["l1", "s1"], supported_hypothesis_ids: [], limitations: [] } }],
   [{ name: "propose_fix", args: { overrides: [{ target: "builder.schema_filter", value: "main" }], mitigation: "filter the builder query to one schema" } }],
 ];
 const model: ChatModel = {

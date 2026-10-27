@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { type ChatModel, investigate } from "../src/agent.js";
-import { StubEvidence, StubWorlds } from "../src/fakes/stubWorld.js";
+import { StubEvidence, StubWorlds, stubChain } from "../src/fakes/stubWorld.js";
 import type { ChatRequest, ChatResult } from "../src/llm/nightshift.js";
 import { describeDifferences, measuredNumbers, qualifyTables } from "../src/tools.js";
 
@@ -53,7 +53,7 @@ describe("explanations walk the chain with measured numbers", () => {
       };
     },
   });
-  const finish = (cause: string) => [{ name: "finish", args: { headline: "Loader rejects", prediction: "breaks", cause_claim: cause, mitigation: "filter by schema", evidence: ["x2"], supported_hypothesis_ids: [], limitations: [] } }];
+  const finish = (cause: string) => [{ name: "finish", args: { cause_chain: [{ claim: "stub-chg-1 widens what svc_builder reads", cites: ["x2"] }, { claim: cause, cites: ["x2: loader.loads_input"] }], headline: "Loader rejects", prediction: "breaks", mitigation: "filter by schema", evidence: ["x2"], supported_hypothesis_ids: [], limitations: [] } }];
   const experiment = [{ name: "run_experiment", args: { variant: "candidate", observe: ["query_rows", "consumer_status"], hypothesis_ids: [], rationale: "t" } }];
   const fix = [{ name: "propose_fix", args: { overrides: [{ target: "builder.schema_filter", value: "main" }], mitigation: "filter by schema" } }];
 
