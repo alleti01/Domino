@@ -65,6 +65,27 @@ on the chain's wording and the order the overrides were listed in.
 - With one override, use its full-fix run as the only single-override run.
 - Same rule for every world; no extra runs.
 
+## P5. Look for a fix that removes the cause
+P4 can only choose among the overrides the investigator proposed. If every verified override only adds
+headroom, the report's verified fix is one that leaves the cause in place. Before reporting it:
+
+1. **Code tries the settings with fixed choices.** For each `overridable` setting of type `string` (with
+   choices) or `boolean`, run the candidate with each other value alone. Each run takes about 0.25 s.
+2. **Ask the investigator once** for a fix that removes the cause, citing the same chain, for settings code
+   can't enumerate (numbers). Its answer must be valid `params.overrides`, or it is skipped.
+3. **Judge every passing candidate with P4's rule** (kinds judged on metrics an override can move). Any that
+   removes the cause is re-verified the usual way (candidate twice, baseline once).
+4. **Report:** a verified fix that removes the cause becomes the fix, and the headroom fix is listed as an
+   alternative. If none is found, keep the headroom fix and say "no fix that removes the cause was found among
+   the overridable settings".
+
+- Needs from the data layer: a `choices` list on each `string` entry in `describe`'s `overridable`. It isn't
+  there yet (the options are only in `description`); Anish adds it. Until then, step 1 covers booleans only.
+- Runs only after a verified fix whose overrides are all `adds_headroom`.
+- Code makes every decision except step 2's proposal. Same rule for every world.
+- The fix is still a setting change. If the real remedy is a change to the change itself (the investigator's
+  prose mitigation), say so as a limitation; it can't be verified here.
+
 ## Measuring it
 Anish re-runs the scorecard on the practice worlds after any change (modes D and E, 3 repeats). The
 held-out world stays out of tuning: its results are only used for the final run.
