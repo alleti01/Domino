@@ -1,0 +1,282 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026215751-68d3b6",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-x3c9/change/0291",
+    "world_id": "w-x3c9",
+    "title": "Content update: rule 0291 for template T7",
+    "files": [
+      "content/rules/T7/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T7/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f02\": \"m-0291-f02\",\n+    \"f21\": \"m-0291-f21\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T7\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Content update for rule-0291 causes content-interpreter exit_code=3 due to insufficient input slots",
+    "cause": "The proposed change adds rule-0291 for template T7 with only 2 criteria fields (f02, f21), but template T7 requires inputs_supplied=20 fields per interface contract ic-0036. The rule-validator validation passes (0 rejected out of 4 rules checked, ic-0035 field_count=21 check is lenient), but the content-interpreter fails with exit_code=3: \"fatal: event 0: rule rule-0291 read an input slot that does not exist (20 inputs supplied)\". The measured difference: baseline exit_code=0, candidate exit_code=3.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-fa5c3a9ecc4e48b3: baseline · workload default → all assertions passed",
+      "x-0bb3db5cd6874b02: candidate · workload default → failed: interpreter_keeps_running",
+      "x-c7021af4bdb34115: candidate · workload default → failed: interpreter_keeps_running",
+      "x-23cb2d58ca9345cc: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "The rule-validator field_count=21 check appeared lenient and did not catch the input slot mismatch; the exact criteria of that check was not fully inspected",
+      "No experiment tested a partial-field mitigation; only the full 2-field and full-20-field scenarios were observed"
+    ],
+    "mitigation": {
+      "text": "Add the remaining 18 input fields to rule-0291's criteria so that all 20 required inputs are supplied, or adjust template T7's inputs_supplied contract to match the 2 fields provided by rule-0291",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0291 runs content-pipeline",
+      "status": "observed",
+      "detail": "validate, then ship to content-interpreter",
+      "evidence": [
+        {
+          "row_id": "change_records:ci-0008",
+          "facts": "item_kind=runs_component, item_ref=content-pipeline, item_detail=validate, then ship to content-interpreter"
+        },
+        {
+          "row_id": "service_catalog:ic-0031",
+          "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+        }
+      ]
+    },
+    {
+      "edge": "content-pipeline calls rule-validator.validate",
+      "status": "observed",
+      "detail": "step=1",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0031",
+          "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+        },
+        {
+          "row_id": "service_catalog:ic-0035",
+          "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    },
+    {
+      "edge": "rule-validator.validate checks_against template:T7",
+      "status": "inferred",
+      "detail": "field_count=21",
+      "evidence": [
+        {
+          "row_id": "service_catalog:ic-0035",
+          "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-fa5c3a9ecc4e48b3",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the change to compare against candidate",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 baseline"
+    },
+    {
+      "experiment_id": "x-0bb3db5cd6874b02",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Run with the proposed change to see if rule-0291 causes validation or evaluation failures",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5be2c2051191257025c141dfffb26a18b5e5764c3287cebcf544b9f3cc98d841",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 candidate"
+    },
+    {
+      "experiment_id": "x-c7021af4bdb34115",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 0,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 3
+      },
+      "failed_assertions": [
+        {
+          "name": "interpreter_keeps_running",
+          "detail": "observed exit 3, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5be2c2051191257025c141dfffb26a18b5e5764c3287cebcf544b9f3cc98d841",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 candidate"
+    },
+    {
+      "experiment_id": "x-23cb2d58ca9345cc",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-x3c9 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Template field count validation does NOT reject rule-0291 in the rule-validator",
+      "mechanism": "rule-validator.validate checks_against template:T7 with field_count=21 (ic-0035), but apparently this check is lenient or only validates certain aspects",
+      "status": "refuted",
+      "evidence_for": [
+        "service_catalog:ic-0033",
+        "service_catalog:ic-0035"
+      ]
+    },
+    {
+      "hypothesis_id": "h2",
+      "claim": "The content-interpreter fails to evaluate rule-0291 because it only supplies 2 criteria fields but the interpreter expects 20 inputs for template T7",
+      "mechanism": "content-interpreter.load_rules evaluates against template:T7 with contract inputs_supplied=20 (ic-0036). Since rule-0291 only supplies criteria for f02 and f21, the interpreter will have insufficient inputs.",
+      "status": "supported",
+      "evidence_for": [
+        "service_catalog:ic-0036",
+        "x-0bb3db5cd6874b02"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "change_records:ci-0008",
+      "source": "change_records",
+      "facts": "item_kind=runs_component, item_ref=content-pipeline, item_detail=validate, then ship to content-interpreter"
+    },
+    {
+      "row_id": "service_catalog:ic-0031",
+      "source": "service_catalog",
+      "facts": "component=content-pipeline, relation=calls, target=rule-validator.validate, contract_key=step, contract_value=1"
+    },
+    {
+      "row_id": "service_catalog:ic-0035",
+      "source": "service_catalog",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+    },
+    {
+      "row_id": "service_catalog:ic-0033",
+      "source": "service_catalog",
+      "facts": "component=rule-0291, relation=instance_of, target=template:T7, contract_key=matches_on, contract_value=f02,f21"
+    },
+    {
+      "row_id": "service_catalog:ic-0036",
+      "source": "service_catalog",
+      "facts": "component=content-interpreter.load_rules, relation=evaluates, target=template:T7, contract_key=inputs_supplied, contract_value=20"
+    }
+  ],
+  "models": {
+    "calls": 16,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 15,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_9aohofe4",
+      "req_v7gzqfpi",
+      "req_4itir67r",
+      "req_qhmr237f",
+      "req_uozo1i8l",
+      "req_vl60lr09",
+      "req_4ok6xhxx",
+      "req_661y0tga",
+      "req_jjischi6",
+      "req_wxtvk2hx",
+      "req_66qubthf",
+      "req_1eibry1t",
+      "req_91e2vdsc",
+      "req_09i0o8kd",
+      "req_1c1zygdr",
+      "req_abzj7sbr"
+    ],
+    "total_latency_ms": 82902,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 3,
+    "reads": 1,
+    "updates": 2
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 4,
+  "duration_ms": 87467
+}

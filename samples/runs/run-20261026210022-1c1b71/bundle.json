@@ -1,0 +1,270 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026210022-1c1b71",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-d2v4/change/0042",
+    "world_id": "w-d2v4",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,4 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n+GRANT SELECT ON r1.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Explicit shard grants for svc_bundle_reader break worker-runtime startup: bundle exceeds preallocated entry limit",
+    "cause": "The change adds GRANT SELECT ON r0.* and GRANT SELECT ON r1.* to svc_bundle_reader. Baseline: rows_visible_to_builder = 60, bundle entries = 60, worker-runtime starts OK (exit 0). Candidate: rows_visible_to_builder = 180 (60 + 120 from shards), bundle entries = 180, bundle size 5629 bytes. Worker-runtime preallocates 160 entries; 180 > 160 causes exit code 2 (refuse to start).",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-448cbec6a3d44c84: baseline · workload default → all assertions passed",
+      "x-5108e87d916e414d: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-af593eeb54b34a75: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-5e417d767a314837: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "No experiment tested adjusting the runtime preallocation limit or filtering which tables the reader accesses. Only the default workload was tested."
+    ],
+    "mitigation": {
+      "text": "Reduce the runtime preallocation from 160 to ≥180, or restrict the shard grants to only the tables needed (e.g., grant on specific tables rather than r0.*/r1.*) so rows_visible_to_builder stays ≤160.",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0042 grants_to svc_bundle_reader",
+      "status": "observed",
+      "detail": "GRANT SELECT ON r0.*; GRANT SELECT ON r1.*",
+      "evidence": [
+        {
+          "row_id": "change_records:cr-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "change_records:cr-0002",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "svc_bundle_reader identity_of bundle-builder",
+      "status": "observed",
+      "detail": "service runs as svc_bundle_reader",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0001",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle-builder writes bundle.json",
+      "status": "observed",
+      "detail": "output_mode=as_returned",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "runtime_config:rc-0001",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle.json loaded_by worker-runtime",
+      "status": "observed",
+      "detail": "read at startup",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "pipeline_repo:jd-0001",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "worker-runtime configured_with worker-runtime.max_entries",
+      "status": "inferred",
+      "detail": "max_entries=160",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0001",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-448cbec6a3d44c84",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the change",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 60,
+        "bundle-builder.entries": 60,
+        "bundle-builder.bundle_bytes": 1909,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 60
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "6aa4ebb85f4a51adb283e6f23311f1d65aeed87331acea58dcc9f7ec553928eb",
+          "bytes": 1909
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 baseline"
+    },
+    {
+      "experiment_id": "x-5108e87d916e414d",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish candidate metrics with the change",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 180,
+        "bundle-builder.entries": 180,
+        "bundle-builder.bundle_bytes": 5629,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "15e209ec3ecf3506a23ce475655918c4409aed35dd1565d48056246823fbc709",
+          "bytes": 5629
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 candidate"
+    },
+    {
+      "experiment_id": "x-af593eeb54b34a75",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 180,
+        "bundle-builder.entries": 180,
+        "bundle-builder.bundle_bytes": 5629,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "15e209ec3ecf3506a23ce475655918c4409aed35dd1565d48056246823fbc709",
+          "bytes": 5629
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 candidate"
+    },
+    {
+      "experiment_id": "x-5e417d767a314837",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 60,
+        "bundle-builder.entries": 60,
+        "bundle-builder.bundle_bytes": 1909,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 60
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "6aa4ebb85f4a51adb283e6f23311f1d65aeed87331acea58dcc9f7ec553928eb",
+          "bytes": 1909
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Explicit shard grants for svc_bundle_reader cause worker-runtime to fail with exit code 2 because the bundle contains 180 entries, exceeding the runtime's preallocation limit of 160",
+      "mechanism": "The GRANT SELECT ON r0.* and r1.* adds shard database access for svc_bundle_reader, which increases rows_visible_to_builder from 60 (baseline) to 180 (candidate). The bundle-builder reads 180 rows instead of 60, producing a 5629-byte bundle. Worker-runtime loads the bundle at startup and checks entry count against its preallocation of 160; 180 > 160 causes exit code 2 (refuse to start)",
+      "status": "open",
+      "evidence_for": [
+        "x-448cbec6a3d44c84",
+        "x-5108e87d916e414d"
+      ]
+    }
+  ],
+  "cited_evidence": [],
+  "models": {
+    "calls": 12,
+    "failed": 1,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 10,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_aczdo2yp",
+      "req_rlz8vbvn",
+      "req_k4gwj43d",
+      "req_aoxlqly9",
+      "req_pduw08w6",
+      "req_p48ad0eg",
+      "req_poa4c7au",
+      "req_qvaky0wo",
+      "req_ka5oar2u",
+      "req_d25sko86",
+      "req_mbqanbu1"
+    ],
+    "total_latency_ms": 66874,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 1,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 8,
+  "duration_ms": 88132
+}

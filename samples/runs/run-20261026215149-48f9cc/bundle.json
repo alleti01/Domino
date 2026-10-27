@@ -1,0 +1,222 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026215149-48f9cc",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-p4r8/change/0042",
+    "world_id": "w-p4r8",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Explicit shard grants for svc_bundle_reader doubles meta-store row visibility from 140 to 280, but all functional metrics remain healthy",
+    "cause": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader (observed in change_statement:cr-0005). This grants the principal access to shard database r0 in addition to the existing default.* access. The meta-store tracks all tables visible to a principal, so rows_visible_to_builder doubles from 140 (default.* only) to 280 (default.* + r0.*). Bundle-builder continues reading 140 entries and writing 4390 bytes; worker-runtime exits 0 and loads 140 entries. All three experiments (baseline x-0745e5e45a7548c3, candidate x-f53d9b4b705a4b1b, control x-f81d84cc51284ead) confirm functional metrics are unchanged.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-0745e5e45a7548c3: baseline · workload default → all assertions passed",
+      "x-f53d9b4b705a4b1b: candidate · workload default → all assertions passed",
+      "x-f81d84cc51284ead: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "No test of actual query execution against r0.* tables under per-principal query limits; no test of audit logging behavior with the new grant. The experiment only measures meta-store visibility and functional pipeline metrics.",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null,
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "h1: The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in the migration. The meta-store tracks all tables/grants visible to a principal. With the new grant on r0.*, svc_bundle_reader now sees both default.* (140 rows) and r0.* (140 rows) = 280 total rows.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "db_catalog:ag-0014",
+          "facts": "grant=ag-0014, principal=svc_bundle_reader, database=default, privilege=SELECT"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in the migration. The meta-store tracks all tables/grants visible to a principal. With the new grant on r0.*, svc_bundle_reader now sees both default.* (140 rows) and r0.* (140 rows) = 280 total rows.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "change_records:cr-0005",
+          "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in the migration. The meta-store tracks all tables/grants visible to a principal. With the new grant on r0.*, svc_bundle_reader now sees both default.* (140 rows) and r0.* (140 rows) = 280 total rows.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-0745e5e45a7548c3",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h1: The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in the migration. The meta-store tracks all tables/grants visible to a principal. With the new grant on r0.*, svc_bundle_reader now sees both default.* (140 rows) and r0.* (140 rows) = 280 total rows.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-f53d9b4b705a4b1b",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-0745e5e45a7548c3",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Compare baseline (without the change) to establish normal operation metrics",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-p4r8 baseline"
+    },
+    {
+      "experiment_id": "x-f53d9b4b705a4b1b",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Compare candidate (with the change) to see if explicit shard grants affect behavior",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-p4r8 candidate"
+    },
+    {
+      "experiment_id": "x-f81d84cc51284ead",
+      "variant": "control",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Compare control (change reverted) to establish baseline without any change",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-p4r8 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The explicit shard grants for svc_bundle_reader will double the number of rows visible to the principal in the meta-store (from 140 to 280) because GRANT SELECT ON r0.* is added alongside the existing GRANT SELECT ON default.*",
+      "mechanism": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in the migration. The meta-store tracks all tables/grants visible to a principal. With the new grant on r0.*, svc_bundle_reader now sees both default.* (140 rows) and r0.* (140 rows) = 280 total rows.",
+      "status": "open",
+      "evidence_for": [
+        "db_catalog:ag-0014",
+        "change_records:cr-0005",
+        "x-0745e5e45a7548c3",
+        "x-f53d9b4b705a4b1b"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "db_catalog:ag-0014",
+      "source": "db_catalog",
+      "facts": "grant=ag-0014, principal=svc_bundle_reader, database=default, privilege=SELECT"
+    },
+    {
+      "row_id": "change_records:cr-0005",
+      "source": "change_records",
+      "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+    }
+  ],
+  "models": {
+    "calls": 18,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 17,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_gvotqret",
+      "req_44yd2ws3",
+      "req_5g0arotw",
+      "req_e59l906p",
+      "req_0b7ok6zn",
+      "req_25z11nc1",
+      "req_nffr1ng1",
+      "req_yc3488dh",
+      "req_hukpbs4l",
+      "req_usedgzw5",
+      "req_xjmkdf6d",
+      "req_rd0f5zap",
+      "req_7v1hakq2",
+      "req_jedekr5p",
+      "req_2udxp5tl",
+      "req_3nzbwbj7",
+      "req_0wwqt57o",
+      "req_gd92tovb"
+    ],
+    "total_latency_ms": 160029,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 0,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 8,
+  "duration_ms": 167443
+}

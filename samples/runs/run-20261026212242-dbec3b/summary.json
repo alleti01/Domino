@@ -1,0 +1,24 @@
+{
+  "run_id": "run-20261026212242-dbec3b",
+  "change_id": "w-p4r8/change/0042",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The grant GRANT SELECT ON r0.* TO svc_bundle_reader causes rows_visible_to_builder to increase from 140 to 280 (now sees both default.bundle_fields and r0.bundle_fields), but loaded_entries stays at 140 and exit_code stays 0. The max_entries=200 limit is not approached (140 < 200), and the worker-runtime starts successfully.",
+  "model_prediction": "safe",
+  "evidence_refs": [
+    "x-19d35359cc5b4205",
+    "x-01e903d141ac4b3c",
+    "hash:e324106ff11566cb",
+    "hash:3016e97171edca55",
+    "db_catalog:ag-0014",
+    "db_catalog:ti-0015"
+  ],
+  "model_calls": 18,
+  "experiments": 2,
+  "duration_ms": 145933,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

@@ -1,0 +1,23 @@
+{
+  "run_id": "run-20261026215440-cdcf12",
+  "change_id": "w-r1z5/change/0291",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The change adds rule-0291 specifying only fields f02 and f21, while template T7 requires field_count=21. However, the \"all other fields wildcard\" mechanism means the 19 unspecified fields are treated as wildcards, satisfying the field_count=21 contract. The rule-validator checks_against contract (ic-0025) accepts the rule, and content-interpreter.load_rules evaluates with inputs_supplied=21 and exit_code=0. Experiments confirm: baseline 3 rules checked/0 rejected/exit 0; candidate 4 rules checked/0 rejected/exit 0 (new rule added and accepted); control matches baseline. No regression observed.",
+  "model_prediction": "safe",
+  "evidence_refs": [
+    "hash:02309505196c643c",
+    "hash:62e40d08589ea00b",
+    "x-e119d2c0a96e4300",
+    "x-507d3dae5fcc4ccb",
+    "x-0e1f030ea19b4ae0"
+  ],
+  "model_calls": 13,
+  "experiments": 3,
+  "duration_ms": 79929,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

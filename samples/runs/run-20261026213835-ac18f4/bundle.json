@@ -1,0 +1,216 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026213835-ac18f4",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-n7v2/change/0291",
+    "world_id": "w-n7v2",
+    "title": "Content update: rule 0291 for template T7",
+    "files": [
+      "content/rules/T7/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T7/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f02\": \"m-0291-f02\",\n+    \"f05\": \"m-0291-f05\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T7\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Rule 0291 for template T7 passes validation: new rule processed through pipeline without rejections",
+    "cause": "The change adds rule-0291 for template T7 with criteria f02 and f05. Flow: change → rule-0291 interface → rule-validator.validate (checks_against template:T7) → content-pipeline → content-interpreter.load_rules (inputs_supplied=20). In system w-n7v2, two interface contracts exist: template-registry declares field_count=21 for template:T7 (contract ic-0014, row hash:da215d1662fad1c0), and rule-validator.validate checks_against template:T7 with field_count=21 (contract ic-0015, row hash:9c910f3dbb206d9e). Baseline experiment (x-945716a7ee124591): 3 rules checked, 0 rejected, exit_code=0, 50 events processed, 0 matches. Candidate experiment (x-e5938b1e9f684045): 4 rules checked (includes new rule), 0 rejected, exit_code=0, 50 events processed, 0 matches. The new rule is accepted by the validator without rejecting any rules; field_count contract of 21 for template T7 is consistent with the existing rule set.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-945716a7ee124591: baseline · workload default → all assertions passed",
+      "x-e5938b1e9f684045: candidate · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "Contracts ic-0014 and ic-0015 are specific to system w-n7v2 and may differ in other systems. Experiments use default workload; real-world event patterns may vary. The field_count=21 is a static contract value and does not dynamically adjust per rule addition.",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null,
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "h2: The change flows: change → rule-0291 interface → rule-validator.validate (checks_against template:T7, field_count=21 contract per ic-0015) → content-pipeline (ships rules) → content-interpreter.load_rules (evaluates with inputs_supplied=20). The field_count=21 contracts ic-0014 and ic-0015 are specific to system w-n7v2.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "hash:da215d1662fad1c0",
+          "facts": "component=template-registry, relation=declares, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    },
+    {
+      "edge": "h2: The change flows: change → rule-0291 interface → rule-validator.validate (checks_against template:T7, field_count=21 contract per ic-0015) → content-pipeline (ships rules) → content-interpreter.load_rules (evaluates with inputs_supplied=20). The field_count=21 contracts ic-0014 and ic-0015 are specific to system w-n7v2.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "hash:9c910f3dbb206d9e",
+          "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+        }
+      ]
+    },
+    {
+      "edge": "h2: The change flows: change → rule-0291 interface → rule-validator.validate (checks_against template:T7, field_count=21 contract per ic-0015) → content-pipeline (ships rules) → content-interpreter.load_rules (evaluates with inputs_supplied=20). The field_count=21 contracts ic-0014 and ic-0015 are specific to system w-n7v2.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-945716a7ee124591",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h2: The change flows: change → rule-0291 interface → rule-validator.validate (checks_against template:T7, field_count=21 contract per ic-0015) → content-pipeline (ships rules) → content-interpreter.load_rules (evaluates with inputs_supplied=20). The field_count=21 contracts ic-0014 and ic-0015 are specific to system w-n7v2.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-e5938b1e9f684045",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-945716a7ee124591",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the change",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-n7v2 baseline"
+    },
+    {
+      "experiment_id": "x-e5938b1e9f684045",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish candidate metrics with the change applied",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "490fb600429b71823a4207eb0f1bb3e4565bab113d342e950d7db6fe2a1baaca",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-n7v2 candidate"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The new rule-0291 for template T7 adds criteria f02 and f05 without violating the field_count=21 contract or causing any rule rejections",
+      "mechanism": "The change flows: change → rule-0291 interface → rule-validator.validate (checks_against template:T7, field_count=21) → content-pipeline (ships rules) → content-interpreter.load_rules (evaluates with inputs_supplied=20). The field_count contract of 21 for template T7 is maintained.",
+      "status": "open",
+      "evidence_for": [
+        "hash:da215d1662fad1c0",
+        "hash:9c910f3dbb206d9e",
+        "x-945716a7ee124591",
+        "x-e5938b1e9f684045"
+      ]
+    },
+    {
+      "hypothesis_id": "h2",
+      "claim": "The new rule-0291 for template T7 adds criteria f02 and f05. The rule flows through rule-validator.validate which checks_against template:T7. In system w-n7v2, template-registry declares field_count=21 for template:T7 (ic-0014) and rule-validator.validate checks_against template:T7 with field_count=21 (ic-0015). Both contracts are specific to system w-n7v2. Baseline: 3 rules checked, 0 rejected. Candidate: 4 rules checked (new rule included), 0 rejected. All observables exit_code=0 in both variants.",
+      "mechanism": "The change flows: change → rule-0291 interface → rule-validator.validate (checks_against template:T7, field_count=21 contract per ic-0015) → content-pipeline (ships rules) → content-interpreter.load_rules (evaluates with inputs_supplied=20). The field_count=21 contracts ic-0014 and ic-0015 are specific to system w-n7v2.",
+      "status": "supported",
+      "evidence_for": [
+        "hash:da215d1662fad1c0",
+        "hash:9c910f3dbb206d9e",
+        "x-945716a7ee124591",
+        "x-e5938b1e9f684045"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "hash:da215d1662fad1c0",
+      "source": "semantic_layer",
+      "facts": "component=template-registry, relation=declares, target=template:T7, contract_key=field_count, contract_value=21"
+    },
+    {
+      "row_id": "hash:9c910f3dbb206d9e",
+      "source": "semantic_layer",
+      "facts": "component=rule-validator.validate, relation=checks_against, target=template:T7, contract_key=field_count, contract_value=21"
+    }
+  ],
+  "models": {
+    "calls": 18,
+    "failed": 1,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 15,
+      "nvidia/nemotron-3-ultra-550b-a55b": 2
+    },
+    "request_ids": [
+      "req_wjvrbxnh",
+      "req_es63jpnz",
+      "req_gwmsbips",
+      "req_d0saa5hu",
+      "req_9pv8lin1",
+      "req_y2ohlmzz",
+      "req_l8tu9mb6",
+      "req_r8btvp9a",
+      "req_fyf31zi0",
+      "req_qdrkldht",
+      "req_loyqs18b",
+      "req_i6gka0ll",
+      "req_j14cs0jl",
+      "req_ysz7kc5r",
+      "req_1nx95w14",
+      "req_z3gzzh7w",
+      "req_n0elsnc6"
+    ],
+    "total_latency_ms": 160334,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 3,
+    "reads": 0,
+    "updates": 1
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 2,
+    "final": "approved",
+    "issues": [
+      {
+        "round": 1,
+        "statement": "The field_count=21 contract for template T7 (ic-0014 / ic-0015) is maintained",
+        "problem": "unsupported: hash:da215d1662fad1c0, hash:9c910f3dbb206d9e, hash:0caae67d3ed9c6e1, hash:c0fbf007bda94678, hash:6182c73e57853808, hash:8f72e71e51b0fe11, hash:1392ce566839aba0, hash:e5f3a3fec17ef995"
+      }
+    ]
+  },
+  "queries": 6,
+  "duration_ms": 180506
+}

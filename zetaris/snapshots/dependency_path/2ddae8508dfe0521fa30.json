@@ -1,0 +1,204 @@
+{
+  "contract_version": "0.3",
+  "call": "dependency_path",
+  "mode": "live",
+  "status": "ok",
+  "start": {
+    "entity_id": "w-n7v2/change/0291",
+    "entity_type": "change"
+  },
+  "paths": [
+    {
+      "hops": [
+        {
+          "from": "w-n7v2/change/0291",
+          "from_type": "change",
+          "to": "w-n7v2/interface/rule-0291",
+          "to_type": "interface",
+          "relation": "adds_rule",
+          "edge_status": "observed",
+          "detail": "template=T7; matches_on=f02,f05; all other fields wildcard",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0003",
+              "query_id": "q-c28bdf93681f489b"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0013",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        },
+        {
+          "from": "w-n7v2/interface/rule-0291",
+          "from_type": "interface",
+          "to": "w-n7v2/interface/template:T7",
+          "to_type": "interface",
+          "relation": "instance_of",
+          "edge_status": "inferred",
+          "detail": "matches_on=f02,f05",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0013",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-n7v2/change/0291",
+          "from_type": "change",
+          "to": "w-n7v2/interface/content-pipeline",
+          "to_type": "interface",
+          "relation": "runs",
+          "edge_status": "observed",
+          "detail": "validate, then ship to content-interpreter",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0004",
+              "query_id": "q-c28bdf93681f489b"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0011",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        },
+        {
+          "from": "w-n7v2/interface/content-pipeline",
+          "from_type": "interface",
+          "to": "w-n7v2/interface/rule-validator.validate",
+          "to_type": "interface",
+          "relation": "calls",
+          "edge_status": "observed",
+          "detail": "step=1",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0011",
+              "query_id": "q-c28bdf93681f489b"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0015",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        },
+        {
+          "from": "w-n7v2/interface/rule-validator.validate",
+          "from_type": "interface",
+          "to": "w-n7v2/interface/template:T7",
+          "to_type": "interface",
+          "relation": "checks_against",
+          "edge_status": "inferred",
+          "detail": "field_count=21",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0015",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    },
+    {
+      "hops": [
+        {
+          "from": "w-n7v2/change/0291",
+          "from_type": "change",
+          "to": "w-n7v2/interface/content-pipeline",
+          "to_type": "interface",
+          "relation": "runs",
+          "edge_status": "observed",
+          "detail": "validate, then ship to content-interpreter",
+          "evidence": [
+            {
+              "source_system": "change_records",
+              "source_row_id": "ci-0004",
+              "query_id": "q-c28bdf93681f489b"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0011",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        },
+        {
+          "from": "w-n7v2/interface/content-pipeline",
+          "from_type": "interface",
+          "to": "w-n7v2/interface/content-interpreter.load_rules",
+          "to_type": "interface",
+          "relation": "ships_to",
+          "edge_status": "observed",
+          "detail": "step=2",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0012",
+              "query_id": "q-c28bdf93681f489b"
+            },
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0016",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        },
+        {
+          "from": "w-n7v2/interface/content-interpreter.load_rules",
+          "from_type": "interface",
+          "to": "w-n7v2/interface/template:T7",
+          "to_type": "interface",
+          "relation": "evaluates",
+          "edge_status": "inferred",
+          "detail": "inputs_supplied=20",
+          "evidence": [
+            {
+              "source_system": "service_catalog",
+              "source_row_id": "ic-0016",
+              "query_id": "q-c28bdf93681f489b"
+            }
+          ]
+        }
+      ],
+      "source_systems": [
+        "change_records",
+        "service_catalog"
+      ],
+      "meets_two_source_rule": true
+    }
+  ],
+  "unresolved": [],
+  "dq_issues": [],
+  "edges_considered": 15,
+  "query_ids": [
+    "q-c28bdf93681f489b"
+  ],
+  "duration_ms": 1797,
+  "error": null,
+  "snapshot_request": {
+    "entity_id": "w-n7v2/change/0291",
+    "max_hops": 6
+  }
+}

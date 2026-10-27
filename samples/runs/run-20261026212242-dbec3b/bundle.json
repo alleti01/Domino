@@ -1,0 +1,214 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026212242-dbec3b",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-p4r8/change/0042",
+    "world_id": "w-p4r8",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Explicit shard grants for svc_bundle_reader: safe - visibility doubles but no limits violated",
+    "cause": "The grant GRANT SELECT ON r0.* TO svc_bundle_reader causes rows_visible_to_builder to increase from 140 to 280 (now sees both default.bundle_fields and r0.bundle_fields), but loaded_entries stays at 140 and exit_code stays 0. The max_entries=200 limit is not approached (140 < 200), and the worker-runtime starts successfully.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-19d35359cc5b4205: baseline · workload default → all assertions passed",
+      "x-01e903d141ac4b3c: candidate · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "Experiments ran the default workload only; other workloads or parameter combinations could potentially behave differently.",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null,
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "h1: The bundle-builder service runs as svc_bundle_reader. With the explicit grant on r0.*, the builder gains SELECT access to all tables in r0, including default.bundle_fields, increasing rows_visible_to_builder from 140 to 280. However, loaded_entries and bundle_bytes remain unchanged at 140 and 4390 respectively, and worker-runtime exits successfully with code 0.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "db_catalog:ag-0014",
+          "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The bundle-builder service runs as svc_bundle_reader. With the explicit grant on r0.*, the builder gains SELECT access to all tables in r0, including default.bundle_fields, increasing rows_visible_to_builder from 140 to 280. However, loaded_entries and bundle_bytes remain unchanged at 140 and 4390 respectively, and worker-runtime exits successfully with code 0.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "db_catalog:ti-0015",
+          "facts": "database=r0, database_name=r0"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The bundle-builder service runs as svc_bundle_reader. With the explicit grant on r0.*, the builder gains SELECT access to all tables in r0, including default.bundle_fields, increasing rows_visible_to_builder from 140 to 280. However, loaded_entries and bundle_bytes remain unchanged at 140 and 4390 respectively, and worker-runtime exits successfully with code 0.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "hash:e324106ff11566cb",
+          "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The bundle-builder service runs as svc_bundle_reader. With the explicit grant on r0.*, the builder gains SELECT access to all tables in r0, including default.bundle_fields, increasing rows_visible_to_builder from 140 to 280. However, loaded_entries and bundle_bytes remain unchanged at 140 and 4390 respectively, and worker-runtime exits successfully with code 0.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-19d35359cc5b4205",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h1: The bundle-builder service runs as svc_bundle_reader. With the explicit grant on r0.*, the builder gains SELECT access to all tables in r0, including default.bundle_fields, increasing rows_visible_to_builder from 140 to 280. However, loaded_entries and bundle_bytes remain unchanged at 140 and 4390 respectively, and worker-runtime exits successfully with code 0.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-01e903d141ac4b3c",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-19d35359cc5b4205",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the explicit shard grant for svc_bundle_reader",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-p4r8 baseline"
+    },
+    {
+      "experiment_id": "x-01e903d141ac4b3c",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish candidate metrics WITH the explicit shard grant for svc_bundle_reader on r0.*",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-p4r8 candidate"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The explicit shard grant GRANT SELECT ON r0.* TO svc_bundle_reader causes the bundle-builder (running as svc_bundle_reader) to see double the visible rows (280 vs 140 baseline) in the meta-store, because it now has access to both default.bundle_fields and r0.bundle_fields. However, loaded_entries stays at 140 and exit_code stays 0, well within the max_entries=200 limit.",
+      "mechanism": "The bundle-builder service runs as svc_bundle_reader. With the explicit grant on r0.*, the builder gains SELECT access to all tables in r0, including default.bundle_fields, increasing rows_visible_to_builder from 140 to 280. However, loaded_entries and bundle_bytes remain unchanged at 140 and 4390 respectively, and worker-runtime exits successfully with code 0.",
+      "status": "supported",
+      "evidence_for": [
+        "db_catalog:ag-0014",
+        "db_catalog:ti-0015",
+        "hash:e324106ff11566cb",
+        "x-19d35359cc5b4205",
+        "x-01e903d141ac4b3c"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "db_catalog:ag-0014",
+      "source": "db_catalog",
+      "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+    },
+    {
+      "row_id": "db_catalog:ti-0015",
+      "source": "db_catalog",
+      "facts": "database=r0, database_name=r0"
+    },
+    {
+      "row_id": "hash:e324106ff11566cb",
+      "source": "semantic_layer",
+      "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+    }
+  ],
+  "models": {
+    "calls": 18,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 17,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_vg7iam3v",
+      "req_5bmy4n7j",
+      "req_molb939p",
+      "req_57kprqd5",
+      "req_l2wiotwr",
+      "req_8b2ekwli",
+      "req_90nwemz6",
+      "req_nq6qcivc",
+      "req_dsy9gwzb",
+      "req_35g4woe4",
+      "req_awvofuuq",
+      "req_q51ylt7s",
+      "req_t590v6e3",
+      "req_cadmzuzu",
+      "req_hhseyh38",
+      "req_9snliz3k",
+      "req_d3ekzy3z",
+      "req_o3lzgkt3"
+    ],
+    "total_latency_ms": 140403,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 0,
+    "updates": 1
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 8,
+  "duration_ms": 145933
+}

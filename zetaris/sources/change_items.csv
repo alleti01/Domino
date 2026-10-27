@@ -1,0 +1,17 @@
+source_system,source_row_id,system_id,change_id,file_path,item_kind,item_ref,item_detail,title
+change_records,ci-0001,w-g4k8,0291,content/rules/T4/rule-0291.json,adds_rule,rule-0291,"template=T4; matches_on=f01,f13; all other fields wildcard",Content update: rule 0291 for template T4
+change_records,ci-0002,w-g4k8,0291,content/rules/T4/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T4
+change_records,ci-0003,w-n7v2,0291,content/rules/T7/rule-0291.json,adds_rule,rule-0291,"template=T7; matches_on=f02,f05; all other fields wildcard",Content update: rule 0291 for template T7
+change_records,ci-0004,w-n7v2,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
+change_records,ci-0005,w-r1z5,0291,content/rules/T7/rule-0291.json,adds_rule,rule-0291,"template=T7; matches_on=f02,f21; all other fields wildcard",Content update: rule 0291 for template T7
+change_records,ci-0006,w-r1z5,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
+change_records,ci-0007,w-x3c9,0291,content/rules/T7/rule-0291.json,adds_rule,rule-0291,"template=T7; matches_on=f02,f21; all other fields wildcard",Content update: rule 0291 for template T7
+change_records,ci-0008,w-x3c9,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
+change_records,ci-0009,w-y6p3,0291,content/rules/T7/rule-0291.json,adds_rule,rule-0291,"template=T7; matches_on=f02,f21; all other fields wildcard",Content update: rule 0291 for template T7
+change_records,ci-0010,w-y6p3,0291,content/rules/T7/rule-0291.json,runs_component,content-pipeline,"validate, then ship to content-interpreter",Content update: rule 0291 for template T7
+change_records,ci-5001,w-c5h2,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
+change_records,ci-5002,w-c5h2,0317,services/orders/handler.py,adds_call,inventory-service.reserve,"called once per order, synchronously",Orders: reserve stock before confirming an order
+change_records,ci-5003,w-f8w3,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
+change_records,ci-5004,w-f8w3,0317,services/orders/handler.py,adds_call,inventory-service.reserve,"called once per order, synchronously",Orders: reserve stock before confirming an order
+change_records,ci-5005,w-v2k9,0317,services/orders/handler.py,adds_call,order-service.handle_order,handle_order now calls inventory-service.reserve before confirm,Orders: reserve stock before confirming an order
+change_records,ci-5006,w-v2k9,0317,services/orders/handler.py,adds_call,inventory-service.reserve,"called once per order, synchronously",Orders: reserve stock before confirming an order

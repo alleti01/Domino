@@ -1,0 +1,72 @@
+{
+  "contract_version": "0.3",
+  "call": "describe_world",
+  "mode": "fake",
+  "status": "ok",
+  "world": "fake-w0",
+  "title": "Explicit shard grants for the bundle reader",
+  "components": [
+    {
+      "name": "meta-store",
+      "role": "catalog of table columns across databases, with per-principal grants"
+    },
+    {
+      "name": "bundle-builder",
+      "role": "runs as svc_bundle_reader; reads column metadata for bundle_fields and writes a bundle file"
+    },
+    {
+      "name": "worker-runtime",
+      "role": "loads the bundle file at startup"
+    }
+  ],
+  "change": {
+    "entity_id": "fake-w0/change/0042",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "description": "Moves the reader's implicit access to shard databases onto explicit grants so that per-principal query limits and audit logging apply.",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "variants": {
+    "baseline": "system without the change",
+    "candidate": "system with the change applied",
+    "control": "change applied, then reverted"
+  },
+  "params": {
+    "overrides": {
+      "type": "object",
+      "default": {},
+      "description": "settings to change before the run, as {target: value}; targets are listed in overridable"
+    }
+  },
+  "metrics": [
+    "meta-store.rows_visible_to_builder",
+    "bundle-builder.entries",
+    "bundle-builder.bundle_bytes",
+    "worker-runtime.exit_code",
+    "worker-runtime.loaded_entries"
+  ],
+  "overridable": [
+    {
+      "target": "worker-runtime.max_entries",
+      "current": 200,
+      "type": "number",
+      "description": "worker-runtime setting"
+    },
+    {
+      "target": "worker-runtime.startup_timeout_s",
+      "current": 30,
+      "type": "number",
+      "description": "worker-runtime setting"
+    },
+    {
+      "target": "bundle-builder.output_mode",
+      "current": "as_returned",
+      "type": "string",
+      "description": "bundle-builder setting: as_returned or collapse_same_name"
+    }
+  ],
+  "error": null,
+  "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
+}

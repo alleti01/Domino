@@ -1,0 +1,14 @@
+{
+  "run_id": "run-20261024010745-222e42",
+  "change_id": "stub-chg-2",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": null,
+  "model_prediction": "safe",
+  "evidence_refs": [],
+  "model_calls": 19,
+  "experiments": 3,
+  "duration_ms": 218573,
+  "outage": false,
+  "all_calls_nemotron": true
+}

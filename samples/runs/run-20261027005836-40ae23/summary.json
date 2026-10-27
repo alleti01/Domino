@@ -1,0 +1,27 @@
+{
+  "run_id": "run-20261027005836-40ae23",
+  "change_id": "w-g4k8/change/0291",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "The change adds rule-0291 for template T4 with criteria f01 and f13. Contract ic-0006 specifies inputs_supplied=12 for content-interpreter.load_rules. Candidate experiment (x-0a62a89848144148) shows exit_code=3 with fatal error: \"rule rule-0291 read an input slot that does not exist (12 inputs supplied)\". The rule references f13 which maps to the 13th input slot, but only 12 slots are supplied (f01-f12). The fix is to remove f13 from rule-0291's criteria. Baseline experiment (x-f4b9e164c6374d16) with 3 rules having 2-3 fields each and exit_code=0 confirms the interpreter works when rules stay within 12 input slots.",
+  "model_prediction": "safe",
+  "evidence_refs": [
+    "hash:3b880a5288e62980",
+    "hash:418e69ae7f6df96e",
+    "hash:4bd9eafdf2faf482",
+    "hash:fd05169f843e0da0",
+    "hash:65acac5467212ec7",
+    "x-f4b9e164c6374d16",
+    "x-0a62a89848144148",
+    "hash:544be03ae594a583",
+    "hash:6533a5e617256f0a"
+  ],
+  "model_calls": 19,
+  "experiments": 4,
+  "duration_ms": 199644,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

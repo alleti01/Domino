@@ -1,0 +1,23 @@
+{
+  "run_id": "run-20261026215921-251ffd",
+  "change_id": "w-y6p3/change/0291",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The new rule-0291 defines matches_on=f02,f21 for template T7. Experiment candidate run shows rule-validator rejects rule-0291 with message \"fields ['f21'] beyond 20\". Baseline: 3 rules checked, 0 rejected. Candidate: 4 rules checked, 1 rejected (rule-0291). Content-pipeline holds back the new rule set. The rejection message maps to contract ic-0051 (rule-validator.validate checks_against content-interpreter.load_rules with inputs_supplied=20), not ic-0045 (field_count=21).",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-f497b2e6047e4a14",
+    "hash:58dde46a25326ebe",
+    "hash:b2bbdd67228432ab",
+    "hash:e5f3a3fec17ef995",
+    "hash:4c3791e0e2525723"
+  ],
+  "model_calls": 22,
+  "experiments": 2,
+  "duration_ms": 204451,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 1,
+  "cache_hits": 0,
+  "fix": null
+}

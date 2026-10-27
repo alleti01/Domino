@@ -1,0 +1,6476 @@
+{
+ "version": 1,
+ "recorded_at": "2026-10-27T07:31:36.228Z",
+ "change_id": "w-h9c5",
+ "mode": "full",
+ "data_source": "data_layer",
+ "settings": {
+  "investigator_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "critic": {
+   "model": "nvidia/nemotron-3-ultra-550b-a55b",
+   "maxRounds": 2,
+   "revisionSteps": 6
+  }
+ },
+ "model": [
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-a790ea06-3944-4c10-b495-e4e43cfdd5c4",
+      "type": "function",
+      "function": {
+       "name": "get_dependency_path",
+       "arguments": "{\"entity\":\"w-h9c5/change/0042\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_chobmpl6",
+    "requestId": "req_chobmpl6",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_1",
+    "latencyMs": 3567,
+    "attempts": 1,
+    "at": "2026-10-27T07:31:40.022Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_chobmpl6",
+      "request_id": "req_chobmpl6",
+      "decision_id": "req_chobmpl6",
+      "created_at": 1793086300006,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "Investigation run-20261027073136-f6dca4.\nInvestigate this proposed change before it is deployed.\n\nChange w-h9c5/change/0042: Explicit shard grants for svc_bundle_reader\nMoves the r",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1271,
+        "tokensIn": 3717,
+        "tokensOut": 124,
+        "outputTps": 97.5609756097561,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 3717,
+       "output_tokens": 124,
+       "total_tokens": 3841,
+       "output_tps": 97.5609756097561,
+       "latency_ms": 1271
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "passed",
+       "risk_level": "low",
+       "raw_risk": "low",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        }
+       ],
+       "recommended_action": "allow",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 3339,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.38744,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 3717,
+    "completion_tokens": 124,
+    "total_tokens": 3841
+   },
+   "attempts": 1,
+   "latencyMs": 3569
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": "Now let me query the semantic layer to understand the current state of grants, principals, and settings.\n",
+    "tool_calls": [
+     {
+      "id": "call-767d1dba-105c-4f17-9ddb-13502053a206",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"purpose\":\"Find the principal svc_bundle_reader in system w-h9c5\",\"sql\":\"SELECT principal_id, principal_name, system_id FROM lightning.metastore.domino.systems.principal WHERE system_id = 'w-h9c5' AND principal_name = 'svc_bundle_reader'\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_3xrnjqf3",
+    "requestId": "req_3xrnjqf3",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_2",
+    "latencyMs": 3895,
+    "attempts": 1,
+    "at": "2026-10-27T07:31:46.342Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_3xrnjqf3",
+      "request_id": "req_3xrnjqf3",
+      "decision_id": "req_3xrnjqf3",
+      "created_at": 1793086306333,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "042\",\"nodes\":[{\"id\":\"w-h9c5/change/0042\",\"kind\":\"change\",\"label\":\"0042\",\"source\":\"change_records\",\"row_id\":\"change_records:cr-0003\"},{\"id\":\"w-h9c5/database/r0\",\"kind\":\"database\",\"l",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 3879,
+        "tokensIn": 5136,
+        "tokensOut": 403,
+        "outputTps": 103.89275586491364,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 5136,
+       "output_tokens": 403,
+       "total_tokens": 5539,
+       "output_tps": 103.89275586491364,
+       "latency_ms": 3879
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.42585,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 5136,
+    "completion_tokens": 403,
+    "total_tokens": 5539
+   },
+   "attempts": 1,
+   "latencyMs": 3897
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-35f724d3-f192-4871-8770-6bd34365535f",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"purpose\":\"Find access grants for svc_bundle_reader in system w-h9c5\",\"sql\":\"SELECT grant_id, principal_id, database_id, privilege FROM lightning.metastore.domino.systems.access_grant WHERE system_id = 'w-h9c5' AND principal_id = 'w-h9c5/principal/svc_bundle_reader'\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_gwac28a4",
+    "requestId": "req_gwac28a4",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_3",
+    "latencyMs": 2117,
+    "attempts": 1,
+    "at": "2026-10-27T07:31:48.996Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_gwac28a4",
+      "request_id": "req_gwac28a4",
+      "decision_id": "req_gwac28a4",
+      "created_at": 1793086308986,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "007\"},{\"id\":\"w-h9c5/principal/svc_bundle_reader\",\"kind\":\"principal\",\"label\":\"svc_bundle_reader\",\"source\":\"change_records\",\"row_id\":\"change_records:cr-0003\"},{\"id\":\"w-h9c5/service/b",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 2090,
+        "tokensIn": 5368,
+        "tokensOut": 120,
+        "outputTps": 57.41626794258374,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 5368,
+       "output_tokens": 120,
+       "total_tokens": 5488,
+       "output_tps": 57.41626794258374,
+       "latency_ms": 2090
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.48124,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 5368,
+    "completion_tokens": 120,
+    "total_tokens": 5488
+   },
+   "attempts": 1,
+   "latencyMs": 2120
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-d6049f6f-9943-4b3b-b2d8-6762af556206",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"sql\":\"SELECT * FROM lightning.metastore.domino.systems.access_grant WHERE system_id = 'w-h9c5' AND database_id = 'w-h9c5/database/r0'\",\"purpose\":\"Find grants related to database r0 in system w-h9c5\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_mp7qse78",
+    "requestId": "req_mp7qse78",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_4",
+    "latencyMs": 1334,
+    "attempts": 1,
+    "at": "2026-10-27T07:31:50.648Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_mp7qse78",
+      "request_id": "req_mp7qse78",
+      "decision_id": "req_mp7qse78",
+      "created_at": 1793086310639,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "/q-bundle-fields\",\"kind\":\"query\",\"label\":\"q-bundle-fields\",\"source\":\"pipeline_repo\",\"row_id\":\"pipeline_repo:jd-0003\"},{\"id\":\"w-h9c5/table/default.bundle_fields\",\"kind\":\"table\",\"lab",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1246,
+        "tokensIn": 5609,
+        "tokensOut": 104,
+        "outputTps": 83.46709470304975,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 5609,
+       "output_tokens": 104,
+       "total_tokens": 5713,
+       "output_tps": 83.46709470304975,
+       "latency_ms": 1246
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.05488,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 5609,
+    "completion_tokens": 104,
+    "total_tokens": 5713
+   },
+   "attempts": 1,
+   "latencyMs": 1337
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-2738436a-197c-4cab-be2e-72f281b0d162",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"sql\":\"SELECT setting_id, service_id, setting_key, setting_value FROM lightning.metastore.domino.systems.runtime_setting WHERE system_id = 'w-h9c5' AND service_id = 'w-h9c5/service/worker-runtime'\",\"purpose\":\"Find runtime settings for worker-runtime in system w-h9c5\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_k9ugoi2b",
+    "requestId": "req_k9ugoi2b",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_5",
+    "latencyMs": 2735,
+    "attempts": 1,
+    "at": "2026-10-27T07:31:53.719Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_k9ugoi2b",
+      "request_id": "req_k9ugoi2b",
+      "decision_id": "req_k9ugoi2b",
+      "created_at": 1793086313702,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "ipeline_repo:jd-0003\"},{\"id\":\"w-h9c5/service/worker-runtime\",\"kind\":\"service\",\"label\":\"worker-runtime\",\"source\":\"runtime_config\",\"row_id\":\"runtime_config:rc-0004\"},{\"id\":\"w-h9c5/se",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1801,
+        "tokensIn": 5855,
+        "tokensOut": 140,
+        "outputTps": 77.73459189339256,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 5855,
+       "output_tokens": 140,
+       "total_tokens": 5995,
+       "output_tps": 77.73459189339256,
+       "latency_ms": 1801
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.11201,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 5855,
+    "completion_tokens": 140,
+    "total_tokens": 5995
+   },
+   "attempts": 1,
+   "latencyMs": 2738
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": "Now let me look at the bundle-builder query and its observations to understand what happens when it reads metadata:\n",
+    "tool_calls": [
+     {
+      "id": "call-0de48659-5f96-4fa8-bdb3-c448fa261de9",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"purpose\":\"Find query observations for bundle fields query\",\"sql\":\"SELECT query_id, rows_returned_p50, artifact_entries_p50 FROM lightning.metastore.domino.systems.query_observation WHERE system_id = 'w-h9c5' AND query_id = 'q-bundle-fields'\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_9n203zla",
+    "requestId": "req_9n203zla",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_6",
+    "latencyMs": 1841,
+    "attempts": 1,
+    "at": "2026-10-27T07:31:55.922Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_9n203zla",
+      "request_id": "req_9n203zla",
+      "decision_id": "req_9n203zla",
+      "created_at": 1793086315916,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "c5/database/r0\",\"relation\":\"grants_on\",\"status\":\"observed\",\"source\":\"change_records\",\"row_id\":\"change_records:cr-0003\",\"row_ids\":[\"change_records:cr-0003\",\"db_catalog:ti-0007\"],\"de",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1526,
+        "tokensIn": 6162,
+        "tokensOut": 135,
+        "outputTps": 88.46657929226737,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 6162,
+       "output_tokens": 135,
+       "total_tokens": 6297,
+       "output_tps": 88.46657929226737,
+       "latency_ms": 1526
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.17196,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 6162,
+    "completion_tokens": 135,
+    "total_tokens": 6297
+   },
+   "attempts": 1,
+   "latencyMs": 1845
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-74fcc746-aef8-42e9-8881-bf719e2d42d9",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"sql\":\"SELECT obs_id, query_id, rows_returned_p50, artifact_entries_p50 FROM lightning.metastore.domino.systems.query_observation WHERE query_id LIKE '%bundle_fields%' LIMIT 10\",\"purpose\":\"Find query observations for bundle fields\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_meiowcs4",
+    "requestId": "req_meiowcs4",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_7",
+    "latencyMs": 1125,
+    "attempts": 1,
+    "at": "2026-10-27T07:31:58.005Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_meiowcs4",
+      "request_id": "req_meiowcs4",
+      "decision_id": "req_meiowcs4",
+      "created_at": 1793086317996,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "ndle_reader\"},{\"from\":\"w-h9c5/database/r0\",\"to\":\"w-h9c5/table/r0.bundle_fields\",\"relation\":\"contains\",\"status\":\"inferred\",\"source\":\"db_catalog\",\"row_id\":\"db_catalog:ti-0007\",\"row_i",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1102,
+        "tokensIn": 6334,
+        "tokensOut": 105,
+        "outputTps": 95.28130671506351,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 6334,
+       "output_tokens": 105,
+       "total_tokens": 6439,
+       "output_tps": 95.28130671506351,
+       "latency_ms": 1102
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.23493,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 6334,
+    "completion_tokens": 105,
+    "total_tokens": 6439
+   },
+   "attempts": 1,
+   "latencyMs": 1129
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-d6bb58a2-739c-4963-b203-cf4cc4ab1df8",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"sql\":\"SELECT contract_id, component, relation, target, contract_key, contract_value FROM lightning.metastore.domino.systems.interface_contract WHERE system_id = 'w-h9c5' AND (component = 'bundle-builder' OR component = 'worker-runtime')\",\"purpose\":\"Find interface contracts for bundle-builder and worker-runtime in system w-h9c5\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_xbpw5dg1",
+    "requestId": "req_xbpw5dg1",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_8",
+    "latencyMs": 1963,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:00.888Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_xbpw5dg1",
+      "request_id": "req_xbpw5dg1",
+      "decision_id": "req_xbpw5dg1",
+      "created_at": 1793086320880,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "ed_p50=99 over 288 runs in 7 days\"},{\"from\":\"w-h9c5/service/bundle-builder\",\"to\":\"w-h9c5/table/default.bundle_fields\",\"relation\":\"reads\",\"status\":\"inferred\",\"source\":\"pipeline_repo",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1484,
+        "tokensIn": 6897,
+        "tokensOut": 144,
+        "outputTps": 97.03504043126685,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 6897,
+       "output_tokens": 144,
+       "total_tokens": 7041,
+       "output_tps": 97.03504043126685,
+       "latency_ms": 1484
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.29932,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 6897,
+    "completion_tokens": 144,
+    "total_tokens": 7041
+   },
+   "attempts": 1,
+   "latencyMs": 1967
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-7e673ef4-2596-4c18-a478-2620897a1a9f",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"sql\":\"SELECT * FROM lightning.metastore.domino.systems.principal WHERE system_id = 'w-h9c5'\",\"purpose\":\"Find all principals in system w-h9c5\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_ec91xi32",
+    "requestId": "req_ec91xi32",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_9",
+    "latencyMs": 3302,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:04.560Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_ec91xi32",
+      "request_id": "req_ec91xi32",
+      "decision_id": "req_ec91xi32",
+      "created_at": 1793086324549,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "fault.bundle_fields\",\"relation\":\"reads\",\"status\":\"inferred\",\"source\":\"pipeline_repo\",\"row_id\":\"pipeline_repo:jd-0003\",\"row_ids\":[\"pipeline_repo:jd-0003\",\"db_catalog:ti-0006\"],\"deta",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 2649,
+        "tokensIn": 7065,
+        "tokensOut": 252,
+        "outputTps": 95.13023782559456,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 7065,
+       "output_tokens": 252,
+       "total_tokens": 7317,
+       "output_tps": 95.13023782559456,
+       "latency_ms": 2649
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.36973,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 7065,
+    "completion_tokens": 252,
+    "total_tokens": 7317
+   },
+   "attempts": 1,
+   "latencyMs": 3305
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": "Let me check for any existing grants on database r0 and look at what other principals might be affected:\n",
+    "tool_calls": [
+     {
+      "id": "call-d499489d-79ea-42a7-8730-540c97266002",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"purpose\":\"Find all grants on database r0 in system w-h9c5\",\"sql\":\"SELECT * FROM lightning.metastore.domino.systems.access_grant WHERE system_id = 'w-h9c5' AND database_id = 'w-h9c5/database/r0'\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_5ea3wfif",
+    "requestId": "req_5ea3wfif",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_10",
+    "latencyMs": 10865,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:15.900Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_5ea3wfif",
+      "request_id": "req_5ea3wfif",
+      "decision_id": "req_5ea3wfif",
+      "created_at": 1793086335891,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "from\":\"w-h9c5/artifact/bundle.json\",\"to\":\"w-h9c5/service/worker-runtime\",\"relation\":\"loaded_by\",\"status\":\"observed\",\"source\":\"runtime_conf…(truncated)\n[steps left: 19]\nNow let me q",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 10837,
+        "tokensIn": 7416,
+        "tokensOut": 692,
+        "outputTps": 63.855310510288824,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 7416,
+       "output_tokens": 692,
+       "total_tokens": 8108,
+       "output_tps": 63.855310510288824,
+       "latency_ms": 10837
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.4429,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 7416,
+    "completion_tokens": 692,
+    "total_tokens": 8108
+   },
+   "attempts": 1,
+   "latencyMs": 10868
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": "Let me check the change_statement table to understand the migration better:\n",
+    "tool_calls": [
+     {
+      "id": "call-71e7ba0f-0db3-4c84-a068-1984756accfb",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"purpose\":\"Find change statements for w-h9c5/change/0042\",\"sql\":\"SELECT * FROM lightning.metastore.domino.systems.change_statement WHERE system_id = 'w-h9c5' AND change_id = 'w-h9c5/change/0042'\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_y5bxtvid",
+    "requestId": "req_y5bxtvid",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_11",
+    "latencyMs": 6837,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:22.740Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_y5bxtvid",
+      "request_id": "req_y5bxtvid",
+      "decision_id": "req_y5bxtvid",
+      "created_at": 1793086342723,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "r to understand the current state of grants, principals, and settings.\n\n{\"query_id\":\"q-6f17c9ce5eaa445a\",\"row_count\":1,\"queries_left\":7,\"rows\":[{\"row_id\":\"hash:e493a94d7b6e3422\",\"s",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 6804,
+        "tokensIn": 7563,
+        "tokensOut": 781,
+        "outputTps": 114.78542034097589,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 7563,
+       "output_tokens": 781,
+       "total_tokens": 8344,
+       "output_tps": 114.78542034097589,
+       "latency_ms": 6804
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.52398,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 7563,
+    "completion_tokens": 781,
+    "total_tokens": 8344
+   },
+   "attempts": 1,
+   "latencyMs": 6840
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": "Let me check the dependency edge details more carefully and then form hypotheses.\n",
+    "tool_calls": [
+     {
+      "id": "call-1e60fd70-8deb-4e74-8694-2947e7d92f08",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"sql\":\"SELECT * FROM lightning.metastore.domino.systems.dependency_edge WHERE system_id = 'w-h9c5' AND (from_id = 'w-h9c5/principal/svc_bundle_reader' OR to_id = 'w-h9c5/principal/svc_bundle_reader')\",\"purpose\":\"Find dependency edges from svc_bundle_reader in system w-h9c5\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_065htzwk",
+    "requestId": "req_065htzwk",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_12",
+    "latencyMs": 14229,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:36.972Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_065htzwk",
+      "request_id": "req_065htzwk",
+      "decision_id": "req_065htzwk",
+      "created_at": 1793086356961,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "3422\",\"source\":\"semantic_layer\",\"values\":{\"principal_id\":\"w-h9c5/principal/svc_bundle_reader\",\"principal_name\":\"svc_bundle_reader\",\"system_id\":\"w-h9c5\"}}]}\n[steps left: 18]\nnull\n{\"",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 14195,
+        "tokensIn": 7708,
+        "tokensOut": 749,
+        "outputTps": 52.76505811905601,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 7708,
+       "output_tokens": 749,
+       "total_tokens": 8457,
+       "output_tps": 52.76505811905601,
+       "latency_ms": 14195
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.60742,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 7708,
+    "completion_tokens": 749,
+    "total_tokens": 8457
+   },
+   "attempts": 1,
+   "latencyMs": 14233
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-ff693e7a-2a36-4ffd-8197-e45a0851f925",
+      "type": "function",
+      "function": {
+       "name": "describe_experiments",
+       "arguments": "{}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_evwcwlqh",
+    "requestId": "req_evwcwlqh",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_13",
+    "latencyMs": 7474,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:44.452Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_evwcwlqh",
+      "request_id": "req_evwcwlqh",
+      "decision_id": "req_evwcwlqh",
+      "created_at": 1793086364442,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "{\"query_id\":\"q-4955475e38df460f\",\"row_count\":1,\"queries_left\":6,\"rows\":[{\"row_id\":\"hash:f6df76e3420d0ca0\",\"source\":\"semantic_layer\",\"values\":{\"grant_id\":\"w-h9c5/grant/ag-0006\",\"pri",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 7445,
+        "tokensIn": 7872,
+        "tokensOut": 412,
+        "outputTps": 55.339153794492944,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 7872,
+       "output_tokens": 412,
+       "total_tokens": 8284,
+       "output_tps": 55.339153794492944,
+       "latency_ms": 7445
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.69199,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 7872,
+    "completion_tokens": 412,
+    "total_tokens": 8284
+   },
+   "attempts": 1,
+   "latencyMs": 7476
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": "Now I have a good picture of the system. Let me form hypotheses and run experiments. \n\nKey findings:\n- The change adds `GRANT SELECT ON r0.* TO svc_bundle_reader;`\n- `svc_bundle_reader` runs as `bundle-builder` service\n- `worker-runtime` has `max_entries = 200` setting\n- Bundle fields query normally returns 99 rows p50\n- There are other principals: `svc_admin_console`, `svc_metrics`\n- `svc_admin_console` already has SELECT on `r0`\n\nLet me run a baseline vs candidate experiment to see the effect:\n",
+    "tool_calls": [
+     {
+      "id": "call-ea2445b1-f425-4427-b82b-2136a1fce22c",
+      "type": "function",
+      "function": {
+       "name": "run_experiment",
+       "arguments": "{\"variant\":\"baseline\",\"observe\":[\"meta-store.rows_visible_to_builder\",\"bundle-builder.entries\",\"bundle-builder.bundle_bytes\",\"worker-runtime.exit_code\",\"worker-runtime.loaded_entries\"],\"workload\":\"default\",\"rationale\":\"Establish baseline metrics without the explicit shard grants change\",\"hypothesis_ids\":[\"h1\",\"h2\"]}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_az5k47ug",
+    "requestId": "req_az5k47ug",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_14",
+    "latencyMs": 5401,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:49.855Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_az5k47ug",
+      "request_id": "req_az5k47ug",
+      "decision_id": "req_az5k47ug",
+      "created_at": 1793086369845,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "7223eb973363\",\"source\":\"semantic_layer\",\"values\":{\"setting_id\":\"w-h9c5/setting/worker-runtime.startup_timeout_s\",\"service_id\":\"w-h9c5/service/worker-runtime\",\"setting_key\":\"startup",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 5373,
+        "tokensIn": 8144,
+        "tokensOut": 569,
+        "outputTps": 105.89986971896519,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 8144,
+       "output_tokens": 569,
+       "total_tokens": 8713,
+       "output_tps": 105.89986971896519,
+       "latency_ms": 5373
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 8144,
+    "completion_tokens": 569,
+    "total_tokens": 8713
+   },
+   "attempts": 1,
+   "latencyMs": 5404
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-0caa5f90-993a-46ea-9a60-de137ecf5421",
+      "type": "function",
+      "function": {
+       "name": "run_experiment",
+       "arguments": "{\"workload\":\"default\",\"observe\":[\"meta-store.rows_visible_to_builder\",\"bundle-builder.entries\",\"bundle-builder.bundle_bytes\",\"worker-runtime.exit_code\",\"worker-runtime.loaded_entries\"],\"rationale\":\"Run with the explicit shard grants change to compare metrics\",\"hypothesis_ids\":[\"h1\",\"h2\"],\"variant\":\"candidate\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_vezvuzzm",
+    "requestId": "req_vezvuzzm",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_15",
+    "latencyMs": 1914,
+    "attempts": 1,
+    "at": "2026-10-27T07:32:52.033Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_vezvuzzm",
+      "request_id": "req_vezvuzzm",
+      "decision_id": "req_vezvuzzm",
+      "created_at": 1793086372018,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "\n[steps left: 12]\nnull\n{\"query_id\":\"q-1a731eaad3934336\",\"row_count\":3,\"queries_left\":0,\"rows\":[{\"row_id\":\"db_catalog:ag-0007\",\"source\":\"db_catalog\",\"values\":{\"principal_id\":\"w-h9c5",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1884,
+        "tokensIn": 8815,
+        "tokensOut": 145,
+        "outputTps": 76.96390658174099,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 8815,
+       "output_tokens": 145,
+       "total_tokens": 8960,
+       "output_tps": 76.96390658174099,
+       "latency_ms": 1884
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "warning",
+       "risk_level": "medium",
+       "raw_risk": "medium",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        },
+        {
+         "type": "citation_consistency",
+         "status": "warning",
+         "message": "Factual claim requested but response lacks citation markers."
+        }
+       ],
+       "recommended_action": "show_warning",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.08713,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 8815,
+    "completion_tokens": 145,
+    "total_tokens": 8960
+   },
+   "attempts": 1,
+   "latencyMs": 1916
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": "Now I have the key data. Let me summarize my findings and form hypotheses.\n\n**Key observations from experiments:**\n\n| Metric | Baseline | Candidate | Change |\n|--------|----------|-----------|--------|\n| meta-store.rows_visible_to_builder | 99 | 198 | +99 |\n| bundle-builder.entries | 99 | 198 | +99 |\n| bundle-builder.bundle_bytes | 3118 | 6187 | +3069 |\n| worker-runtime.exit_code | 0 | 0 | no change |\n| worker-runtime.loaded_entries | 99 | 198 | +99 |\n\nThe explicit grant `GRANT SELECT ON r0.* TO svc_bundle_reader` adds database r0 access to svc_bundle_reader, doubling the rows visible from 99 to 198.\n\nLet me form formal hypotheses:\n",
+    "tool_calls": [
+     {
+      "id": "call-51f27b65-e57f-4188-838e-c157513b0e77",
+      "type": "function",
+      "function": {
+       "name": "record_hypothesis",
+       "arguments": "{\"confidence\":0.95,\"mechanism\":\"The grant adds database r0 to svc_bundle_reader's accessible databases. The bundle-builder query reads column metadata across all accessible databases, finding 99 rows in r0.bundle_fields plus 99 in default.bundle_fields = 198 total\",\"evidence_against\":[],\"claim\":\"The explicit grant GRANT SELECT ON r0.* TO svc_bundle_reader causes svc_bundle_reader to see 99 additional rows from database r0, doubling the visible rows from 99 to 198\",\"evidence_for\":[\"x-f11c624e659b486d: meta-store.rows_visible_to_builder 99 → candidate x-bbafe547b0d34ae0: meta-store.rows_visible_to_builder 198\"],\"falsified_by\":\"If a follow-up experiment shows rows_visible_to_builder remains 99 with the explicit grant\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_e5p1k7ff",
+    "requestId": "req_e5p1k7ff",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_16",
+    "latencyMs": 14660,
+    "attempts": 1,
+    "at": "2026-10-27T07:33:06.873Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_e5p1k7ff",
+      "request_id": "req_e5p1k7ff",
+      "decision_id": "req_e5p1k7ff",
+      "created_at": 1793086386858,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "and then form hypotheses.\n\nERROR: Query budget exhausted; reason with what you have or run an experiment.\n[steps left: 8]\nnull\n{\"world_id\":\"w-h9c5\",\"variants\":[\"baseline\",\"candidat",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 14218,
+        "tokensIn": 9368,
+        "tokensOut": 1012,
+        "outputTps": 71.17738078492053,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 9368,
+       "output_tokens": 1012,
+       "total_tokens": 10380,
+       "output_tps": 71.17738078492053,
+       "latency_ms": 14218
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "passed",
+       "risk_level": "low",
+       "raw_risk": "low",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        }
+       ],
+       "recommended_action": "allow",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.17673,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 9368,
+    "completion_tokens": 1012,
+    "total_tokens": 10380
+   },
+   "attempts": 1,
+   "latencyMs": 14663
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-d0f6fb67-c1a8-4c79-8a3e-73e6d2e3ce88",
+      "type": "function",
+      "function": {
+       "name": "query_usl",
+       "arguments": "{\"purpose\":\"Find interface contracts with query limits in system w-h9c5\",\"sql\":\"SELECT * FROM lightning.metastore.domino.systems.interface_contract WHERE system_id = 'w-h9c5'\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_blhjmwic",
+    "requestId": "req_blhjmwic",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_17",
+    "latencyMs": 1273,
+    "attempts": 1,
+    "at": "2026-10-27T07:33:08.151Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_blhjmwic",
+      "request_id": "req_blhjmwic",
+      "decision_id": "req_blhjmwic",
+      "created_at": 1793086388145,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "lt\",\"description\":\"the world's standard workload\"}],\"overridable\":[{\"target\":\"worker-runtime.max_entries\",\"current\":200,\"type\":\"number\",\"description\":\"worker-runtime setting\"},{\"ta",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 1253,
+        "tokensIn": 9851,
+        "tokensOut": 128,
+        "outputTps": 102.15482841181166,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 9851,
+       "output_tokens": 128,
+       "total_tokens": 9979,
+       "output_tps": 102.15482841181166,
+       "latency_ms": 1253
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "passed",
+       "risk_level": "low",
+       "raw_risk": "low",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 1,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        }
+       ],
+       "recommended_action": "allow",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.28053,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 9851,
+    "completion_tokens": 128,
+    "total_tokens": 9979
+   },
+   "attempts": 1,
+   "latencyMs": 1278
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-58618028-0900-452d-8901-61c720fae3cc",
+      "type": "function",
+      "function": {
+       "name": "record_hypothesis",
+       "arguments": "{\"claim\":\"The increased loaded_entries from 99 to 198 brings the worker-runtime close to its max_entries limit of 200, risking limit violation\",\"mechanism\":\"With 198 entries now loaded (up from 99), the worker-runtime max_entries limit of 200 is approached. If future queries add even a few more rows, the limit could be exceeded, causing startup failure or truncation.\",\"evidence_for\":[\"x-f11c624e659b486d: worker-runtime.loaded_entries 99 → baseline\",\"x-bbafe547b0d34ae0: worker-runtime.loaded_entries 198 → candidate\",\"runtime_config:rc-0004: worker-runtime.max_entries = 200\"],\"confidence\":0.85,\"evidence_against\":[],\"falsified_by\":\"If a follow-up experiment shows loaded_entries stays well below 200 even with additional data, or if the limit is configurable and set higher\"}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_5u3va9iz",
+    "requestId": "req_5u3va9iz",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_18",
+    "latencyMs": 5886,
+    "attempts": 1,
+    "at": "2026-10-27T07:33:14.043Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_5u3va9iz",
+      "request_id": "req_5u3va9iz",
+      "decision_id": "req_5u3va9iz",
+      "created_at": 1793086394032,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "ries\",\"current\":200,\"type\":\"number\",\"description\":\"worker-runtime setting\"},{\"target\":\"worker-runtime.startup_timeout_s\",\"current\":30,\"type\":\"number\",\"description\":\"worker-runtime ",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 4628,
+        "tokensIn": 9963,
+        "tokensOut": 444,
+        "outputTps": 95.93777009507346,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 9963,
+       "output_tokens": 444,
+       "total_tokens": 10407,
+       "output_tps": 95.93777009507346,
+       "latency_ms": 4628
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "passed",
+       "risk_level": "low",
+       "raw_risk": "low",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        }
+       ],
+       "recommended_action": "allow",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.38032,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 9963,
+    "completion_tokens": 444,
+    "total_tokens": 10407
+   },
+   "attempts": 1,
+   "latencyMs": 5887
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-7e8ceabc-f0d8-408e-9d66-f219dd107b38",
+      "type": "function",
+      "function": {
+       "name": "finish",
+       "arguments": "{\"supported_hypothesis_ids\":[\"h1\",\"h2\"],\"headline\":\"Explicit shard grants for svc_bundle_reader doubles visible rows, approaching worker-runtime limit\",\"evidence\":[\"x-f11c624e659b486d: meta-store.rows_visible_to_builder 99, worker-runtime.loaded_entries 99, worker-runtime.exit_code 0\",\"x-bbafe547b0d34ae0: meta-store.rows_visible_to_builder 198, worker-runtime.loaded_entries 198, worker-runtime.exit_code 0\"],\"limitations\":[\"Experiment only tests default workload; production workloads may have different query patterns\",\"Limit margin of 2 entries (200-198) is minimal but change is currently safe\",\"No test of whether future queries or additional data could push loaded_entries over 200\"],\"prediction\":\"safe\",\"cause_chain\":[{\"claim\":\"The change GRANT SELECT ON r0.* TO svc_bundle_reader adds database r0 to svc_bundle_reader's accessible databases\",\"cites\":[\"change_records:cr-0003\",\"x-f11c624e659b486d\"]},{\"claim\":\"bundle-builder reads column metadata from all accessible databases, doubling rows from 99 to 198\",\"cites\":[\"pipeline_repo:jd-0003\",\"x-f11c624e659b486d\",\"x-bbafe547b0d34ae0\"]},{\"claim\":\"worker-runtime loaded_entries increases from 99 to 198 with the candidate change\",\"cites\":[\"runtime_config:rc-0004\",\"x-f11c624e659b486d\",\"x-bbafe547b0d34ae0\"]},{\"claim\":\"worker-runtime.max_entries limit is 200, so 198 entries approaches but does not exceed the limit\",\"cites\":[\"runtime_config:rc-0004\",\"x-f11c624e659b486d\",\"x-bbafe547b0d34ae0\"]},{\"claim\":\"worker-runtime.exit_code remains 0 in both baseline and candidate, indicating the change does not break startup\",\"cites\":[\"x-f11c624e659b486d\",\"x-bbafe547b0d34ae0\"]}]}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_2ve25gyv",
+    "requestId": "req_2ve25gyv",
+    "routedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "providerModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3.5-lightning-30b-a3b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "purpose": "step_19",
+    "latencyMs": 16607,
+    "attempts": 1,
+    "at": "2026-10-27T07:33:30.652Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_2ve25gyv",
+      "request_id": "req_2ve25gyv",
+      "decision_id": "req_2ve25gyv",
+      "created_at": 1793086410636,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "uilder.output_mode\",\"current\":\"as_returned\",\"type\":\"string\",\"description\":\"bundle-builder setting: as_returned or collapse_same_name\"}]}\n[steps left: 7]\nNow I have a good picture o",
+      "winning_route": {
+       "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "label": "Nemotron 3.5 Lightning 30B A3B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "A"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "ms": 16574,
+        "tokensIn": 10323,
+        "tokensOut": 998,
+        "outputTps": 60.214794256063705,
+        "coherence": null,
+        "tier": "A",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 10323,
+       "output_tokens": 998,
+       "total_tokens": 11321,
+       "output_tps": 60.214794256063705,
+       "latency_ms": 16574
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "passed",
+       "risk_level": "low",
+       "raw_risk": "low",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        }
+       ],
+       "recommended_action": "allow",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "neutral",
+       "label": "single route",
+       "detail": "one model handled this — no cross-model agreement to check",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.48439,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3.5 Lightning 30B A3B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 10323,
+    "completion_tokens": 998,
+    "total_tokens": 11321
+   },
+   "attempts": 1,
+   "latencyMs": 16611
+  },
+  {
+   "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+     {
+      "id": "call-72f6be76-6b8c-442d-98ce-7c25fd02681c",
+      "type": "function",
+      "function": {
+       "name": "submit_review",
+       "arguments": "{\"claims\": [{\"statement\": \"The change GRANT SELECT ON r0.* TO svc_bundle_reader adds database r0 to svc_bundle_reader's accessible databases\", \"verdict\": \"supported\", \"evidence\": \"change_records:cr-0003; db_catalog:ti-0007\"}, {\"statement\": \"bundle-builder reads column metadata from all accessible databases, doubling rows from 99 to 198\", \"verdict\": \"supported\", \"evidence\": \"pipeline_repo:jd-0003; telemetry:qt-0003; x-f11c624e659b486d; x-bbafe547b0d34ae0\"}, {\"statement\": \"worker-runtime loaded_entries increases from 99 to 198 with the candidate change\", \"verdict\": \"supported\", \"evidence\": \"runtime_config:rc-0004; x-f11c624e659b486d; x-bbafe547b0d34ae0\"}, {\"statement\": \"worker-runtime.max_entries limit is 200\", \"verdict\": \"supported\", \"evidence\": \"hash:ded68111b620d85d\"}, {\"statement\": \"198 entries approaches but does not exceed the limit\", \"verdict\": \"supported\", \"evidence\": \"hash:ded68111b620d85d; x-bbafe547b0d34ae0\"}, {\"statement\": \"worker-runtime.exit_code remains 0 in both baseline and candidate, indicating the change does not break startup\", \"verdict\": \"supported\", \"evidence\": \"x-f11c624e659b486d; x-bbafe547b0d34ae0\"}], \"mitigation\": {\"present\": false, \"would_fix\": false, \"reasoning\": \"No mitigation proposed; the explanation correctly notes the change does not cause failure (exit_code 0 in both).\"}, \"consistent_with_experiments\": true, \"approved\": true, \"issues\": []}"
+      }
+     }
+    ]
+   },
+   "finishReason": "tool_calls",
+   "receipt": {
+    "schema": "meterless.compute_receipt.v1",
+    "receiptId": "rcpt_req_wuyua1jb",
+    "requestId": "req_wuyua1jb",
+    "routedModel": "nvidia/nemotron-3-ultra-550b-a55b",
+    "providerModel": "nvidia/nemotron-3-ultra-550b-a55b",
+    "reason": "single-candidate",
+    "phaseModels": [
+     "nvidia/nemotron-3-ultra-550b-a55b"
+    ],
+    "cacheStatus": "miss",
+    "requestedModel": "nvidia/nemotron-3-ultra-550b-a55b",
+    "purpose": "review",
+    "latencyMs": 9922,
+    "attempts": 1,
+    "at": "2026-10-27T07:33:40.579Z",
+    "raw": {
+     "body": {
+      "schema": "meterless.compute_receipt.v1",
+      "receipt_id": "rcpt_req_wuyua1jb",
+      "request_id": "req_wuyua1jb",
+      "decision_id": "req_wuyua1jb",
+      "created_at": 1793086420568,
+      "status": "ok",
+      "app": "domino",
+      "requested_mode": "meterless/auto",
+      "prompt_preview": "rants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bun",
+      "winning_route": {
+       "model": "nvidia/nemotron-3-ultra-550b-a55b",
+       "label": "Nemotron 3 Ultra 550B A55B",
+       "provider": "nvidia",
+       "kind": "cloud",
+       "tier": "C"
+      },
+      "phases": [
+       {
+        "phase": "final_synthesis",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "ms": 9903,
+        "tokensIn": 2403,
+        "tokensOut": 499,
+        "outputTps": 50.388771079470864,
+        "coherence": null,
+        "tier": "C",
+        "reflex_decided_in_ms": 0.2
+       }
+      ],
+      "usage": {
+       "input_tokens": 2403,
+       "output_tokens": 499,
+       "total_tokens": 2902,
+       "output_tps": 50.388771079470864,
+       "latency_ms": 9903
+      },
+      "cost": {
+       "actual_usd": 0,
+       "naive_usd": 0,
+       "baseline": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "label": "Nemotron 3.5 Lightning 30B A3B",
+        "source": "mode-default-frontier"
+       },
+       "verifier_usd": 0,
+       "race_overhead_usd": 0
+      },
+      "savings": {
+       "amount": 0,
+       "currency": "USD",
+       "vs": "Nemotron 3.5 Lightning 30B A3B",
+       "baseline_source": "mode-default-frontier"
+      },
+      "cache": {
+       "status": "miss",
+       "losers_reclaimed": 0,
+       "partials_reclaimed": 0
+      },
+      "privacy": {
+       "path": "cloud-ok",
+       "redaction": {
+        "applied": false,
+        "spans": 0
+       }
+      },
+      "cross_check": {
+       "status": "passed",
+       "risk_level": "low",
+       "raw_risk": "low",
+       "verifier": "deterministic/schema+regex",
+       "reflex_ms": 0,
+       "verifier_ms": 0,
+       "verifier_ran": false,
+       "verifier_model": null,
+       "verifier_verdict": null,
+       "verifier_error": null,
+       "verifier_tokens": null,
+       "checks": [
+        {
+         "type": "destructive_action",
+         "status": "passed",
+         "message": "No destructive ops detected."
+        },
+        {
+         "type": "pii_guard",
+         "status": "passed",
+         "message": "No PII/credential detected in response."
+        },
+        {
+         "type": "schema_validity",
+         "status": "passed",
+         "message": "Tool call matches declared schema."
+        }
+       ],
+       "recommended_action": "allow",
+       "blocking": false,
+       "app": "domino",
+       "destructive": false,
+       "requires_review": false
+      },
+      "consensus": {
+       "level": "solo",
+       "tone": "blue",
+       "label": "frontier answer",
+       "detail": "answered by a top-tier model",
+       "raced": 1,
+       "agree": 1,
+       "coherence": null,
+       "verified": null
+      },
+      "consensus_escalation": null,
+      "fusion": null,
+      "synthesis": null,
+      "gen_verifier": null,
+      "debate": null,
+      "quality_race": null,
+      "reasoning_scaffold": null,
+      "app_policy": {
+       "app": "domino",
+       "has_rule": true,
+       "privacy": "cloud-ok",
+       "cross_check": "auto",
+       "race_width": 6,
+       "premium_budget": null,
+       "lanes": null,
+       "requested_mode": "auto",
+       "routed_mode": "auto",
+       "mode_coerced": false
+      },
+      "budget_degrade": null,
+      "refine": null,
+      "test_time_compute": null,
+      "hmem": null,
+      "tool_degraded": null,
+      "mcp": null,
+      "job": null,
+      "method": null,
+      "deliberation": null,
+      "egress": {
+       "destination": "nvidia",
+       "coverage": "pattern_floor",
+       "sent": {
+        "prompt_chars": 4000,
+        "context_sources": [
+         "messages"
+        ],
+        "redacted": []
+       },
+       "withheld": [],
+       "never_eligible": []
+      },
+      "verification": null,
+      "verdict": null,
+      "bar": null,
+      "score": null,
+      "graded_weight": null,
+      "eligible": null,
+      "scorecard": null,
+      "unmet": null,
+      "optimistic": null,
+      "routing": {
+       "policy": "learned-router",
+       "width": 1,
+       "of": 1,
+       "confidence": null,
+       "reason": "single-candidate",
+       "predicted": "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "escalated": null,
+       "winner": "nvidia/nemotron-3-ultra-550b-a55b",
+       "escalated_on_divergence": false,
+       "hedge": null,
+       "hedges_skipped": 0
+      },
+      "host_pressure": {
+       "thermal": "nominal",
+       "battery": null,
+       "pressure": {
+        "battery": {
+         "score": 0,
+         "soft": 0.3,
+         "hard": 0.5,
+         "label": "nominal",
+         "sensor": "battery%, charging"
+        },
+        "thermal": {
+         "score": 0.15,
+         "soft": 0.55,
+         "hard": 0.8,
+         "label": "nominal",
+         "sensor": "thermal API"
+        },
+        "memory": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "committed/swap"
+        },
+        "cpu": {
+         "score": 0,
+         "soft": 0.7,
+         "hard": 0.9,
+         "label": "nominal",
+         "sensor": "30s load avg"
+        },
+        "gpu": {
+         "score": 0,
+         "soft": 0.75,
+         "hard": 0.92,
+         "label": "nominal",
+         "sensor": "GPU + VRAM"
+        },
+        "network": {
+         "score": 0.1,
+         "soft": 0.5,
+         "hard": 0.85,
+         "label": "nominal",
+         "sensor": "RTT to providers"
+        },
+        "quota": {
+         "score": 0.5976,
+         "soft": 0.8,
+         "hard": 0.95,
+         "label": "nominal",
+         "sensor": "per-key window"
+        }
+       }
+      },
+      "error": "",
+      "summary": "ok · Nemotron 3 Ultra 550B A55B · miss · $0.0000 saved"
+     }
+    }
+   },
+   "usage": {
+    "prompt_tokens": 2403,
+    "completion_tokens": 499,
+    "total_tokens": 2902
+   },
+   "attempts": 1,
+   "latencyMs": 9925
+  }
+ ],
+ "calls": [
+  {
+   "method": "getChange",
+   "key": "[\"w-h9c5\"]",
+   "result": {
+    "change_id": "w-h9c5/change/0042",
+    "world_id": "w-h9c5",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "description": "Moves the reader's implicit access to shard databases onto explicit grants so that per-principal query limits and audit logging apply.\nSystem components: meta-store (catalog of table columns across databases, with per-principal grants); bundle-builder (runs as svc_bundle_reader; reads column metadata for bundle_fields and writes a bundle file); worker-runtime (loads the bundle file at startup).\nSemantic-layer rows for this system have system_id = 'w-h9c5'; other values belong to unrelated systems.",
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n",
+    "files": [
+     "db/migrations/0042_reader_shard_grants.sql"
+    ]
+   }
+  },
+  {
+   "method": "describe",
+   "key": "[]",
+   "result": [
+    {
+     "view": "lightning.metastore.domino.systems.principal",
+     "source": "db_catalog (identities known to the database catalog)",
+     "columns": [
+      "principal_id",
+      "system_id",
+      "principal_name",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.database_entity",
+     "source": "db_catalog (databases known to the catalog)",
+     "columns": [
+      "database_id",
+      "system_id",
+      "database_name",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.data_table",
+     "source": "db_catalog (tables per database, with column counts)",
+     "columns": [
+      "table_id",
+      "database_id",
+      "system_id",
+      "table_name",
+      "column_count",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.access_grant",
+     "source": "db_catalog (current read grants per identity and database)",
+     "columns": [
+      "grant_id",
+      "principal_id",
+      "database_id",
+      "system_id",
+      "privilege",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.change_statement",
+     "source": "change_records (grant statements in a proposed change)",
+     "columns": [
+      "stmt_id",
+      "change_id",
+      "system_id",
+      "action",
+      "privilege",
+      "principal_id",
+      "database_id",
+      "file_path",
+      "title",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.job",
+     "source": "pipeline_repo (services: identity they run as, query, output file)",
+     "columns": [
+      "job_id",
+      "system_id",
+      "service_name",
+      "principal_id",
+      "query_id",
+      "query_text",
+      "reads_table",
+      "output_artifact_id",
+      "output_mode",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.runtime_setting",
+     "source": "runtime_config (services: input file and settings)",
+     "columns": [
+      "setting_id",
+      "system_id",
+      "service_id",
+      "input_artifact_id",
+      "setting_key",
+      "setting_value",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.query_observation",
+     "source": "telemetry (observed query results over recent runs)",
+     "columns": [
+      "obs_id",
+      "system_id",
+      "query_id",
+      "job_id",
+      "window_days",
+      "sampled_runs",
+      "rows_returned_p50",
+      "artifact_entries_p50",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.change_item",
+     "source": "change_records (other items in a proposed change: IDs, rules, jobs it runs)",
+     "columns": [
+      "item_id",
+      "change_id",
+      "system_id",
+      "item_kind",
+      "item_ref",
+      "item_detail",
+      "file_path",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.inventory_record",
+     "source": "inventory_registry (registered records with kind, parent, owner and status)",
+     "columns": [
+      "record_key",
+      "system_id",
+      "record_id",
+      "record_kind",
+      "parent_record_id",
+      "owner",
+      "status",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.interface_contract",
+     "source": "service_catalog (what components call, declare and accept)",
+     "columns": [
+      "contract_id",
+      "system_id",
+      "component",
+      "relation",
+      "target",
+      "contract_key",
+      "contract_value",
+      "source_system",
+      "source_row_id"
+     ]
+    },
+    {
+     "view": "lightning.metastore.domino.systems.dependency_edge",
+     "source": "change_records, db_catalog, inventory_registry, pipeline_repo, runtime_config, service_catalog, telemetry (cross-source links joined inside Zetaris, with status and evidence rows)",
+     "columns": [
+      "edge_id",
+      "system_id",
+      "from_id",
+      "from_type",
+      "to_id",
+      "to_type",
+      "relation",
+      "edge_status",
+      "evidence",
+      "detail"
+     ]
+    }
+   ]
+  },
+  {
+   "method": "dependencyPath",
+   "key": "[\"w-h9c5/change/0042\",\"w-h9c5/change/0042\"]",
+   "result": {
+    "change_id": "w-h9c5/change/0042",
+    "nodes": [
+     {
+      "id": "w-h9c5/change/0042",
+      "kind": "change",
+      "label": "0042",
+      "source": "change_records",
+      "row_id": "change_records:cr-0003"
+     },
+     {
+      "id": "w-h9c5/database/r0",
+      "kind": "database",
+      "label": "r0",
+      "source": "change_records",
+      "row_id": "change_records:cr-0003"
+     },
+     {
+      "id": "w-h9c5/table/r0.bundle_fields",
+      "kind": "table",
+      "label": "r0.bundle_fields",
+      "source": "db_catalog",
+      "row_id": "db_catalog:ti-0007"
+     },
+     {
+      "id": "w-h9c5/principal/svc_bundle_reader",
+      "kind": "principal",
+      "label": "svc_bundle_reader",
+      "source": "change_records",
+      "row_id": "change_records:cr-0003"
+     },
+     {
+      "id": "w-h9c5/service/bundle-builder",
+      "kind": "service",
+      "label": "bundle-builder",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003"
+     },
+     {
+      "id": "w-h9c5/query/q-bundle-fields",
+      "kind": "query",
+      "label": "q-bundle-fields",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003"
+     },
+     {
+      "id": "w-h9c5/table/default.bundle_fields",
+      "kind": "table",
+      "label": "default.bundle_fields",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003"
+     },
+     {
+      "id": "w-h9c5/artifact/bundle.json",
+      "kind": "artifact",
+      "label": "bundle.json",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003"
+     },
+     {
+      "id": "w-h9c5/service/worker-runtime",
+      "kind": "service",
+      "label": "worker-runtime",
+      "source": "runtime_config",
+      "row_id": "runtime_config:rc-0004"
+     },
+     {
+      "id": "w-h9c5/setting/worker-runtime.max_entries",
+      "kind": "setting",
+      "label": "worker-runtime.max_entries",
+      "source": "runtime_config",
+      "row_id": "runtime_config:rc-0004"
+     },
+     {
+      "id": "w-h9c5/setting/worker-runtime.startup_timeout_s",
+      "kind": "setting",
+      "label": "worker-runtime.startup_timeout_s",
+      "source": "runtime_config",
+      "row_id": "runtime_config:rc-0005"
+     }
+    ],
+    "edges": [
+     {
+      "from": "w-h9c5/change/0042",
+      "to": "w-h9c5/database/r0",
+      "relation": "grants_on",
+      "status": "observed",
+      "source": "change_records",
+      "row_id": "change_records:cr-0003",
+      "row_ids": [
+       "change_records:cr-0003",
+       "db_catalog:ti-0007"
+      ],
+      "detail": "GRANT SELECT TO svc_bundle_reader"
+     },
+     {
+      "from": "w-h9c5/database/r0",
+      "to": "w-h9c5/table/r0.bundle_fields",
+      "relation": "contains",
+      "status": "inferred",
+      "source": "db_catalog",
+      "row_id": "db_catalog:ti-0007",
+      "row_ids": [
+       "db_catalog:ti-0007"
+      ],
+      "detail": "column_count=99"
+     },
+     {
+      "from": "w-h9c5/change/0042",
+      "to": "w-h9c5/principal/svc_bundle_reader",
+      "relation": "grants_to",
+      "status": "observed",
+      "source": "change_records",
+      "row_id": "change_records:cr-0003",
+      "row_ids": [
+       "change_records:cr-0003",
+       "db_catalog:ag-0006"
+      ],
+      "detail": "GRANT SELECT ON r0.*"
+     },
+     {
+      "from": "w-h9c5/principal/svc_bundle_reader",
+      "to": "w-h9c5/service/bundle-builder",
+      "relation": "identity_of",
+      "status": "observed",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003",
+      "row_ids": [
+       "pipeline_repo:jd-0003",
+       "db_catalog:ag-0006"
+      ],
+      "detail": "service runs as svc_bundle_reader"
+     },
+     {
+      "from": "w-h9c5/service/bundle-builder",
+      "to": "w-h9c5/query/q-bundle-fields",
+      "relation": "executes",
+      "status": "observed",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003",
+      "row_ids": [
+       "pipeline_repo:jd-0003",
+       "telemetry:qt-0003"
+      ],
+      "detail": "SELECT name, type FROM system.columns WHERE table = 'bundle_fields' ORDER BY name | rows_returned_p50=99 over 288 runs in 7 days"
+     },
+     {
+      "from": "w-h9c5/service/bundle-builder",
+      "to": "w-h9c5/table/default.bundle_fields",
+      "relation": "reads",
+      "status": "inferred",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003",
+      "row_ids": [
+       "pipeline_repo:jd-0003",
+       "db_catalog:ti-0006"
+      ],
+      "detail": "matched on table name bundle_fields"
+     },
+     {
+      "from": "w-h9c5/service/bundle-builder",
+      "to": "w-h9c5/table/r0.bundle_fields",
+      "relation": "reads",
+      "status": "inferred",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003",
+      "row_ids": [
+       "pipeline_repo:jd-0003",
+       "db_catalog:ti-0007"
+      ],
+      "detail": "matched on table name bundle_fields"
+     },
+     {
+      "from": "w-h9c5/service/bundle-builder",
+      "to": "w-h9c5/artifact/bundle.json",
+      "relation": "writes",
+      "status": "observed",
+      "source": "pipeline_repo",
+      "row_id": "pipeline_repo:jd-0003",
+      "row_ids": [
+       "pipeline_repo:jd-0003",
+       "runtime_config:rc-0004"
+      ],
+      "detail": "output_mode=as_returned"
+     },
+     {
+      "from": "w-h9c5/artifact/bundle.json",
+      "to": "w-h9c5/service/worker-runtime",
+      "relation": "loaded_by",
+      "status": "observed",
+      "source": "runtime_config",
+      "row_id": "runtime_config:rc-0004",
+      "row_ids": [
+       "runtime_config:rc-0004",
+       "pipeline_repo:jd-0003"
+      ],
+      "detail": "read at startup"
+     },
+     {
+      "from": "w-h9c5/service/worker-runtime",
+      "to": "w-h9c5/setting/worker-runtime.max_entries",
+      "relation": "configured_with",
+      "status": "inferred",
+      "source": "runtime_config",
+      "row_id": "runtime_config:rc-0004",
+      "row_ids": [
+       "runtime_config:rc-0004"
+      ],
+      "detail": "max_entries=200"
+     },
+     {
+      "from": "w-h9c5/service/worker-runtime",
+      "to": "w-h9c5/setting/worker-runtime.startup_timeout_s",
+      "relation": "configured_with",
+      "status": "inferred",
+      "source": "runtime_config",
+      "row_id": "runtime_config:rc-0005",
+      "row_ids": [
+       "runtime_config:rc-0005"
+      ],
+      "detail": "startup_timeout_s=30"
+     }
+    ],
+    "dq_issues": []
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT principal_id, principal_name, system_id FROM lightning.metastore.domino.systems.principal WHERE system_id = 'w-h9c5' AND principal_name = 'svc_bundle_reader'\"]",
+   "result": {
+    "query_id": "q-6f17c9ce5eaa445a",
+    "sql": "SELECT principal_id, principal_name, system_id FROM lightning.metastore.domino.systems.principal WHERE system_id = 'w-h9c5' AND principal_name = 'svc_bundle_reader'",
+    "columns": [
+     "principal_id",
+     "principal_name",
+     "system_id"
+    ],
+    "rows": [
+     {
+      "row_id": "hash:e493a94d7b6e3422",
+      "source": "semantic_layer",
+      "values": {
+       "principal_id": "w-h9c5/principal/svc_bundle_reader",
+       "principal_name": "svc_bundle_reader",
+       "system_id": "w-h9c5"
+      }
+     }
+    ],
+    "elapsed_ms": 445,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT grant_id, principal_id, database_id, privilege FROM lightning.metastore.domino.systems.access_grant WHERE system_id = 'w-h9c5' AND principal_id = 'w-h9c5/principal/svc_bundle_reader'\"]",
+   "result": {
+    "query_id": "q-4955475e38df460f",
+    "sql": "SELECT grant_id, principal_id, database_id, privilege FROM lightning.metastore.domino.systems.access_grant WHERE system_id = 'w-h9c5' AND principal_id = 'w-h9c5/principal/svc_bundle_reader'",
+    "columns": [
+     "grant_id",
+     "principal_id",
+     "database_id",
+     "privilege"
+    ],
+    "rows": [
+     {
+      "row_id": "hash:f6df76e3420d0ca0",
+      "source": "semantic_layer",
+      "values": {
+       "grant_id": "w-h9c5/grant/ag-0006",
+       "principal_id": "w-h9c5/principal/svc_bundle_reader",
+       "database_id": "w-h9c5/database/default",
+       "privilege": "SELECT"
+      }
+     }
+    ],
+    "elapsed_ms": 232,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT * FROM lightning.metastore.domino.systems.access_grant WHERE system_id = 'w-h9c5' AND database_id = 'w-h9c5/database/r0'\"]",
+   "result": {
+    "query_id": "q-4742faac0b704fc7",
+    "sql": "SELECT * FROM lightning.metastore.domino.systems.access_grant WHERE system_id = 'w-h9c5' AND database_id = 'w-h9c5/database/r0'",
+    "columns": [
+     "grant_id",
+     "principal_id",
+     "database_id",
+     "system_id",
+     "privilege",
+     "source_system",
+     "source_row_id"
+    ],
+    "rows": [
+     {
+      "row_id": "db_catalog:ag-0008",
+      "source": "db_catalog",
+      "values": {
+       "grant_id": "w-h9c5/grant/ag-0008",
+       "principal_id": "w-h9c5/principal/svc_admin_console",
+       "database_id": "w-h9c5/database/r0",
+       "system_id": "w-h9c5",
+       "privilege": "SELECT",
+       "source_system": "db_catalog",
+       "source_row_id": "ag-0008"
+      }
+     }
+    ],
+    "elapsed_ms": 241,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT setting_id, service_id, setting_key, setting_value FROM lightning.metastore.domino.systems.runtime_setting WHERE system_id = 'w-h9c5' AND service_id = 'w-h9c5/service/worker-runtime'\"]",
+   "result": {
+    "query_id": "q-5bec370e7d484c63",
+    "sql": "SELECT setting_id, service_id, setting_key, setting_value FROM lightning.metastore.domino.systems.runtime_setting WHERE system_id = 'w-h9c5' AND service_id = 'w-h9c5/service/worker-runtime'",
+    "columns": [
+     "setting_id",
+     "service_id",
+     "setting_key",
+     "setting_value"
+    ],
+    "rows": [
+     {
+      "row_id": "hash:ded68111b620d85d",
+      "source": "semantic_layer",
+      "values": {
+       "setting_id": "w-h9c5/setting/worker-runtime.max_entries",
+       "service_id": "w-h9c5/service/worker-runtime",
+       "setting_key": "max_entries",
+       "setting_value": "200"
+      }
+     },
+     {
+      "row_id": "hash:01f57223eb973363",
+      "source": "semantic_layer",
+      "values": {
+       "setting_id": "w-h9c5/setting/worker-runtime.startup_timeout_s",
+       "service_id": "w-h9c5/service/worker-runtime",
+       "setting_key": "startup_timeout_s",
+       "setting_value": "30"
+      }
+     }
+    ],
+    "elapsed_ms": 264,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT query_id, rows_returned_p50, artifact_entries_p50 FROM lightning.metastore.domino.systems.query_observation WHERE system_id = 'w-h9c5' AND query_id = 'q-bundle-fields'\"]",
+   "result": {
+    "query_id": "q-82fa81b4123d4fc9",
+    "sql": "SELECT query_id, rows_returned_p50, artifact_entries_p50 FROM lightning.metastore.domino.systems.query_observation WHERE system_id = 'w-h9c5' AND query_id = 'q-bundle-fields'",
+    "columns": [
+     "query_id",
+     "rows_returned_p50",
+     "artifact_entries_p50"
+    ],
+    "rows": [],
+    "elapsed_ms": 864,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT obs_id, query_id, rows_returned_p50, artifact_entries_p50 FROM lightning.metastore.domino.systems.query_observation WHERE query_id LIKE '%bundle_fields%' LIMIT 10\"]",
+   "result": {
+    "query_id": "q-55c834832ba54484",
+    "sql": "SELECT obs_id, query_id, rows_returned_p50, artifact_entries_p50 FROM lightning.metastore.domino.systems.query_observation WHERE query_id LIKE '%bundle_fields%' LIMIT 10",
+    "columns": [
+     "obs_id",
+     "query_id",
+     "rows_returned_p50",
+     "artifact_entries_p50"
+    ],
+    "rows": [
+     {
+      "row_id": "hash:b1bc507352b24430",
+      "source": "semantic_layer",
+      "values": {
+       "obs_id": "w-d2v4/observation/qt-0001",
+       "query_id": "w-d2v4/query/q-bundle-fields",
+       "rows_returned_p50": "60",
+       "artifact_entries_p50": "60"
+      }
+     },
+     {
+      "row_id": "hash:af08f9f84aa71753",
+      "source": "semantic_layer",
+      "values": {
+       "obs_id": "w-h9c5/observation/qt-0003",
+       "query_id": "w-h9c5/query/q-bundle-fields",
+       "rows_returned_p50": "99",
+       "artifact_entries_p50": "99"
+      }
+     },
+     {
+      "row_id": "hash:6501ccc047032b43",
+      "source": "semantic_layer",
+      "values": {
+       "obs_id": "w-k7m2/observation/qt-0005",
+       "query_id": "w-k7m2/query/q-bundle-fields",
+       "rows_returned_p50": "140",
+       "artifact_entries_p50": "140"
+      }
+     },
+     {
+      "row_id": "hash:4e3aa38231198c54",
+      "source": "semantic_layer",
+      "values": {
+       "obs_id": "w-p4r8/observation/qt-0007",
+       "query_id": "w-p4r8/query/q-bundle-fields",
+       "rows_returned_p50": "140",
+       "artifact_entries_p50": "140"
+      }
+     },
+     {
+      "row_id": "hash:9808dea97f2db661",
+      "source": "semantic_layer",
+      "values": {
+       "obs_id": "w-t3n6/observation/qt-0009",
+       "query_id": "w-t3n6/query/q-bundle-fields",
+       "rows_returned_p50": "90",
+       "artifact_entries_p50": "90"
+      }
+     }
+    ],
+    "elapsed_ms": 821,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT contract_id, component, relation, target, contract_key, contract_value FROM lightning.metastore.domino.systems.interface_contract WHERE system_id = 'w-h9c5' AND (component = 'bundle-builder' OR component = 'worker-runtime')\"]",
+   "result": {
+    "query_id": "q-6d95258ba2f54483",
+    "sql": "SELECT contract_id, component, relation, target, contract_key, contract_value FROM lightning.metastore.domino.systems.interface_contract WHERE system_id = 'w-h9c5' AND (component = 'bundle-builder' OR component = 'worker-runtime')",
+    "columns": [
+     "contract_id",
+     "component",
+     "relation",
+     "target",
+     "contract_key",
+     "contract_value"
+    ],
+    "rows": [],
+    "elapsed_ms": 276,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "query",
+   "key": "[\"SELECT * FROM lightning.metastore.domino.systems.principal WHERE system_id = 'w-h9c5'\"]",
+   "result": {
+    "query_id": "q-1a731eaad3934336",
+    "sql": "SELECT * FROM lightning.metastore.domino.systems.principal WHERE system_id = 'w-h9c5'",
+    "columns": [
+     "principal_id",
+     "system_id",
+     "principal_name",
+     "source_system",
+     "source_row_id"
+    ],
+    "rows": [
+     {
+      "row_id": "db_catalog:ag-0007",
+      "source": "db_catalog",
+      "values": {
+       "principal_id": "w-h9c5/principal/svc_admin_console",
+       "system_id": "w-h9c5",
+       "principal_name": "svc_admin_console",
+       "source_system": "db_catalog",
+       "source_row_id": "ag-0007"
+      }
+     },
+     {
+      "row_id": "db_catalog:ag-0006",
+      "source": "db_catalog",
+      "values": {
+       "principal_id": "w-h9c5/principal/svc_bundle_reader",
+       "system_id": "w-h9c5",
+       "principal_name": "svc_bundle_reader",
+       "source_system": "db_catalog",
+       "source_row_id": "ag-0006"
+      }
+     },
+     {
+      "row_id": "db_catalog:ag-0009",
+      "source": "db_catalog",
+      "values": {
+       "principal_id": "w-h9c5/principal/svc_metrics",
+       "system_id": "w-h9c5",
+       "principal_name": "svc_metrics",
+       "source_system": "db_catalog",
+       "source_row_id": "ag-0009"
+      }
+     }
+    ],
+    "elapsed_ms": 377,
+    "from_snapshot": false
+   }
+  },
+  {
+   "method": "catalog",
+   "key": "[\"w-h9c5\"]",
+   "result": {
+    "world_id": "w-h9c5",
+    "variants": [
+     "baseline",
+     "candidate",
+     "control"
+    ],
+    "params": [],
+    "observables": [
+     {
+      "name": "meta-store.rows_visible_to_builder",
+      "description": "metric reported by the world"
+     },
+     {
+      "name": "bundle-builder.entries",
+      "description": "metric reported by the world"
+     },
+     {
+      "name": "bundle-builder.bundle_bytes",
+      "description": "metric reported by the world"
+     },
+     {
+      "name": "worker-runtime.exit_code",
+      "description": "metric reported by the world"
+     },
+     {
+      "name": "worker-runtime.loaded_entries",
+      "description": "metric reported by the world"
+     }
+    ],
+    "workloads": [
+     {
+      "name": "default",
+      "description": "the world's standard workload"
+     }
+    ],
+    "overridable": [
+     {
+      "target": "worker-runtime.max_entries",
+      "current": 200,
+      "type": "number",
+      "description": "worker-runtime setting"
+     },
+     {
+      "target": "worker-runtime.startup_timeout_s",
+      "current": 30,
+      "type": "number",
+      "description": "worker-runtime setting"
+     },
+     {
+      "target": "bundle-builder.output_mode",
+      "current": "as_returned",
+      "type": "string",
+      "description": "bundle-builder setting: as_returned or collapse_same_name"
+     }
+    ]
+   }
+  },
+  {
+   "method": "run",
+   "key": "[{\"world_id\":\"w-h9c5\",\"change_id\":\"w-h9c5/change/0042\",\"variant\":\"baseline\",\"observe\":[\"meta-store.rows_visible_to_builder\",\"bundle-builder.entries\",\"bundle-builder.bundle_bytes\",\"worker-runtime.exit_code\",\"worker-runtime.loaded_entries\"],\"workload\":\"default\"}]",
+   "result": {
+    "experiment_id": "x-f11c624e659b486d",
+    "request": {
+     "world_id": "w-h9c5",
+     "change_id": "w-h9c5/change/0042",
+     "variant": "baseline",
+     "observe": [
+      "meta-store.rows_visible_to_builder",
+      "bundle-builder.entries",
+      "bundle-builder.bundle_bytes",
+      "worker-runtime.exit_code",
+      "worker-runtime.loaded_entries"
+     ],
+     "workload": "default"
+    },
+    "completed": true,
+    "observations": {
+     "meta-store.rows_visible_to_builder": 99,
+     "bundle-builder.entries": 99,
+     "bundle-builder.bundle_bytes": 3118,
+     "worker-runtime.exit_code": 0,
+     "worker-runtime.loaded_entries": 99
+    },
+    "assertions": [
+     {
+      "name": "builder_completes",
+      "passed": true,
+      "detail": "observed exit 0, expected exit 0"
+     },
+     {
+      "name": "runtime_starts_with_bundle",
+      "passed": true,
+      "detail": "observed exit 0, expected exit 0"
+     }
+    ],
+    "logs_tail": "meta-store: applied GRANT SELECT ON default.* TO svc_bundle_reader;\nbundle-builder: read 99 rows for table bundle_fields; wrote 99 entries (3118 bytes)\nworker-runtime: started with 99 entries",
+    "artifacts": [
+     {
+      "name": "bundle.json",
+      "sha256": "226692a614974d78461bd958ad2bece3176a8fb50f68d765ac7820d00918239d",
+      "bytes": 3118
+     }
+    ],
+    "duration_ms": 125,
+    "reproduce": "python3 -m data_layer run w-h9c5 baseline"
+   }
+  },
+  {
+   "method": "run",
+   "key": "[{\"world_id\":\"w-h9c5\",\"change_id\":\"w-h9c5/change/0042\",\"variant\":\"candidate\",\"observe\":[\"meta-store.rows_visible_to_builder\",\"bundle-builder.entries\",\"bundle-builder.bundle_bytes\",\"worker-runtime.exit_code\",\"worker-runtime.loaded_entries\"],\"workload\":\"default\"}]",
+   "result": {
+    "experiment_id": "x-bbafe547b0d34ae0",
+    "request": {
+     "world_id": "w-h9c5",
+     "change_id": "w-h9c5/change/0042",
+     "variant": "candidate",
+     "observe": [
+      "meta-store.rows_visible_to_builder",
+      "bundle-builder.entries",
+      "bundle-builder.bundle_bytes",
+      "worker-runtime.exit_code",
+      "worker-runtime.loaded_entries"
+     ],
+     "workload": "default"
+    },
+    "completed": true,
+    "observations": {
+     "meta-store.rows_visible_to_builder": 198,
+     "bundle-builder.entries": 198,
+     "bundle-builder.bundle_bytes": 6187,
+     "worker-runtime.exit_code": 0,
+     "worker-runtime.loaded_entries": 198
+    },
+    "assertions": [
+     {
+      "name": "builder_completes",
+      "passed": true,
+      "detail": "observed exit 0, expected exit 0"
+     },
+     {
+      "name": "runtime_starts_with_bundle",
+      "passed": true,
+      "detail": "observed exit 0, expected exit 0"
+     }
+    ],
+    "logs_tail": "meta-store: applied GRANT SELECT ON default.* TO svc_bundle_reader;\nmeta-store: applied GRANT SELECT ON r0.* TO svc_bundle_reader;\nbundle-builder: read 198 rows for table bundle_fields; wrote 198 entries (6187 bytes)\nworker-runtime: started with 198 entries",
+    "artifacts": [
+     {
+      "name": "bundle.json",
+      "sha256": "32a8b1c4e08470b33fb441d38107d9c818f6a0de7a5cfc80a2f6ad3965a3dc10",
+      "bytes": 6187
+     }
+    ],
+    "duration_ms": 99,
+    "reproduce": "python3 -m data_layer run w-h9c5 candidate"
+   }
+  }
+ ],
+ "summary": {
+  "run_id": "run-20261027073136-f6dca4",
+  "change_id": "w-h9c5/change/0042",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The change GRANT SELECT ON r0.* TO svc_bundle_reader adds database r0 to svc_bundle_reader's accessible databases [change_records:cr-0003; x-f11c624e659b486d] → bundle-builder reads column metadata from all accessible databases, doubling rows from 99 to 198 [pipeline_repo:jd-0003; x-f11c624e659b486d; x-bbafe547b0d34ae0] → worker-runtime loaded_entries increases from 99 to 198 with the candidate change [runtime_config:rc-0004; x-f11c624e659b486d; x-bbafe547b0d34ae0] → worker-runtime.max_entries limit is 200, so 198 entries approaches but does not exceed the limit [runtime_config:rc-0004; x-f11c624e659b486d; x-bbafe547b0d34ae0] → worker-runtime.exit_code remains 0 in both baseline and candidate, indicating the change does not break startup [x-f11c624e659b486d; x-bbafe547b0d34ae0].",
+  "model_prediction": "safe",
+  "evidence_refs": [
+   "x-f11c624e659b486d",
+   "x-bbafe547b0d34ae0",
+   "change_records:cr-0003",
+   "pipeline_repo:jd-0003",
+   "runtime_config:rc-0004"
+  ],
+  "model_calls": 20,
+  "experiments": 2,
+  "duration_ms": 124358,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+ }
+}

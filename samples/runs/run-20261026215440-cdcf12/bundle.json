@@ -1,0 +1,232 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026215440-cdcf12",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-r1z5/change/0291",
+    "world_id": "w-r1z5",
+    "title": "Content update: rule 0291 for template T7",
+    "files": [
+      "content/rules/T7/rule-0291.json"
+    ],
+    "diff": "--- /dev/null\n+++ b/content/rules/T7/rule-0291.json\n@@ -0,0 +1,8 @@\n+{\n+  \"criteria\": {\n+    \"f02\": \"m-0291-f02\",\n+    \"f21\": \"m-0291-f21\"\n+  },\n+  \"rule_id\": \"rule-0291\",\n+  \"template\": \"T7\"\n+}\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Change w-r1z5/change/0291 is SAFE: new rule-0291 for template T7 accepted without rejection despite only specifying 2 of 21 required fields",
+    "cause": "The change adds rule-0291 specifying only fields f02 and f21, while template T7 requires field_count=21. However, the \"all other fields wildcard\" mechanism means the 19 unspecified fields are treated as wildcards, satisfying the field_count=21 contract. The rule-validator checks_against contract (ic-0025) accepts the rule, and content-interpreter.load_rules evaluates with inputs_supplied=21 and exit_code=0. Experiments confirm: baseline 3 rules checked/0 rejected/exit 0; candidate 4 rules checked/0 rejected/exit 0 (new rule added and accepted); control matches baseline. No regression observed.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-e119d2c0a96e4300: baseline · workload default → all assertions passed",
+      "x-507d3dae5fcc4ccb: candidate · workload default → all assertions passed",
+      "x-0e1f030ea19b4ae0: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "The experiments used the default workload only; edge cases with different field configurations or workload variants were not tested. The \"wildcard\" mechanism's exact behavior across all possible field combinations was not individually verified.",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null,
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "h1: The rule-validator.checks_against contract (ic-0025) specifies field_count=21, but the \"matches_on=f02,f21; all other fields wildcard\" detail means remaining 19 fields are treated as wildcards, satisfying the contract",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "hash:02309505196c643c",
+          "facts": "item_kind=adds_rule, item_ref=rule-0291, item_detail=template=T7; matches_on=f02,f21; all other fields wildcard"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The rule-validator.checks_against contract (ic-0025) specifies field_count=21, but the \"matches_on=f02,f21; all other fields wildcard\" detail means remaining 19 fields are treated as wildcards, satisfying the contract",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "hash:62e40d08589ea00b",
+          "facts": "item_kind=runs_component, item_ref=content-pipeline, item_detail=validate, then ship to content-interpreter"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The rule-validator.checks_against contract (ic-0025) specifies field_count=21, but the \"matches_on=f02,f21; all other fields wildcard\" detail means remaining 19 fields are treated as wildcards, satisfying the contract",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-507d3dae5fcc4ccb",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h1: The rule-validator.checks_against contract (ic-0025) specifies field_count=21, but the \"matches_on=f02,f21; all other fields wildcard\" detail means remaining 19 fields are treated as wildcards, satisfying the contract",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-e119d2c0a96e4300",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h1: The rule-validator.checks_against contract (ic-0025) specifies field_count=21, but the \"matches_on=f02,f21; all other fields wildcard\" detail means remaining 19 fields are treated as wildcards, satisfying the contract",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-0e1f030ea19b4ae0",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-e119d2c0a96e4300",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test baseline: normal operation without the new rule-0291",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-r1z5 baseline"
+    },
+    {
+      "experiment_id": "x-507d3dae5fcc4ccb",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test candidate: operation WITH the new rule-0291",
+      "observations": {
+        "rule-validator.rules_checked": 4,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 4,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "5be2c2051191257025c141dfffb26a18b5e5764c3287cebcf544b9f3cc98d841",
+          "bytes": 421
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-r1z5 candidate"
+    },
+    {
+      "experiment_id": "x-0e1f030ea19b4ae0",
+      "variant": "control",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Test control: operation with change reverted, to confirm baseline behavior",
+      "observations": {
+        "rule-validator.rules_checked": 3,
+        "rule-validator.rules_rejected": 0,
+        "content-pipeline.rules_shipped": 3,
+        "content-interpreter.events_processed": 50,
+        "content-interpreter.matches": 0,
+        "content-interpreter.exit_code": 0
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "shipped_rules.json",
+          "sha256": "b695df4295971efee7dc3582d41ff8e0b81f395bf230182eda97350a5fa589b6",
+          "bytes": 321
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-r1z5 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The new rule-0291 will be accepted by rule-validator without rejection despite only specifying 2 of 21 required fields, because \"all other fields wildcard\" mechanism fills in missing fields",
+      "mechanism": "The rule-validator.checks_against contract (ic-0025) specifies field_count=21, but the \"matches_on=f02,f21; all other fields wildcard\" detail means remaining 19 fields are treated as wildcards, satisfying the contract",
+      "status": "open",
+      "evidence_for": [
+        "hash:02309505196c643c",
+        "hash:62e40d08589ea00b",
+        "x-507d3dae5fcc4ccb",
+        "x-e119d2c0a96e4300",
+        "x-0e1f030ea19b4ae0"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "hash:02309505196c643c",
+      "source": "semantic_layer",
+      "facts": "item_kind=adds_rule, item_ref=rule-0291, item_detail=template=T7; matches_on=f02,f21; all other fields wildcard"
+    },
+    {
+      "row_id": "hash:62e40d08589ea00b",
+      "source": "semantic_layer",
+      "facts": "item_kind=runs_component, item_ref=content-pipeline, item_detail=validate, then ship to content-interpreter"
+    }
+  ],
+  "models": {
+    "calls": 13,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 12,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_bv73s64f",
+      "req_adv92fda",
+      "req_469csqpq",
+      "req_hmg937jn",
+      "req_chfo2igp",
+      "req_snap15ul",
+      "req_c2d5g8x0",
+      "req_h5zvo2j9",
+      "req_0aq6spsd",
+      "req_ic86ooge",
+      "req_7x0k6em0",
+      "req_si1nnrot",
+      "req_ng6j1yoi"
+    ],
+    "total_latency_ms": 72791,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 0,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 4,
+  "duration_ms": 79929
+}

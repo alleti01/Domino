@@ -1,0 +1,23 @@
+{
+  "run_id": "run-20261026214926-89b259",
+  "change_id": "w-n7v2/change/0291",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The experimental comparison between baseline (x-c1a26d5750494637) and candidate (x-8f4a3841aaca4d71) shows:\n- Baseline: rule-validator checked 3 rules, 0 rejected, exit_code=0\n- Candidate: rule-validator checked 4 rules (including rule-0291), 0 rejected, exit_code=0\n- Content-pipeline shipped 3 rules (baseline) vs 4 rules (candidate) successfully\n- Content-interpreter processed 50 events with 3/4 rules, 0 matches, exit_code=0 in both variants\nThe hypothesis that rule-0291 would fail due to field_count mismatch (template T7 requires 21 fields but rule-0291 specifies only f02/f05) is refuted by the experimental data showing 0 rejections and exit_code=0 in both baseline and candidate runs.",
+  "model_prediction": "safe",
+  "evidence_refs": [
+    "x-c1a26d5750494637",
+    "x-8f4a3841aaca4d71",
+    "hash:dd9e71cb79cefc73",
+    "hash:f6455e1b2d840f04",
+    "hash:aa0d80881ba77209"
+  ],
+  "model_calls": 19,
+  "experiments": 2,
+  "duration_ms": 140707,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 1,
+  "cache_hits": 0,
+  "fix": null
+}

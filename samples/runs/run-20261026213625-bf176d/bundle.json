@@ -1,0 +1,239 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026213625-bf176d",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-h9c5/change/0042",
+    "world_id": "w-h9c5",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "no_failure_observed",
+    "headline": "Explicit shard grants double svc_bundle_reader's visible rows from 99 to 198, approaching worker-runtime max_entries=200 limit at 99% capacity",
+    "cause": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader, expanding the reader's table access from the default schema to all tables in database r0. Experiment comparison shows: baseline loaded_entries=99 → candidate loaded_entries=198 (2x increase). worker-runtime max_entries=200 (row_id: w-h9c5/setting/worker-runtime.max_entries). The 198 loaded entries operate at 99% of the 200-entry limit, leaving only 2 entries of headroom. The meta-store rows_visible_to_builder also doubled from 99 to 198, confirming the grant expanded query scope. While 198 < 200 technically stays under the limit, the proximity is concerning.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-251aab3cdabc49ef: baseline · workload default → all assertions passed",
+      "x-f40892ba060344c6: candidate · workload default → all assertions passed",
+      "x-1833518d0388442b: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "- Only one workload (default) tested; other workloads may have different query patterns\n- No testing of per-principal query limit enforcement mechanics\n- No audit logging behavior observed under the change\n- Only 288 runs observed over 7 days; longer-term patterns unknown",
+      "Baseline and candidate both passed under every tested workload."
+    ],
+    "mitigation": null,
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "h1: The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in addition to existing grants, expanding the reader's table access from implicit/default scope to all tables in database r0. This causes bundle-builder query q-bundle-fields to scan more tables, doubling rows_returned_p50 from 99 to 198.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "telemetry:qt-0003",
+          "facts": "query=q-bundle-fields, window_days=7, sampled_runs=288, rows_returned_p50=99, artifact_entries_p50=99"
+        }
+      ]
+    },
+    {
+      "edge": "h1: The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in addition to existing grants, expanding the reader's table access from implicit/default scope to all tables in database r0. This causes bundle-builder query q-bundle-fields to scan more tables, doubling rows_returned_p50 from 99 to 198.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-251aab3cdabc49ef",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h1: The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in addition to existing grants, expanding the reader's table access from implicit/default scope to all tables in database r0. This causes bundle-builder query q-bundle-fields to scan more tables, doubling rows_returned_p50 from 99 to 198.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-f40892ba060344c6",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h2: With explicit GRANT SELECT ON r0.*, svc_bundle_reader's query scope expands, causing bundle-builder to read 198 rows instead of 99. The worker-runtime loads these entries against its max_entries=200 setting.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-251aab3cdabc49ef",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "h2: With explicit GRANT SELECT ON r0.*, svc_bundle_reader's query scope expands, causing bundle-builder to read 198 rows instead of 99. The worker-runtime loads these entries against its max_entries=200 setting.",
+      "status": "observed",
+      "detail": null,
+      "evidence": [
+        {
+          "row_id": "x-f40892ba060344c6",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-251aab3cdabc49ef",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the change to compare against candidate run",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 99,
+        "bundle-builder.entries": 99,
+        "bundle-builder.bundle_bytes": 3118,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 99
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "226692a614974d78461bd958ad2bece3176a8fb50f68d765ac7820d00918239d",
+          "bytes": 3118
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-h9c5 baseline"
+    },
+    {
+      "experiment_id": "x-f40892ba060344c6",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Run with the change (explicit shard grants) to observe any differences",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 198,
+        "bundle-builder.entries": 198,
+        "bundle-builder.bundle_bytes": 6187,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 198
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "32a8b1c4e08470b33fb441d38107d9c818f6a0de7a5cfc80a2f6ad3965a3dc10",
+          "bytes": 6187
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-h9c5 candidate"
+    },
+    {
+      "experiment_id": "x-1833518d0388442b",
+      "variant": "control",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Run control (change reverted) to verify the baseline comparison",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 99,
+        "bundle-builder.entries": 99,
+        "bundle-builder.bundle_bytes": 3118,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 99
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "226692a614974d78461bd958ad2bece3176a8fb50f68d765ac7820d00918239d",
+          "bytes": 3118
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-h9c5 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "Explicit shard grant ON r0.* causes svc_bundle_reader to see double the rows (99→198), potentially exceeding per-principal query limits",
+      "mechanism": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader in addition to existing grants, expanding the reader's table access from implicit/default scope to all tables in database r0. This causes bundle-builder query q-bundle-fields to scan more tables, doubling rows_returned_p50 from 99 to 198.",
+      "status": "open",
+      "evidence_for": [
+        "telemetry:qt-0003",
+        "x-251aab3cdabc49ef",
+        "x-f40892ba060344c6"
+      ]
+    },
+    {
+      "hypothesis_id": "h2",
+      "claim": "The doubled row count (99→198) approaches the worker-runtime max_entries limit of 200, risking OOM or startup failure if future queries exceed this threshold",
+      "mechanism": "With explicit GRANT SELECT ON r0.*, svc_bundle_reader's query scope expands, causing bundle-builder to read 198 rows instead of 99. The worker-runtime loads these entries against its max_entries=200 setting.",
+      "status": "open",
+      "evidence_for": [
+        "x-251aab3cdabc49ef",
+        "x-f40892ba060344c6"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "telemetry:qt-0003",
+      "source": "telemetry",
+      "facts": "query=q-bundle-fields, window_days=7, sampled_runs=288, rows_returned_p50=99, artifact_entries_p50=99"
+    }
+  ],
+  "models": {
+    "calls": 20,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 19,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_6cp1d4dz",
+      "req_70t0sai7",
+      "req_a8w70hhb",
+      "req_7vasikcs",
+      "req_ybsoizl8",
+      "req_aedtuzls",
+      "req_mck69xam",
+      "req_fp548rza",
+      "req_uwgds51k",
+      "req_t0v16l6j",
+      "req_nivf4z9z",
+      "req_2km3qclr",
+      "req_fpr1t6x8",
+      "req_cy8ac0i6",
+      "req_icuxl5xl",
+      "req_nbdznk0v",
+      "req_cxel3hjd",
+      "req_te252h0a",
+      "req_af0o5mwp",
+      "req_0ljupzcz"
+    ],
+    "total_latency_ms": 120595,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 3,
+    "reads": 0,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 8,
+  "duration_ms": 127061
+}

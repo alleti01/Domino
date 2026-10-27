@@ -1,0 +1,19 @@
+{
+  "contract_version": "0.3",
+  "call": "run_experiment",
+  "mode": "fake",
+  "experiment_id": "x-23dff5151ff44807",
+  "world": "fake-w0",
+  "variant": "candidate",
+  "params": {},
+  "passed": null,
+  "assertions": [],
+  "metrics": {},
+  "artifacts": [],
+  "logs": [],
+  "reproduce": null,
+  "duration_ms": 1,
+  "error": "World did not finish within 0.001s",
+  "status": "timeout",
+  "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
+}

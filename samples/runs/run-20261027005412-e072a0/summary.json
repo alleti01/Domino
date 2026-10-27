@@ -1,0 +1,24 @@
+{
+  "run_id": "run-20261027005412-e072a0",
+  "change_id": "w-y6p3/change/0291",
+  "mode": "full",
+  "verdict": "no_failure_observed",
+  "cause_claim": "The change adds rule-0291 with criteria on f02 and f21 for template T7. The dependency chain: change → rule-0291 interface → template:T7 (matches_on=f02,f21) → content-pipeline → rule-validator.validate. The rule-validator (ic-0045) checks the rule against template:T7's field_count=21. The rule-validator also enforces a inputs_supplied=20 constraint (ic-0051). Rule-0291 references field f21, which exceeds the 20-field limit enforced by the validator, causing rejection. Baseline experiment x-41215c45e02445e7 had 0 rejections; candidate experiment x-b62718f0eebc4918 rejected 1 rule with message \"rule-0291: rejected, fields ['f21'] beyond 20\". The rejected rule was held back by validation, so only 3 of 4 rules were shipped to the interpreter (exit_code=0, matches=0).",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-41215c45e02445e7",
+    "x-b62718f0eebc4918",
+    "service_catalog:ic-0043",
+    "service_catalog:ic-0045",
+    "service_catalog:ic-0051",
+    "service_catalog:ic-0044"
+  ],
+  "model_calls": 21,
+  "experiments": 2,
+  "duration_ms": 264283,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 0,
+  "cache_hits": 0,
+  "fix": null
+}

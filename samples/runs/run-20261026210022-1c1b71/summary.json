@@ -1,0 +1,20 @@
+{
+  "run_id": "run-20261026210022-1c1b71",
+  "change_id": "w-d2v4/change/0042",
+  "mode": "full",
+  "verdict": "reproduced_failure",
+  "cause_claim": "The change adds GRANT SELECT ON r0.* and GRANT SELECT ON r1.* to svc_bundle_reader. Baseline: rows_visible_to_builder = 60, bundle entries = 60, worker-runtime starts OK (exit 0). Candidate: rows_visible_to_builder = 180 (60 + 120 from shards), bundle entries = 180, bundle size 5629 bytes. Worker-runtime preallocates 160 entries; 180 > 160 causes exit code 2 (refuse to start).",
+  "model_prediction": "breaks",
+  "evidence_refs": [
+    "x-448cbec6a3d44c84",
+    "x-5108e87d916e414d"
+  ],
+  "model_calls": 12,
+  "experiments": 4,
+  "duration_ms": 88133,
+  "outage": false,
+  "all_calls_nemotron": true,
+  "model_failures": 1,
+  "cache_hits": 0,
+  "fix": null
+}

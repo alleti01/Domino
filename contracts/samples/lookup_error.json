@@ -1,0 +1,16 @@
+{
+  "contract_version": "0.3",
+  "call": "lookup",
+  "mode": "fake",
+  "status": "error",
+  "query_id": "q-8587140325fd4c80",
+  "sql": "DELETE FROM some_table",
+  "columns": [],
+  "rows": [],
+  "row_count": 0,
+  "row_ids": [],
+  "truncated": false,
+  "duration_ms": 0,
+  "error": "Refused: read-only access allows SELECT, WITH, SHOW, DESCRIBE, DESC, LIST, got DELETE.",
+  "_note": "FAKE SAMPLE: a real output captured from the data layer with the world relabelled. Same shape as live. The scorecard rejects mode=fake."
+}

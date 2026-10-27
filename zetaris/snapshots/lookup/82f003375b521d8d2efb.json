@@ -1,0 +1,49 @@
+{
+  "contract_version": "0.1",
+  "call": "lookup",
+  "mode": "live",
+  "status": "ok",
+  "query_id": "q-141a532d1ebb4603",
+  "sql": "SELECT job_id, service_name, principal_id, query_id, output_mode, source_system, source_row_id FROM lightning.metastore.domino.systems.job WHERE system_id = 'w-k7m2' ORDER BY job_id",
+  "columns": [
+    "job_id",
+    "service_name",
+    "principal_id",
+    "query_id",
+    "output_mode",
+    "source_system",
+    "source_row_id"
+  ],
+  "rows": [
+    {
+      "job_id": "w-k7m2/service/bundle-builder",
+      "service_name": "bundle-builder",
+      "principal_id": "w-k7m2/principal/svc_bundle_reader",
+      "query_id": "w-k7m2/query/q-bundle-fields",
+      "output_mode": "as_returned",
+      "source_system": "pipeline_repo",
+      "source_row_id": "jd-0005"
+    },
+    {
+      "job_id": "w-k7m2/service/metrics-exporter",
+      "service_name": "metrics-exporter",
+      "principal_id": "w-k7m2/principal/svc_metrics",
+      "query_id": "w-k7m2/query/q-request-log",
+      "output_mode": "as_returned",
+      "source_system": "pipeline_repo",
+      "source_row_id": "jd-0006"
+    }
+  ],
+  "row_count": 2,
+  "row_ids": [
+    "pipeline_repo:jd-0005",
+    "pipeline_repo:jd-0006"
+  ],
+  "truncated": false,
+  "duration_ms": 847,
+  "error": null,
+  "snapshot_request": {
+    "sql": "SELECT job_id, service_name, principal_id, query_id, output_mode, source_system, source_row_id FROM lightning.metastore.domino.systems.job WHERE system_id = 'w-k7m2' ORDER BY job_id",
+    "limit": null
+  }
+}

@@ -1,0 +1,337 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026214138-a57802",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-d2v4/change/0042",
+    "world_id": "w-d2v4",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,4 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n+GRANT SELECT ON r1.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Explicit shard grants for svc_bundle_reader breaks worker-runtime: bundle exceeds preallocated entry limit",
+    "cause": "The change adds GRANT SELECT ON r0.* and r1.* to svc_bundle_reader. Before the change, svc_bundle_reader had implicit access only to the default database (60 bundle_fields rows). After the change, explicit grants extend read access to r0 and r1 bundle_fields tables as well (180 total rows). This causes bundle-builder to read 180 rows (vs 60 baseline), producing a 5629-byte bundle (vs 1909 bytes). worker-runtime has a preallocated limit of 160 entries, but the new bundle contains 180 entries, causing runtime startup failure with exit_code 2: \"bundle has 180 entries but the runtime preallocates 160\".",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-b1a066ee11e44e7a: baseline · workload default → all assertions passed",
+      "x-67d23842d4df4f5c: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-314063d495bb4f53: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-fad73fd37dfa48b4: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "- Experiment uses default workload only; behavior under other workloads not tested\n- The implicit-to-explicit grant transition may have additional effects on audit logging and per-principal query limits that were not measured"
+    ],
+    "mitigation": {
+      "text": "Remove the GRANT SELECT ON r1.* grant while keeping the GRANT SELECT ON r0.* grant. This limits svc_bundle_reader's explicit read access to the default database and r0 only (120 bundle_fields rows total: 60 from default + 60 from r0), which is below the worker-runtime preallocation limit of 160 entries, allowing the runtime to start successfully while still providing explicit grants for per-principal query limits and audit logging on r0.",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0042 grants_to svc_bundle_reader",
+      "status": "observed",
+      "detail": "GRANT SELECT ON r0.*; GRANT SELECT ON r1.*",
+      "evidence": [
+        {
+          "row_id": "change_records:cr-0001",
+          "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+        },
+        {
+          "row_id": "db_catalog:ag-0001",
+          "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+        },
+        {
+          "row_id": "change_records:cr-0002",
+          "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r1"
+        }
+      ]
+    },
+    {
+      "edge": "svc_bundle_reader identity_of bundle-builder",
+      "status": "observed",
+      "detail": "service runs as svc_bundle_reader",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0001",
+          "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
+        },
+        {
+          "row_id": "db_catalog:ag-0001",
+          "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+        }
+      ]
+    },
+    {
+      "edge": "bundle-builder writes bundle.json",
+      "status": "observed",
+      "detail": "output_mode=as_returned",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0001",
+          "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
+        },
+        {
+          "row_id": "runtime_config:rc-0001",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "bundle.json loaded_by worker-runtime",
+      "status": "observed",
+      "detail": "read at startup",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0001",
+          "facts": ""
+        },
+        {
+          "row_id": "pipeline_repo:jd-0001",
+          "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
+        }
+      ]
+    },
+    {
+      "edge": "worker-runtime configured_with worker-runtime.max_entries",
+      "status": "inferred",
+      "detail": "max_entries=160",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0001",
+          "facts": ""
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-b1a066ee11e44e7a",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline measurements before the change is applied",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 60,
+        "bundle-builder.entries": 60,
+        "bundle-builder.bundle_bytes": 1909,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 60
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "6aa4ebb85f4a51adb283e6f23311f1d65aeed87331acea58dcc9f7ec553928eb",
+          "bytes": 1909
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 baseline"
+    },
+    {
+      "experiment_id": "x-67d23842d4df4f5c",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Measure measurements with the explicit shard grants applied",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 180,
+        "bundle-builder.entries": 180,
+        "bundle-builder.bundle_bytes": 5629,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "15e209ec3ecf3506a23ce475655918c4409aed35dd1565d48056246823fbc709",
+          "bytes": 5629
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 candidate"
+    },
+    {
+      "experiment_id": "x-314063d495bb4f53",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 180,
+        "bundle-builder.entries": 180,
+        "bundle-builder.bundle_bytes": 5629,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "15e209ec3ecf3506a23ce475655918c4409aed35dd1565d48056246823fbc709",
+          "bytes": 5629
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 candidate"
+    },
+    {
+      "experiment_id": "x-fad73fd37dfa48b4",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 60,
+        "bundle-builder.entries": 60,
+        "bundle-builder.bundle_bytes": 1909,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 60
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "6aa4ebb85f4a51adb283e6f23311f1d65aeed87331acea58dcc9f7ec553928eb",
+          "bytes": 1909
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-d2v4 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "If svc_bundle_reader now has explicit GRANT SELECT on r0.* and r1.*, the bundle-builder may read more rows from bundle_fields tables, changing meta-store.rows_visible_to_builder observable.",
+      "mechanism": "Explicit grants expand principal's effective permissions → bundle-builder queries bundle_fields on r0/r1 → more rows visible to builder",
+      "status": "supported",
+      "evidence_for": [
+        "db_catalog:ti-0002",
+        "db_catalog:ti-0003",
+        "x-b1a066ee11e44e7a",
+        "x-67d23842d4df4f5c"
+      ]
+    },
+    {
+      "hypothesis_id": "h2",
+      "claim": "If svc_bundle_reader now has explicit GRANT SELECT on shard databases, the bundle file (bundle.json) may contain more/different artifact_entries, changing bundle-builder.entries observable.",
+      "mechanism": "Explicit grants → bundle-builder reads from r0/r1 bundle_fields → more/fewer entries written to bundle.json → worker-runtime loaded_entries changes",
+      "status": "supported",
+      "evidence_for": [
+        "db_catalog:ti-0002",
+        "db_catalog:ti-0003",
+        "x-b1a066ee11e44e7a",
+        "x-67d23842d4df4f5c"
+      ]
+    },
+    {
+      "hypothesis_id": "h3",
+      "claim": "If the bundle content changes, worker-runtime.loaded_entries or worker-runtime.exit_code may differ between baseline and candidate, indicating a runtime failure.",
+      "mechanism": "Changed bundle.json → worker-runtime loads different entries → loaded_entries count or exit_code changes",
+      "status": "supported",
+      "evidence_for": [
+        "runtime_config:rc-0001",
+        "runtime_config:rc-0002",
+        "x-b1a066ee11e44e7a",
+        "x-67d23842d4df4f5c"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "change_records:cr-0001",
+      "source": "change_records",
+      "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r0"
+    },
+    {
+      "row_id": "db_catalog:ag-0001",
+      "source": "db_catalog",
+      "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+    },
+    {
+      "row_id": "change_records:cr-0002",
+      "source": "change_records",
+      "facts": "action=GRANT, privilege=SELECT, principal=svc_bundle_reader, database=r1"
+    },
+    {
+      "row_id": "pipeline_repo:jd-0001",
+      "source": "pipeline_repo",
+      "facts": "service_name=bundle-builder, principal=svc_bundle_reader, query=q-bundle-fields, reads_table=bundle_fields, output_artifact=bundle.json, output_mode=as_returned"
+    },
+    {
+      "row_id": "db_catalog:ti-0002",
+      "source": "db_catalog",
+      "facts": "table=r0.bundle_fields, database=r0, table_name=bundle_fields, column_count=60"
+    },
+    {
+      "row_id": "db_catalog:ti-0003",
+      "source": "db_catalog",
+      "facts": "table=r1.bundle_fields, database=r1, table_name=bundle_fields, column_count=60"
+    }
+  ],
+  "models": {
+    "calls": 16,
+    "failed": 1,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 13,
+      "nvidia/nemotron-3-ultra-550b-a55b": 2
+    },
+    "request_ids": [
+      "req_hdhc0934",
+      "req_47uvvlyw",
+      "req_lc0lyy4m",
+      "req_amv5hfcr",
+      "req_d7ypxijj",
+      "req_7xv2gvax",
+      "req_3lkun1bk",
+      "req_hy9i3np9",
+      "req_33ednj8h",
+      "req_9e5tvgtk",
+      "req_tjx5bvx1",
+      "req_h6no9w3c",
+      "req_gq89xnc4",
+      "req_jbgqz6o9",
+      "req_n72m3vsj"
+    ],
+    "total_latency_ms": 123838,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 4,
+    "reads": 1,
+    "updates": 3
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 2,
+    "final": "approved",
+    "issues": [
+      {
+        "round": 1,
+        "statement": "This would keep bundle_fields rows at 120 (default + r0) which is still above the 160 limit but closer",
+        "problem": "contradicted: 120 entries is below the 160 preallocated limit, not above it. The explanation says 'still above the 160 limit' but 120 < 160."
+      }
+    ]
+  },
+  "queries": 8,
+  "duration_ms": 145603
+}

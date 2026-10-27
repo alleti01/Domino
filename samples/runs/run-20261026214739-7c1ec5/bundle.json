@@ -1,0 +1,288 @@
+{
+  "bundle_version": "1",
+  "run_id": "run-20261026214739-7c1ec5",
+  "replay": false,
+  "mode": "full",
+  "change": {
+    "change_id": "w-k7m2/change/0042",
+    "world_id": "w-k7m2",
+    "title": "Explicit shard grants for svc_bundle_reader",
+    "files": [
+      "db/migrations/0042_reader_shard_grants.sql"
+    ],
+    "diff": "--- /dev/null\n+++ b/db/migrations/0042_reader_shard_grants.sql\n@@ -0,0 +1,3 @@\n+-- Make the reader's access to shard databases explicit so per-principal\n+-- query limits and audit logging apply to it.\n+GRANT SELECT ON r0.* TO svc_bundle_reader;\n"
+  },
+  "verdict": {
+    "verdict": "reproduced_failure",
+    "headline": "Explicit shard grants for svc_bundle_reader breaks worker-runtime: 280 rows exceed max_entries=200 limit, causing worker to refuse to start",
+    "cause": "The change adds GRANT SELECT ON r0.* TO svc_bundle_reader, making the principal's access to ALL tables in database r0 explicit rather than implicit. Previously the reader had access only to bundle_fields (140 rows). With the explicit grant, bundle-builder reads 280 rows (from all tables in r0), exceeding worker-runtime.max_entries=200, causing worker-runtime.exit_code=2 and refusal to start.",
+    "decided_by": "deterministic_judge",
+    "tested": [
+      "x-f25cc122787342f8: baseline · workload default → all assertions passed",
+      "x-7e3baa3f015549ba: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-ac8a94f70d9946f2: candidate · workload default → failed: runtime_starts_with_bundle",
+      "x-8fd4682c540f4510: control · workload default → all assertions passed"
+    ],
+    "limitations": [
+      "Could not test whether svc_bundle_reader was previously restricted to bundle_fields only; the baseline experiment shows 140 rows visible",
+      "which matches the bundle_fields table column count."
+    ],
+    "mitigation": {
+      "text": "Restrict the grant to only the bundle_fields table: GRANT SELECT ON r0.bundle_fields TO svc_bundle_reader; instead of GRANT SELECT ON r0.* TO svc_bundle_reader;",
+      "verified": false
+    },
+    "fix_verification": null
+  },
+  "causal_chain": [
+    {
+      "edge": "0042 grants_to svc_bundle_reader",
+      "status": "observed",
+      "detail": "GRANT SELECT ON r0.*",
+      "evidence": [
+        {
+          "row_id": "change_records:cr-0004",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+        }
+      ]
+    },
+    {
+      "edge": "svc_bundle_reader identity_of bundle-builder",
+      "status": "observed",
+      "detail": "service runs as svc_bundle_reader",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        },
+        {
+          "row_id": "db_catalog:ag-0010",
+          "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+        }
+      ]
+    },
+    {
+      "edge": "bundle-builder writes bundle.json",
+      "status": "observed",
+      "detail": "output_mode=as_returned",
+      "evidence": [
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        },
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": "worker-runtime.max_entries = 200"
+        }
+      ]
+    },
+    {
+      "edge": "bundle.json loaded_by worker-runtime",
+      "status": "observed",
+      "detail": "read at startup",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": "worker-runtime.max_entries = 200"
+        },
+        {
+          "row_id": "pipeline_repo:jd-0005",
+          "facts": ""
+        }
+      ]
+    },
+    {
+      "edge": "worker-runtime configured_with worker-runtime.max_entries",
+      "status": "inferred",
+      "detail": "max_entries=200",
+      "evidence": [
+        {
+          "row_id": "runtime_config:rc-0007",
+          "facts": "worker-runtime.max_entries = 200"
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "x-f25cc122787342f8",
+      "variant": "baseline",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Establish baseline metrics without the explicit shard grants change",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 baseline"
+    },
+    {
+      "experiment_id": "x-7e3baa3f015549ba",
+      "variant": "candidate",
+      "requested_by": "agent",
+      "fix_overrides": null,
+      "rationale": "Run with the explicit shard grants change to observe any differences",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
+    },
+    {
+      "experiment_id": "x-ac8a94f70d9946f2",
+      "variant": "candidate",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: candidate run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 280,
+        "bundle-builder.entries": 280,
+        "bundle-builder.bundle_bytes": 8731,
+        "worker-runtime.exit_code": 2,
+        "worker-runtime.loaded_entries": 0
+      },
+      "failed_assertions": [
+        {
+          "name": "runtime_starts_with_bundle",
+          "detail": "observed exit 2, expected exit 0"
+        }
+      ],
+      "passed": false,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "0abf117890d540ea5dd3cb19639633340ee27fd463717d637f64886d67e7e45b",
+          "bytes": 8731
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 candidate"
+    },
+    {
+      "experiment_id": "x-8fd4682c540f4510",
+      "variant": "control",
+      "requested_by": "harness",
+      "fix_overrides": null,
+      "rationale": "Harness confirmation: control run required before the judge can call a reproduced failure.",
+      "observations": {
+        "meta-store.rows_visible_to_builder": 140,
+        "bundle-builder.entries": 140,
+        "bundle-builder.bundle_bytes": 4390,
+        "worker-runtime.exit_code": 0,
+        "worker-runtime.loaded_entries": 140
+      },
+      "failed_assertions": [],
+      "passed": true,
+      "artifacts": [
+        {
+          "name": "bundle.json",
+          "sha256": "11b17c8f0334493ca0c1b22c49d503f6a74db3e64dfba93614bb35bb933f2f65",
+          "bytes": 4390
+        }
+      ],
+      "reproduce": "python3 -m data_layer run w-k7m2 control"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "h1",
+      "claim": "The explicit GRANT SELECT ON r0.* TO svc_bundle_reader gives the principal access to ALL tables in database r0, not just bundle_fields. This causes the bundle-builder to discover 280 rows (instead of 140), exceeding the worker-runtime.max_entries=200 limit and causing the worker to refuse to start.",
+      "mechanism": "GRANT SELECT ON r0.* → svc_bundle_reader can see all tables in r0 → bundle-builder queries all tables and counts 280 rows → worker-runtime max_entries=200 limit exceeded → worker-runtime.exit_code=2 (fatal: bundle has 280 entries but runtime preallocates 200)",
+      "status": "open",
+      "evidence_for": [
+        "x-f25cc122787342f8",
+        "x-7e3baa3f015549ba"
+      ]
+    }
+  ],
+  "cited_evidence": [
+    {
+      "row_id": "db_catalog:ag-0010",
+      "source": "db_catalog",
+      "facts": "principal=svc_bundle_reader, principal_name=svc_bundle_reader"
+    },
+    {
+      "row_id": "runtime_config:rc-0007",
+      "source": "runtime_config",
+      "facts": "worker-runtime.max_entries = 200"
+    }
+  ],
+  "models": {
+    "calls": 21,
+    "failed": 0,
+    "all_nemotron": true,
+    "by_model": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": 20,
+      "nvidia/nemotron-3-ultra-550b-a55b": 1
+    },
+    "request_ids": [
+      "req_vxa4u5s6",
+      "req_gzlvq0yq",
+      "req_g599ry62",
+      "req_w5d7t7ll",
+      "req_wg769b2j",
+      "req_2l1r6e4d",
+      "req_v9757e3r",
+      "req_us96c47i",
+      "req_810x1zsc",
+      "req_md1z6xku",
+      "req_2u5dykxy",
+      "req_5mu86y5x",
+      "req_errqdwr7",
+      "req_8kyw3i7f",
+      "req_wm8nb59u",
+      "req_ka1nrk6d",
+      "req_0cj22wai",
+      "req_8y59t98a",
+      "req_owqlrzzn",
+      "req_d192j2di",
+      "req_1nod1rtw"
+    ],
+    "total_latency_ms": 98475,
+    "provider": "Meterless Nightshift"
+  },
+  "world_model": {
+    "writes": 2,
+    "reads": 1,
+    "updates": 0
+  },
+  "review": {
+    "reviewer_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "rounds": 1,
+    "final": "approved",
+    "issues": []
+  },
+  "queries": 8,
+  "duration_ms": 104618
+}
