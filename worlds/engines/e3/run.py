@@ -12,6 +12,7 @@ then the interpreter (its own process) evaluates them against a stream of events
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import subprocess
@@ -24,7 +25,45 @@ sys.path.insert(0, str(HERE))
 import rules as rule_files  # noqa: E402
 
 STEP_TIMEOUT_S = 20
-ACCEPTED_PARAMS: dict = {}
+ACCEPTED_PARAMS: dict = {"overrides": "settings to change before the run, as {target: value}"}
+
+# Settings a fix may change, named as the semantic layer names them.
+_SETTINGS = [
+    {"target": "content-interpreter.load_rules.inputs_supplied", "type": "number",
+     "description": "content-interpreter setting: inputs supplied to each rule",
+     "get": lambda s: s["consumer_inputs"], "set": lambda s, v: s.__setitem__("consumer_inputs", v)},
+    {"target": "rule-validator.validate.checks_interpreter_inputs", "type": "boolean",
+     "description": "rule-validator setting: whether validation checks rules against the interpreter's inputs",
+     "get": lambda s: bool(s["validator_checks_consumer"]),
+     "set": lambda s, v: s.__setitem__("validator_checks_consumer", v)},
+]
+
+
+def overridable(setup: dict) -> list:
+    """What `describe` lists as changeable, with each setting's current value."""
+    return [{"target": s["target"], "current": s["get"](setup), "type": s["type"], "description": s["description"]}
+            for s in _SETTINGS]
+
+
+def apply_overrides(setup: dict, overrides) -> tuple:
+    """(a copy of setup with every override applied, log lines) or (None, reason). Never a silent no-op."""
+    if not isinstance(overrides, dict):
+        return None, "overrides must be an object of target -> value"
+    by_target = {s["target"]: s for s in _SETTINGS}
+    out, applied = copy.deepcopy(setup), []
+    for raw, value in overrides.items():
+        target = str(raw).split("/setting/")[-1]
+        spec = by_target.get(target)
+        if spec is None:
+            return None, f"unknown override target {raw!r}; overridable: {sorted(by_target)}"
+        kind = spec["type"]
+        if ((kind == "number" and (isinstance(value, bool) or not isinstance(value, (int, float))))
+                or (kind == "boolean" and not isinstance(value, bool))
+                or (kind == "string" and value not in spec.get("choices", [value]))):
+            return None, f"override {target} must be {spec.get('choices') or 'a ' + kind}, got {value!r}"
+        spec["set"](out, value)
+        applied.append(f"harness: applied override {target} = {json.dumps(value)}")
+    return out, applied
 
 
 def _step(name: str, args: list) -> tuple:
@@ -41,6 +80,9 @@ def run(setup: dict, variant: str, params: dict) -> dict:
     unknown = sorted(set(params) - set(ACCEPTED_PARAMS))
     if unknown:
         return {"error": f"unsupported params: {unknown}"}
+    setup, override_logs = apply_overrides(setup, params.get("overrides") or {})
+    if setup is None:
+        return {"error": override_logs}
     rules = list(setup["existing_rules"]) + ([setup["new_rule"]] if variant == "candidate" else [])
     input_sha = hashlib.sha256(json.dumps({"setup": setup, "variant": variant, "params": params},
                                           sort_keys=True).encode()).hexdigest()
@@ -49,7 +91,7 @@ def run(setup: dict, variant: str, params: dict) -> dict:
         staged, shipped, templates = work / "staged", work / "shipped", work / "templates.json"
         templates.write_text(json.dumps(setup["templates"]), encoding="utf-8")
         rule_files.write_rules(staged, rules)
-        logs = []
+        logs = list(override_logs)
         v_args = ["--rules", str(staged), "--templates", str(templates)]
         if setup["validator_checks_consumer"]:
             v_args += ["--consumer-inputs", str(setup["consumer_inputs"])]
@@ -87,11 +129,17 @@ def run(setup: dict, variant: str, params: dict) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", required=True)
-    parser.add_argument("--variant", required=True, choices=("baseline", "candidate", "control"))
+    parser.add_argument("--variant", choices=("baseline", "candidate", "control"))
     parser.add_argument("--params", default="{}")
+    parser.add_argument("--overridable", action="store_true", help="print the settings a fix may change")
     args = parser.parse_args()
     setup = json.loads(Path(args.case).read_text(encoding="utf-8"))["setup"]
-    print(json.dumps(run(setup, args.variant, json.loads(args.params))))
+    if args.overridable:
+        print(json.dumps(overridable(setup)))
+    elif not args.variant:
+        parser.error("--variant is required")
+    else:
+        print(json.dumps(run(setup, args.variant, json.loads(args.params))))
     return 0
 
 

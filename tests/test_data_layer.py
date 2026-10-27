@@ -107,6 +107,8 @@ check("baseline passes / candidate fails", b["passed"] is True and cnd["passed"]
 check("deterministic input hash", experiments.run_experiment("w-test", "candidate")["reproduce"]["input_sha256"] == cnd["reproduce"]["input_sha256"])
 check("world timeout", experiments.run_experiment("w-test", "control", timeout_s=1)["status"] == "timeout")
 check("engine error -> status error", experiments.run_experiment("w-test", "baseline", {"x": 1})["status"] == "error")
+check("engine error reason is in logs", experiments.run_experiment("w-test", "baseline", {"x": 1})["logs"] == ["harness: unsupported params"])
+check("engine without overrides lists none", experiments.describe_world("w-test")["overridable"] == [] and "overrides" not in experiments.describe_world("w-test")["params"])
 check("bad variant", experiments.run_experiment("w-test", "prod")["status"] == "error")
 os.environ["DOMINO_DATA_MODE"] = "sample"; check("path traversal rejected", experiments.run_experiment("../etc", "baseline")["status"] == "error" and experiments._case_path("../etc") is None)
 check("unknown world outside fake mode", (os.environ.__setitem__("DOMINO_DATA_MODE", "sample") or experiments.run_experiment("nope", "baseline"))["status"] == "error")
@@ -228,6 +230,24 @@ for argv, fn in calls:
         same = False; print("   differs:", argv)
     if cli.get("status") != "ok" and proc.returncode != 1:
         json_on_error = False
+# Verified-fix overrides on the real engines: listed by describe, applied and logged by run, never silently ignored
+for w in ("w-k7m2", "w-g4k8"):
+    d = experiments.describe_world(w)
+    check(f"{w} lists overridable settings with current values", d["overridable"] and all(
+        set(o) == {"target", "current", "type", "description"} for o in d["overridable"]) and "overrides" in d["params"])
+    o = d["overridable"][0]
+    r = experiments.run_experiment(w, "baseline", {"overrides": {f"{w}/setting/{o['target']}": o["current"]}})
+    check(f"{w} override applied and logged", r["status"] == "ok" and
+          f"harness: applied override {o['target']} = {json.dumps(o['current'])}" in r["logs"])
+    plain = experiments.run_experiment(w, "baseline")
+    check(f"{w} override at current value changes nothing but the input hash", r["passed"] == plain["passed"] and
+          r["metrics"] == plain["metrics"] and r["reproduce"]["input_sha256"] != plain["reproduce"]["input_sha256"])
+    bad = experiments.run_experiment(w, "candidate", {"overrides": {"nope.setting": 1}})
+    check(f"{w} unknown override target -> error with reason in logs", bad["status"] == "error" and bad["passed"] is None
+          and "unknown override target" in bad["error"] and bad["logs"] and "nope.setting" in bad["logs"][0])
+    wrong = experiments.run_experiment(w, "candidate", {"overrides": {o["target"]: "not-a-valid-value"}})
+    check(f"{w} wrong override type -> error", wrong["status"] == "error" and wrong["logs"])
+check("overrides must be an object", experiments.run_experiment("w-k7m2", "baseline", {"overrides": [1]})["status"] == "error")
 check("CLI JSON matches the Python results", same)
 check("CLI prints JSON and exits 1 when status != ok", json_on_error)
 

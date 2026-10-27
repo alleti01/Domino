@@ -31,7 +31,8 @@ _WORLD_ID = re.compile(r"^[a-z0-9][a-z0-9-]{1,40}$")
 RUN_FIELDS = {"passed": None, "assertions": [], "metrics": {}, "artifacts": [], "logs": [], "reproduce": None,
               "duration_ms": None, "error": None}
 DESCRIBE_FIELDS = {"title": None, "components": [], "change": None, "variants": {}, "params": {}, "metrics": [],
-                   "error": None}
+                   "overridable": [], "error": None}
+DESCRIBE_TIMEOUT_S = 10
 
 
 def _envelope(call: str, mode: str) -> Dict[str, Any]:
@@ -64,11 +65,30 @@ def list_worlds() -> List[str]:
     return sorted(i for i in ids if _WORLD_ID.match(i))
 
 
+def _overridable(path: Path) -> List[Dict[str, Any]]:
+    """Settings a fix may change in this world (run's params.overrides), as the world's engine reports them."""
+    engine = json.loads(path.read_text(encoding="utf-8"))["engine"]
+    try:
+        proc = subprocess.run([sys.executable, "-I", str(_engine_path(path, engine)), "--case", str(path),
+                               "--overridable"], capture_output=True, text=True, timeout=DESCRIBE_TIMEOUT_S)
+        listed = json.loads(proc.stdout.strip().splitlines()[-1])
+    except (subprocess.TimeoutExpired, IndexError, json.JSONDecodeError):
+        return []
+    return listed if isinstance(listed, list) else []
+
+
 def describe_world(world: str) -> Dict[str, Any]:
     path = _case_path(world) if isinstance(world, str) else None
     if path:
         body = json.loads(path.read_text(encoding="utf-8"))["describe"]
-        return {**_envelope("describe_world", "live"), "status": "ok", "world": world, **DESCRIBE_FIELDS, **body}
+        overridable = _overridable(path)
+        params = dict(body.get("params") or {})
+        if overridable:
+            params["overrides"] = {"type": "object", "default": {},
+                                   "description": "settings to change before the run, as {target: value}; "
+                                                  "targets are listed in overridable"}
+        return {**_envelope("describe_world", "live"), "status": "ok", "world": world, **DESCRIBE_FIELDS, **body,
+                "params": params, "overridable": overridable}
     if config.mode() == "fake":
         return _fake("describe_world.json")
     return {**_envelope("describe_world", config.mode()), "status": "error", "world": world, **DESCRIBE_FIELDS,
@@ -122,7 +142,9 @@ def run_experiment(world: str, variant: str, params: Optional[Dict[str, Any]] = 
         return {**base, "status": "error", "duration_ms": duration_ms,
                 "error": "World printed no JSON result.", "logs": (proc.stderr or "").splitlines()[-20:]}
     if body.get("error"):
-        return {**base, "status": "error", "duration_ms": duration_ms, "error": body["error"]}
+        # The reason goes in logs too: callers that only read logs must still see why the run did not complete.
+        return {**base, "status": "error", "duration_ms": duration_ms, "error": body["error"],
+                "logs": [f"harness: {body['error']}"]}
     reproduce = {"command": f"python3 -m data_layer run {world} {variant}"
                             + (f" --params '{json.dumps(params, sort_keys=True)}'" if params else ""),
                  "input_sha256": body.pop("input_sha256", None)}
