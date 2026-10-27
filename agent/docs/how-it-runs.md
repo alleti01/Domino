@@ -12,9 +12,9 @@ Replays five recorded live investigations through the real agent code: the tool 
 
 | Recording | What it shows |
 |---|---|
-| `pr1-w-c5h2` | Pull request #1 in the demo repo: failure reproduced, cited cause, fix that held when re-run |
+| `pr1-w-c5h2` | Pull request #1 in the demo repo: failure reproduced, cited cause, a fix that holds but only adds headroom, and an honest "no setting removes the cause" |
 | `pr2-w-f8w3` | Pull request #2: the same change on a system that copes; no failure observed, explained from the chain |
-| `zetaris-w-k7m2` | Database grant that breaks a downstream service; fix held |
+| `zetaris-w-k7m2` | Database grant that breaks a downstream service. Raising the limit only adds headroom, so Domino finds the fix that removes the cause: collapse duplicate entries |
 | `zetaris-w-g4k8` | Rule change that breaks an interpreter; fix held |
 | `zetaris-w-h9c5` | The near-miss grant that is fine |
 
@@ -42,7 +42,7 @@ Polls open pull requests with `gh` and checks each new commit once. It posts one
 6. **Decide.** A deterministic judge sets the verdict from the experiments: `reproduced_failure`, `no_failure_observed` or `inconclusive`. The model never sets it.
 7. **Explain.** The investigator writes a cause chain: hops from the change to the failed check (or to the metric that stayed within bounds). Code checks every cite was returned in this run and sends a bad chain back once (`chain.ts`).
 8. **Review.** Nemotron Ultra checks each claim against the evidence; problems go back to the investigator for up to two rounds (`critic.ts`).
-9. **Fix check.** For a reproduced failure, the proposed fix is applied as setting overrides and the world re-run; the fix counts only if it holds. When it holds with several overrides, code tries each one, keeps only those needed, re-verifies the smaller set, and says whether each override removes the cause (every metric an override can move returns to baseline) or only adds headroom (the checks pass while some stay moved) (`fix.ts`).
+9. **Fix check.** For a reproduced failure, the proposed fix is applied as setting overrides and the world re-run; the fix counts only if it holds. When it holds with several overrides, code tries each one, keeps only those needed, re-verifies the smaller set, and says whether each override removes the cause (every metric an override can move returns to baseline) or only adds headroom (the checks pass while some stay moved). If the fix only adds headroom, Domino looks for one that removes the cause: code tries every other value of each on/off and fixed-choice setting, the investigator proposes one more, and a candidate that removes the cause and holds on re-verification becomes the fix (`fix.ts`).
 10. **Write it up.** `bundle.json` for the dashboard and `report.md` for the PR comment (`bundle.ts`).
 
 Budgets: 20 steps, 26 model calls, 8 queries, 10 experiments, 10 minutes. A Nightshift or Zetaris outage marks the run an outage, never a wrong answer.

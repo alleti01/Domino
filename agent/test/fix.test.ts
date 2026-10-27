@@ -47,6 +47,8 @@ describe("verified fixes", () => {
     expect(parseOverrides([{ target: "loader.timeout", value: "5" }], TARGETS)).toHaveProperty("error");
     expect(parseOverrides([{ target: "loader.max_items", value: "lots" }], TARGETS)).toHaveProperty("error");
     expect(parseOverrides([{ target: "loader.max_items", value: "50" }], TARGETS)).toHaveProperty("error");
+    // Seen live: the model lists every setting, unchanged ones at their current value. Those are ignored, not fatal.
+    expect(parseOverrides([{ target: "loader.max_items", value: "120" }, { target: "builder.schema_filter", value: "none" }], TARGETS)).toEqual({ overrides: { "loader.max_items": 120 } });
     expect(parseOverrides([], TARGETS)).toHaveProperty("error");
   });
 
