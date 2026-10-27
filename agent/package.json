@@ -1,10 +1,11 @@
 {
-  "name": "@domino/agent",
+  "name": "domino-check",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Domino investigation agent: Nemotron via Meterless Nightshift.",
   "bin": {
+    "domino-check": "bin/domino.mjs",
     "domino": "bin/domino.mjs"
   },
   "engines": {

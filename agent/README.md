@@ -30,14 +30,21 @@ npm run conformance:world-model   # official Meterless World Model conformance s
 ```
 Needs Nightshift running locally with only Nemotron lanes seated (e.g. `nvidia/nemotron-3.5-lightning-30b-a3b`).
 
-## Run an investigation
+## The `domino` command
 ```bash
-npm run investigate -- --change p03                       # Anish's practice scenario p03 (repo root ../practice)
-npm run investigate -- --change p03 --mode no_experiments # scorecard modes: full | no_tools | no_experiments | no_usl
-npm run investigate -- --change p03 --memory runs/memory  # persist the World Model across runs
-npm run eval -- --set dev                                  # score on the dev practice set
+cd agent && npm install && npm link    # once; then `domino` (or `domino-check`) works from any folder
+domino doctor                           # Node, Python, data layer mode + read-only Zetaris login, Nightshift + a real Nemotron call, gh
+domino run --change w-k7m2              # one live investigation (scorecard modes: --mode full | no_tools | no_experiments | no_usl)
+domino dashboard --open                 # the dashboard, showing runs as they happen
+domino pr 1 --repo owner/name [--post]  # check one pull request
+domino watch --repo owner/name --post   # check every new commit on every open pull request
+domino replay <cassette.json> · domino demo · domino report <run_dir>
 ```
-Outputs go to `runs/<run_id>/`: `trace.jsonl` (for the dashboard), `summary.json`, `cassette.json` (the recording `npm run replay -- <cassette>` re-runs), plus `runs/receipts.jsonl`.
+Settings: `--data-repo` or `DOMINO_DATA_REPO` (in `agent/.env`) is the checkout whose data layer runs live; runs go to `agent/runs/live/run-*/` (`trace.jsonl` appended as the run happens, then `summary.json`, `bundle.json`, `report.md`, `cassette.json`), receipts to `agent/runs/live/receipts.jsonl`. Exit codes: 0 finished, 1 failure reproduced (with `--fail-on-break`), 2 error, 3 outage or inconclusive. Don't type `npx domino`: that downloads an unrelated npm package.
+
+**Pull requests.** `pr` and `watch` read a PR's diff with `gh` (PR code is never checked out or run). The repo's `domino.json` maps folders to modelled systems; a folder is checked only when its change equals the one modelled for that system, otherwise it is reported as not covered. With `--post`, Domino posts one comment (edited in place on later pushes) and a `domino/check` commit status. Demo: [abhijandyala/domino-demo-shop](https://github.com/abhijandyala/domino-demo-shop). Running it in CI: [docs/ci.md](docs/ci.md).
+
+`npm run eval -- --set dev` scores Anish's practice scenarios (`domino run --change p03 --data practice --data-repo ..`).
 
 **Reliability:**
 - A pre-run health check (Nightshift up, token valid, Nemotron offered) marks the run an **outage** instead of a wrong answer.
