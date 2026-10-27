@@ -51,6 +51,20 @@ Report only the needed set as the fix, and list the others as "not needed: the c
 **Why:** a bundled fix can hide which change mattered. A reviewer could apply the one that only raises a
 limit, which passes while the cause stays in place.
 
+### P4 follow-up: judge the kind on metrics an override can move
+The change stays applied during every fix run, so the metrics it moves directly (the first hop of the chain)
+never return to baseline, whatever the override. Today `trimFix` calls an override `removes_cause` only if
+*every* metric the change moved returns to baseline, so a fix that removes the cause downstream of that first
+hop is labelled `adds_headroom`, the same as one that only raises a limit. With both tied, the one kept depends
+on the chain's wording and the order the overrides were listed in.
+
+- Before judging kinds, drop from `moved` every metric whose value is the same in the failing candidate and in
+  every single-override run. No override moves it, so it is the change's own effect.
+- An override is `removes_cause` if all the remaining moved metrics return to baseline, and `adds_headroom` if
+  the checks pass while some stay moved. If nothing remains, the kind is `undetermined`.
+- With one override, use its full-fix run as the only single-override run.
+- Same rule for every world; no extra runs.
+
 ## Measuring it
 Anish re-runs the scorecard on the practice worlds after any change (modes D and E, 3 repeats). The
 held-out world stays out of tuning: its results are only used for the final run.
