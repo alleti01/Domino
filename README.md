@@ -10,6 +10,7 @@ Domino is an autonomous, evidence-first **pre-deployment failure investigation a
 |---|---|
 | **Demo video (1–4 min)** | **TODO:** link |
 | **Live demo (dashboard)** | **TODO:** link |
+| **Live PR checks** | https://github.com/abhijandyala/domino-demo-shop/pulls (real Domino comments and `domino/check` statuses on synthetic pull requests) |
 | **Slide deck** | **TODO:** link |
 | **Repository** | https://github.com/alleti01/Domino |
 
@@ -31,6 +32,7 @@ Domino is an autonomous, evidence-first **pre-deployment failure investigation a
 - [AI coding tools (Cursor, Claude Code)](#ai-coding-tools-cursor-claude-code)
 - [Results](#results)
 - [Try it](#try-it)
+- [Domino on pull requests](#domino-on-pull-requests)
 - [Repository structure](#repository-structure)
 - [Safety, privacy and data](#safety-privacy-and-data)
 - [Limitations](#limitations)
@@ -58,7 +60,9 @@ An engineer opens a high-impact change. Domino:
 3. **Hypothesizes** specific, falsifiable downstream consequences (NVIDIA Nemotron via Meterless Nightshift).
 4. **Experiments:** runs the baseline and the candidate side by side in an isolated test world, changing one thing.
 5. **Controls:** reverts the change and checks that the failure goes away.
-6. **Reports** a conservative verdict with a reproducible evidence bundle.
+6. **Explains** the cause as a chain of steps from the change to the failed check, each step citing the rows and experiments it rests on. Code checks every citation.
+7. **Checks the fix:** re-runs the world with the proposed fix applied, keeps only the settings the fix needs, and looks for a fix that removes the cause rather than one that only adds headroom (such as raising a limit).
+8. **Reports** a conservative verdict with a reproducible evidence bundle, as a dashboard report and a pull-request comment.
 
 | Verdict | Means |
 |---|---|
@@ -68,7 +72,7 @@ An engineer opens a high-impact change. Domino:
 
 **The verdict is decided by code, not a model.** A deterministic judge applies the rule above. Neither Nemotron model can mark anything verified.
 
-The evidence bundle holds the change, the cross-source dependency path with source row IDs, every experiment's parameters and outcome, the model-routing receipts, the reviewer's findings and a suggested (unverified) mitigation. The dashboard renders it as a report and as the PR comment Domino would post.
+The evidence bundle holds the change, the cross-source dependency path with source row IDs, the cited cause chain, every experiment's parameters and outcome, the model-routing receipts, the reviewer's findings and the fix check: whether the fix held when re-run, which settings it needs, and whether it removes the cause or only adds headroom. The dashboard renders it as a report, and `domino pr` posts it as the pull-request comment.
 
 ## How it works
 
@@ -90,6 +94,8 @@ Every investigation is bounded by caps on steps, model calls and wall-clock time
 **Boundaries of autonomy**
 - **Typed tool gateway.** No raw shell and no secrets. The agent can run read-only SQL against the USL, look up rows, walk dependency paths and run experiments, each with argument schemas, budgets and timeouts.
 - **Citation guard.** A claim can only cite rows, path hops and experiments returned in the same run.
+- **Cited cause chain.** The explanation is written as hops from the change to the failed check (or, when nothing failed, to the metric that stayed within bounds). Code rejects an uncited hop or a citation the run never returned, and sends the chain back once; the prose is written from the checked chain.
+- **Fixes are tested, not suggested.** A proposed fix is applied as setting overrides and the world re-run (candidate twice, baseline once). Code drops overrides the fix doesn't need, labels each as removing the cause or adding headroom from the measured metrics, and, when a fix only adds headroom, tries the other settings for one that removes the cause.
 - **Two-source rule.** Every cross-source link rests on facts from independent systems and is labelled *observed*, *inferred* or *unresolved*.
 - **Read-only context.** The agent reads Zetaris as a non-admin user who can see only the USL. It writes nothing outside disposable sandboxes.
 
@@ -200,9 +206,15 @@ Measured on **live Zetaris, 26 October 2026**, agent at commit `ab140d5`, Nemotr
 - **Context without experiments guesses.** C, with full Zetaris context, flagged 3 of 5 safe changes.
 - **Experiments make the verdict trustworthy.** D and E: every verdict right across 3 repeats (repeat agreement 100%), every warning backed by baseline, candidate twice and control.
 - **What the USL adds is the evidence behind the "why".** In these worlds, running the change always exposes the failure, so D and E reach the same verdicts, and they name the failure mechanism about equally often (30% vs 28%). The difference is the citations: with the USL, the explanation cites the cross-source links and source rows behind each step (for example, on one world 5 cross-source links and 10 evidence rows, against 2 links and no rows without it; `agent/docs/comparison-modes.md`).
-- **The cause score is our weakest number,** and we say so. Improving it is the next piece of work (`contracts/PROPOSALS.md`).
+- **The cause score is our weakest number,** and we say so. Since this run the agent writes the cause as a cited chain (P1 and P2 in `contracts/PROPOSALS.md`), and the unseen-world run below used it.
 
-**Unseen world:** one world (four cases) was kept out of the repo and away from agent development until the freeze. On the final code (agent at `be84f06`, live Zetaris, 27 October 2026), Domino got **12/12** verdicts right across 3 repeats: all 6 breaking runs caught, 0 false alarms on the 6 safe runs, and the cause named 47% of the time (keyword proxy). The one setting it could change didn't fix the failure, and the report said so instead of claiming a fix. The static baseline got 2/4 with 2 false alarms on it.
+**After the cited cause chain (agent `53abc68`, live Zetaris, 27 October 2026):** full mode, 3 repeats on all 13 practice worlds (the 10 above plus three order-service worlds). Ungraded on our side; the labels stay outside the repo.
+- 39 of 39 runs on Nemotron, no errors; one Nightshift outage was re-run and recorded.
+- Every world gave the same verdict in all 3 repeats and the same verdict as `ab140d5`.
+- The independent reviewer approved 37 of 39 explanations (29 of 39 before); 34 of 39 cause chains passed the citation check.
+- In 14 of the 18 breaking runs, the proposed fix held when re-run. In the database-grant worlds, raising the runtime's limit only adds headroom; with the later fix checks (P4, P5), Domino finds the fix that removes the cause instead, collapsing the duplicate entries (`output_mode=collapse_same_name`), the remedy the Cloudflare-style failure calls for.
+
+**Unseen world:** one world (four cases) was kept out of the repo and away from agent development until the freeze. On the final code (agent at `be84f06`, which includes the cited cause chain and the fix checks, live Zetaris, 27 October 2026), Domino got **12/12** verdicts right across 3 repeats: all 6 breaking runs caught, 0 false alarms on the 6 safe runs, and the cause named 47% of the time (keyword proxy). The one setting it could change didn't fix the failure, and the report said so instead of claiming a fix. The static baseline got 2/4 with 2 false alarms on it.
 
 ---
 
@@ -216,6 +228,7 @@ Measured on **live Zetaris, 26 October 2026**, agent at commit `ab140d5`, Nemotr
 | 1. Replay | Node.js and npm | a few minutes | the real agent code re-running recorded investigations |
 | 2. Data layer | Python 3.9+, no packages | 1 min | the joined data, experiments and checks the agent uses |
 | 3. Full live | Docker (8 GB+), Zetaris, Nightshift with Nemotron | about an hour the first time | everything live, end to end |
+| 4. Pull requests | level 3, plus the GitHub CLI (`gh`) | minutes after level 3 | Domino checking every pull request and commenting on it |
 
 ### 0. Dashboard
 ```bash
@@ -227,7 +240,7 @@ Static: it reads saved runs from `samples/` and needs no keys, database or serve
 ```bash
 cd agent && npm install && npm run demo
 ```
-The tool gateway, World Model, harness and judge all run again and must reach the recorded verdict. Recorded model calls are marked `replay: true` and are never shown as live.
+The tool gateway, World Model, harness and judge all run again and must reach the recorded verdict. Recorded model calls are marked `replay: true` and are never shown as live. The five recordings include two real pull-request checks from the demo repo and a run where code finds the fix that removes the cause. Once the package is published, the same works from anywhere with `npx domino-check demo`.
 
 ### 2. Data layer in sample mode (no Zetaris)
 ```bash
@@ -244,10 +257,24 @@ python3 scorecard/leakage_check.py                    # nothing the agent sees g
 ### 3. Full live
 1. Install Zetaris (Docker), then `cp .env.example .env` and fill in the Zetaris logins.
 2. `python3 zetaris/setup.py` loads the sources (including the PostgreSQL catalog over JDBC), builds the USL and data-quality rules, and grants the agent read-only access. Two UI steps are listed in `zetaris/README.md`.
-3. Install Meterless Nightshift with Nemotron lanes, then `cd agent && npm install && npm run smoke` (one real Nemotron call, prints the receipt).
-4. `python3 -m data_layer doctor`, then `npm run investigate -- --change <world>` from `agent/` (see `agent/README.md`).
+3. Install Meterless Nightshift with Nemotron lanes, then `cd agent && npm install && npm link` (installs the `domino` command).
+4. `domino doctor` checks Node, Python, the data layer and its read-only Zetaris login, Nightshift with a real Nemotron call, and `gh`. Then `domino run --change w-k7m2` runs one live investigation, and `domino dashboard --open` shows it step by step as it runs (see [`agent/docs/how-it-runs.md`](agent/docs/how-it-runs.md)).
 
 **Use your own database:** `python3 zetaris/seed_db.py --sql > domino_seed.sql` gives the schema and all synthetic rows as plain SQL (PostgreSQL, SQLite, MySQL); `--zetaris-sql` prints the statements that register it in Zetaris.
+
+## Domino on pull requests
+
+```bash
+domino watch --repo owner/name --post   # check every new commit on every open pull request
+domino pr 12 --repo owner/name --post   # or check one
+```
+
+- **Every pull request.** The watcher polls open pull requests with `gh` and checks each new commit once. It posts one comment, edited in place on later pushes, and a `domino/check` commit status that shows in the PR's checks list and can be made a required check. Without `--post`, nothing reaches GitHub.
+- **Only modelled changes get a verdict.** The repository's `domino.json`, read from the base branch, maps folders to the systems Domino has modelled. A folder is checked only when its files and changed lines equal the modelled change; everything else is listed as "not covered", with no verdict.
+- **Safe by construction.** Domino reads the diff only; pull-request code is never checked out or run, and no port is opened.
+- **Where it runs.** On the machine that has Nightshift and Zetaris. A GitHub-hosted runner can't reach them, and a self-hosted runner on a public repository would run strangers' workflows. A sketch for teams that host both: [`agent/docs/ci.md`](agent/docs/ci.md).
+
+Demo: [abhijandyala/domino-demo-shop](https://github.com/abhijandyala/domino-demo-shop/pulls). Pull request #1 reproduces the failure and reports a fix that holds but only adds headroom, saying no setting removes the cause. #2 makes the same change on a system that copes, and gets no failure observed. #3 changes only the README, so it is not covered.
 
 ## Repository structure
 
@@ -261,7 +288,7 @@ python3 scorecard/leakage_check.py                    # nothing the agent sees g
 ├── scorecard/       evaluation harness (modes A–E, X, R), leakage check, repo scan
 ├── tests/           data-layer and abuse tests
 ├── practice/        10 practice scenarios used to build the agent
-├── agent/           investigation agent (TypeScript): loop, gateway, judge, reviewer, Nightshift, World Model
+├── agent/           investigation agent (TypeScript): loop, gateway, judge, reviewer, Nightshift, World Model, the `domino` command
 ├── ui/              dashboard (React, three.js)
 ├── samples/         saved real runs and scorecard the dashboard reads
 └── docs/            data formats
@@ -286,6 +313,8 @@ python3 scorecard/leakage_check.py                    # nothing the agent sees g
 - **Experiment selection is barely tested here.** These worlds take no parameters, so choosing which experiment to run is easy. Worlds where a failure appears only under specific inputs would test it.
 - **Latency:** an investigation takes about 2–3 minutes, mostly model calls. Live Zetaris on a laptop answers in 0.2–3 s per query.
 - **Sample mode** answers from saved snapshots, so only the recorded paths are available offline.
+- **Pull-request checks need a modelled system.** A pull request gets a verdict only when its change matches one Domino has a world for; anything else is reported as not covered. Checks run on the machine with Nightshift and Zetaris.
+- **Fixes are setting changes.** When the real remedy is a change to the change itself (for example, making a call asynchronous), Domino can't test it and says so.
 - **A semantic layer is not a complete causal graph:** keys can be missing. Domino reports unresolved links instead of hiding them.
 
 ## Pre-existing components and what we built
@@ -317,7 +346,8 @@ python3 scorecard/leakage_check.py                    # nothing the agent sees g
 ## Roadmap
 
 Each step is driven by measured shortcomings:
-- **Explain from the chain:** write the cause as cited hops from the change to the failing check, and confirm it by moving one setting (`contracts/PROPOSALS.md`).
+- **Confirm the cause by moving one setting** (P3 in `contracts/PROPOSALS.md`); the cited cause chain and fix checks (P1, P2, P4, P5) are done.
+- **A GitHub App** that receives pull-request webhooks, instead of a watcher polling from one machine.
 - **Parameterized worlds** where a failure appears only under certain inputs, to measure experiment selection.
 - **Connectors** for GitHub, OpenTelemetry, cloud inventory, database catalogs and CI/CD artifacts.
 - **Deployment the customer controls,** with private open-weight Nemotron inference.
