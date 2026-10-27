@@ -5907,3 +5907,94 @@ a.dx-rcell:hover {
   color: var(--dx-ink-3);
   font-size: 12.5px;
 }
+
+/* =====================================================================
+   One page, ruled sections. Every section sits on the same white sheet,
+   and neighbours share one hairline instead of floating as separate cards
+   with gaps, shadows and rounded corners. Last in the file, so it wins.
+   ===================================================================== */
+.dx-main {
+  background: var(--dx-panel);
+}
+
+.dx-top {
+  background: rgb(255 255 255 / 0.92);
+}
+
+.dx-panel,
+.dx-answer,
+.dx-stats {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Stacked sections: no gap, one shared line. */
+.dx-panel + .dx-panel,
+.dx-stack > * + *,
+.dx-stack > * + .dx-ov-cols {
+  margin-top: -1px;
+}
+
+.dx-stats {
+  margin-bottom: -1px;
+}
+
+/* Side by side: no gap, one shared line. */
+.dx-split,
+.dx-split > aside,
+.dx-grid-2,
+.dx-ov-cols,
+.dx-tiles {
+  gap: 0;
+}
+
+.dx-split > aside {
+  margin-left: -1px;
+}
+
+.dx-split > aside > * + * {
+  margin-top: -1px;
+}
+
+.dx-grid-2 > * + *,
+.dx-ov-cols > * + * {
+  margin-top: 0;
+  margin-left: -1px;
+}
+
+/* Tiles: one ruled row of cells. */
+.dx-tiles {
+  border-top: 1px solid var(--dx-line);
+  border-left: 1px solid var(--dx-line);
+}
+
+.dx-tiles a {
+  border: 0;
+  border-right: 1px solid var(--dx-line);
+  border-bottom: 1px solid var(--dx-line);
+  border-radius: 0;
+}
+
+.dx-tiles a:hover {
+  background: var(--dx-hover);
+}
+
+/* Section headers read as headings on the sheet, not card title bars. */
+.dx-panel-h {
+  background: var(--dx-panel-2);
+}
+
+@media (max-width: 1180px) {
+  .dx-split > aside {
+    margin-top: -1px;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 960px) {
+  .dx-grid-2 > * + *,
+  .dx-ov-cols > * + * {
+    margin-top: -1px;
+    margin-left: 0;
+  }
+}
