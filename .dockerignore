@@ -1,0 +1,12 @@
+.git
+**/node_modules
+ui/dist
+**/runs
+ground_truth
+backups
+**/__pycache__
+**/.venv
+.env
+.env.*
+*.mp4
+*.mov
