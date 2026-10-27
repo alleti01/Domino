@@ -28,7 +28,7 @@ Domino is an autonomous, evidence-first **pre-deployment failure investigation a
 - [The problem](#the-problem)
 - [What Domino does](#what-domino-does)
 - [How it works](#how-it-works)
-- [Sponsor technology in Domino](#sponsor-technology-in-domino): [Zetaris](#zetaris-one-view-across-seven-systems), [Meterless Nightshift](#meterless-nightshift-every-model-call-on-the-record), [Meterless World Model](#meterless-world-model-the-agents-memory), [NVIDIA Nemotron](#nvidia-nemotron-the-investigator), [NVIDIA Nemotron Ultra](#nvidia-nemotron-ultra-the-independent-reviewer)
+- [Sponsor technology in Domino](#sponsor-technology-in-domino): [Zetaris](#zetaris-one-view-across-five-systems), [Meterless Nightshift](#meterless-nightshift-every-model-call-on-the-record), [Meterless World Model](#meterless-world-model-the-agents-memory), [NVIDIA Nemotron](#nvidia-nemotron-the-investigator), [NVIDIA Nemotron Ultra](#nvidia-nemotron-ultra-the-independent-reviewer)
 - [AI coding tools (Cursor, Claude Code)](#ai-coding-tools-cursor-claude-code)
 - [Results](#results)
 - [Try it](#try-it)
@@ -55,7 +55,7 @@ No single artifact held the whole causal chain. The change was in one place, the
 An engineer opens a high-impact change. Domino:
 
 1. **Reads the change** and identifies what it touches.
-2. **Connects the context** through a Zetaris Unified Semantic Layer (USL) over seven independent source systems, keeping the source row behind every fact.
+2. **Connects the context** through a Zetaris Unified Semantic Layer (USL) over five independent source systems, keeping the source row behind every fact.
 3. **Hypothesizes** specific, falsifiable downstream consequences (NVIDIA Nemotron via Meterless Nightshift).
 4. **Experiments:** runs the baseline and the candidate side by side in an isolated test world, changing one thing.
 5. **Controls:** reverts the change and checks that the failure goes away.
@@ -75,7 +75,7 @@ The evidence bundle holds the change, the cross-source dependency path with sour
 
 ```mermaid
 flowchart LR
-    PR["Proposed change<br/>(PR / grant / config)"] --> Q["Zetaris USL<br/>7 source systems<br/>read-only user"]
+    PR["Proposed change<br/>(PR / grant / config)"] --> Q["Zetaris USL<br/>5 source systems<br/>read-only user"]
     Q --> H["Investigator<br/>Nemotron 3.5 Lightning<br/>via Meterless Nightshift"]
     H <--> WM["Meterless World Model<br/>investigation state<br/>and memory"]
     H --> X["Sandbox experiment<br/>baseline · candidate ×2 · control"]
@@ -112,7 +112,7 @@ Five sponsor technologies run inside Domino. Each one has a job no other part do
 
 | Technology | What it does in Domino | Where in the code | Proof |
 |---|---|---|---|
-| **Zetaris** | Joins seven separate source systems into one Unified Semantic Layer (USL) that the agent queries; data-quality rules catch broken links | `zetaris/`, `data_layer/zetaris_client.py` | query log, USL tables, data-quality output, cited source rows |
+| **Zetaris** | Joins five separate source systems into one Unified Semantic Layer (USL) that the agent queries; data-quality rules catch broken links | `zetaris/`, `data_layer/zetaris_client.py` | query log, USL tables, data-quality output, cited source rows |
 | **Meterless Nightshift** | The only inference provider: routes every model call to Nemotron and returns a signed receipt naming the model that answered | `agent/src/llm/nightshift.ts`, `agent/src/llm/receipts.ts` | `runs/receipts.jsonl`, `model_call` trace events |
 | **Meterless World Model** (open engine) | The agent's investigation state and memory: what it found, where each fact came from, what it suspected and what it confirmed | `agent/src/engines/worldModel.ts`, `agent/vendor/meterless-world-model/` | World Model reads/writes/updates in every run; official conformance suite |
 | **NVIDIA Nemotron** (3.5 Lightning) | The investigator: follows the change, forms hypotheses, picks experiments, explains the result | `agent/src/agent.ts` | receipts show `nemotron-3.5-lightning-30b-a3b` on every investigator call |
@@ -120,12 +120,12 @@ Five sponsor technologies run inside Domino. Each one has a job no other part do
 
 The dashboard's **System proof** page (`#/under-the-hood`) shows the recorded proof for Nemotron via Nightshift, Zetaris and the World Model, taken from the saved runs.
 
-### Zetaris: one view across seven systems
+### Zetaris: one view across five systems
 
 **What it is.** A data platform whose Unified Semantic Layer (USL) puts many separate sources behind one SQL interface.
 
 **How Domino uses it.** Zetaris is where the scattered facts about a change become one model the agent can question.
-- **One USL over seven source systems:** the proposed change plus six independent systems (change records, record registry, pipeline repo, service catalog, runtime config, telemetry, and a database catalog). Nine synthetic tables in all.
+- **One USL over five source systems:** change records, pipeline repo, service catalog, runtime config and a database catalog. In the 30 saved runs these five supplied every fact Domino cited except three; those came from two more registered sources (record registry and telemetry) that Domino barely used. Nine synthetic tables in all.
 - **A live database in the join.** The database catalog is a real PostgreSQL database registered over JDBC (`CREATE DATASOURCE catalog_db`). The rest are file-store tables. One USL joins the live database with the files.
 - **The cross-source join is built inside Zetaris.** `dependency_edge` links a change to the components, permissions, limits and observed counts it reaches, and labels every link observed / inferred / unresolved with its source row IDs.
 - **Data quality.** Declaring USL keys gave us **19 generated key rules**, plus **6 custom rules** (`zetaris/sql/04_dq.sql`). One of them, `resolved_link`, flags any link that points at nothing. A planted broken link (a grant to a principal that doesn't exist in the catalog) is caught by three rules at once, and `dependency_path` reports it as `unresolved` so the agent knows the chain can't be trusted.
