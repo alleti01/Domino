@@ -50,6 +50,26 @@ service_catalog,ic-0048,w-y6p3,rule-0280,instance_of,template:T7,matches_on,"f02
 service_catalog,ic-0049,w-y6p3,rule-0281,instance_of,template:T7,matches_on,"f01,f03"
 service_catalog,ic-0050,w-y6p3,rule-0282,instance_of,template:T7,matches_on,"f04,f07,f09"
 service_catalog,ic-0051,w-y6p3,rule-validator.validate,checks_against,content-interpreter.load_rules,inputs_supplied,20
+service_catalog,ic-0052,w-b6n4,cleanup-job,calls,lifecycle-api.delete_record,mode,permanent
+service_catalog,ic-0053,w-b6n4,lifecycle-api.delete_record,accepts,record:app,effect,removes the record
+service_catalog,ic-0054,w-b6n4,lifecycle-api.delete_record,accepts,record:site,effect,removes the record and its child records
+service_catalog,ic-0055,w-b6n4,reports-service,reads,record:app,kind,app:legacy-reports
+service_catalog,ic-0056,w-b6n4,billing-sync,reads,record:site,field,owner
+service_catalog,ic-0057,w-j2r7,cleanup-job,calls,lifecycle-api.delete_record,mode,permanent
+service_catalog,ic-0058,w-j2r7,lifecycle-api.delete_record,accepts,record:app,effect,removes the record
+service_catalog,ic-0059,w-j2r7,lifecycle-api.delete_record,accepts,record:site,effect,removes the record and its child records
+service_catalog,ic-0060,w-j2r7,reports-service,reads,record:app,kind,app:legacy-reports
+service_catalog,ic-0061,w-j2r7,billing-sync,reads,record:site,field,owner
+service_catalog,ic-0062,w-m5x1,cleanup-job,calls,lifecycle-api.delete_record,mode,permanent
+service_catalog,ic-0063,w-m5x1,lifecycle-api.delete_record,accepts,record:app,effect,removes the record
+service_catalog,ic-0064,w-m5x1,lifecycle-api.delete_record,accepts,record:site,effect,removes the record and its child records
+service_catalog,ic-0065,w-m5x1,reports-service,reads,record:app,kind,app:legacy-reports
+service_catalog,ic-0066,w-m5x1,billing-sync,reads,record:site,field,owner
+service_catalog,ic-0067,w-q8f3,cleanup-job,calls,lifecycle-api.delete_record,mode,permanent
+service_catalog,ic-0068,w-q8f3,lifecycle-api.delete_record,accepts,record:app,effect,removes the record
+service_catalog,ic-0069,w-q8f3,lifecycle-api.delete_record,accepts,record:site,effect,removes the record and its child records
+service_catalog,ic-0070,w-q8f3,reports-service,reads,record:app,kind,app:legacy-reports
+service_catalog,ic-0071,w-q8f3,billing-sync,reads,record:site,field,owner
 service_catalog,ic-5001,w-c5h2,order-service.handle_order,takes,latency:order-service.handle_order,service_time_ms,60
 service_catalog,ic-5002,w-c5h2,order-service.handle_order,runs_on,pool:order-workers,workers,8
 service_catalog,ic-5003,w-c5h2,order-service.handle_order,called_by,api-gateway,cancels_on_caller_timeout,no
