@@ -1,0 +1,4 @@
+# Public worlds added after the held-out worlds were loaded (see zetaris/build_sources.py late_worlds).
+w-c5h2
+w-f8w3
+w-v2k9

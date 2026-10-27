@@ -50,3 +50,27 @@ service_catalog,ic-0048,w-y6p3,rule-0280,instance_of,template:T7,matches_on,"f02
 service_catalog,ic-0049,w-y6p3,rule-0281,instance_of,template:T7,matches_on,"f01,f03"
 service_catalog,ic-0050,w-y6p3,rule-0282,instance_of,template:T7,matches_on,"f04,f07,f09"
 service_catalog,ic-0051,w-y6p3,rule-validator.validate,checks_against,content-interpreter.load_rules,inputs_supplied,20
+service_catalog,ic-5001,w-c5h2,order-service.handle_order,takes,latency:order-service.handle_order,service_time_ms,60
+service_catalog,ic-5002,w-c5h2,order-service.handle_order,runs_on,pool:order-workers,workers,8
+service_catalog,ic-5003,w-c5h2,order-service.handle_order,called_by,api-gateway,cancels_on_caller_timeout,no
+service_catalog,ic-5004,w-c5h2,inventory-service.reserve,takes,latency:inventory-service.reserve,latency_p50_ms,40
+service_catalog,ic-5005,w-c5h2,api-gateway,routes_to,order-service.handle_order,timeout_ms,250
+service_catalog,ic-5006,w-c5h2,api-gateway,retries,order-service.handle_order,max_retries,2
+service_catalog,ic-5007,w-c5h2,api-gateway,receives,traffic:/orders,rps_profile,50 rps; 100 rps for 4 s every 30 s
+service_catalog,ic-5008,w-c5h2,status-page,polls,api-gateway,interval_s,30
+service_catalog,ic-5009,w-f8w3,order-service.handle_order,takes,latency:order-service.handle_order,service_time_ms,60
+service_catalog,ic-5010,w-f8w3,order-service.handle_order,runs_on,pool:order-workers,workers,12
+service_catalog,ic-5011,w-f8w3,order-service.handle_order,called_by,api-gateway,cancels_on_caller_timeout,no
+service_catalog,ic-5012,w-f8w3,inventory-service.reserve,takes,latency:inventory-service.reserve,latency_p50_ms,40
+service_catalog,ic-5013,w-f8w3,api-gateway,routes_to,order-service.handle_order,timeout_ms,250
+service_catalog,ic-5014,w-f8w3,api-gateway,retries,order-service.handle_order,max_retries,2
+service_catalog,ic-5015,w-f8w3,api-gateway,receives,traffic:/orders,rps_profile,50 rps; 100 rps for 4 s every 30 s
+service_catalog,ic-5016,w-f8w3,status-page,polls,api-gateway,interval_s,30
+service_catalog,ic-5017,w-v2k9,order-service.handle_order,takes,latency:order-service.handle_order,service_time_ms,60
+service_catalog,ic-5018,w-v2k9,order-service.handle_order,runs_on,pool:order-workers,workers,8
+service_catalog,ic-5019,w-v2k9,order-service.handle_order,called_by,api-gateway,cancels_on_caller_timeout,no
+service_catalog,ic-5020,w-v2k9,inventory-service.reserve,takes,latency:inventory-service.reserve,latency_p50_ms,10
+service_catalog,ic-5021,w-v2k9,api-gateway,routes_to,order-service.handle_order,timeout_ms,250
+service_catalog,ic-5022,w-v2k9,api-gateway,retries,order-service.handle_order,max_retries,2
+service_catalog,ic-5023,w-v2k9,api-gateway,receives,traffic:/orders,rps_profile,50 rps; 100 rps for 4 s every 30 s
+service_catalog,ic-5024,w-v2k9,status-page,polls,api-gateway,interval_s,30
