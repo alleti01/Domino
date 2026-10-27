@@ -3,7 +3,7 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile",
-    "watchPatterns": ["ui/**", "samples/**", "Dockerfile", "Caddyfile", "railway.json"]
+    "watchPatterns": ["ui/**", "samples/**", "Dockerfile", "Caddyfile", "railway.json", ".dockerignore"]
   },
   "deploy": {
     "healthcheckPath": "/",
