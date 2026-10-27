@@ -2,7 +2,7 @@
 // overrides of settings the world exposes, and the harness re-runs the world with them applied.
 // Code decides whether the fix held (judgeFix); the model only proposes it.
 
-import type { ExperimentCatalog, ExperimentRequest, ExperimentResult, FixTrim, FixVerification } from "../../contracts/agent/types.js";
+import type { ExperimentCatalog, ExperimentRequest, ExperimentResult, FixSearch, FixTrim, FixVerification } from "../../contracts/agent/types.js";
 import { names } from "./chain.js";
 import { judgeFix } from "./judge.js";
 import type { ChatMessage, ChatRequest, ChatResult, ToolSpec } from "./llm/nightshift.js";
@@ -54,10 +54,10 @@ export function parseOverrides(raw: unknown, targets: Overridable[]): { override
       if (!/^(true|false)$/i.test(text)) return { error: `${t.target} needs true or false, got "${text}".` };
       value = /^true$/i.test(text);
     }
-    if (value === t.current) return { error: `${t.target} is already ${t.current}; an override must change it.` };
+    if (String(value) === String(t.current)) continue; // listed at its current value: not part of the fix (seen live)
     overrides[t.target] = value;
   }
-  if (!Object.keys(overrides).length) return { error: "Give at least one override." };
+  if (!Object.keys(overrides).length) return { error: "Give at least one override that changes a setting from its current value." };
   return { overrides };
 }
 
@@ -65,6 +65,97 @@ const line = (r: ExperimentResult) =>
   `[${r.experiment_id}] ${r.request.variant} + fix: ${Object.entries(r.observations).map(([k, v]) => `${k}=${v}`).join(", ")}; ${r.assertions.filter((a) => !a.passed).map((a) => `FAILED ${a.name} (${a.detail})`).join("; ") || (r.completed ? "all assertions passed" : `did not run: ${r.logs_tail}`)}`;
 
 const passes = (r: ExperimentResult | null) => !!r && r.completed && r.assertions.every((a) => a.passed);
+const same = (r: ExperimentResult, other: ExperimentResult, m: string) => String(r.observations[m]) === String(other.observations[m]);
+const fmt = (o: Record<string, Value>) => Object.entries(o).map(([k, v]) => `\`${k}=${v}\``).join(", ");
+
+/**
+ * P4 (follow-up) kinds, judged on the metrics an override can move. The change stays applied in every fix run, so a
+ * metric it moves directly never returns to baseline whatever the override: if no single-override run moves a metric
+ * away from its failing value, it is the change's own effect and is left out.
+ * removes_cause: every remaining moved metric returns to baseline. adds_headroom: the checks pass while some stay
+ * moved (e.g. more workers absorb added latency that is still there). Otherwise, or if nothing remains: undetermined.
+ */
+export function classifyKinds(failing: ExperimentResult, baseline: ExperimentResult | undefined, singles: Map<string, ExperimentResult | null>): FixTrim["kinds"] {
+  const runsAlone = [...singles.values()].filter((r): r is ExperimentResult => !!r);
+  const moved = baseline ? Object.keys(failing.observations).filter((m) => !same(failing, baseline, m)) : [];
+  const movable = moved.filter((m) => runsAlone.some((r) => !same(r, failing, m)));
+  const kindOf = (r: ExperimentResult | null): FixTrim["kinds"][string] => {
+    if (!r || !baseline || !movable.length) return "undetermined";
+    if (movable.every((m) => same(r, baseline, m))) return "removes_cause";
+    return passes(r) ? "adds_headroom" : "undetermined";
+  };
+  return Object.fromEntries([...singles].map(([k, r]) => [k, kindOf(r)]));
+}
+
+/**
+ * P5: the verified fix only adds headroom, so look for one that removes the cause. Code tries every other value of
+ * each on/off and fixed-choice setting; the investigator is asked once for anything else (numbers). Every passing
+ * candidate is judged with the P4 rule; one that removes the cause is re-verified (candidate twice, baseline once)
+ * and, if it holds, replaces the headroom fix. Code makes every decision except the investigator's one proposal.
+ */
+export async function searchForCause(o: {
+  targets: Overridable[];
+  current: Record<string, Value>;
+  /** A candidate run with the current (headroom) fix applied. */
+  currentRun?: ExperimentResult;
+  failing: ExperimentResult;
+  baseline?: ExperimentResult;
+  run: (variant: "candidate" | "baseline", overrides: Record<string, Value>) => Promise<ExperimentResult | null>;
+  /** The investigator's one answer: every valid proposal in it (it may offer several), or none. */
+  ask: (stillMoved: string[]) => Promise<Array<{ overrides: Record<string, Value>; mitigation: string }>>;
+}): Promise<{ search: FixSearch; fix: { overrides: Record<string, Value>; mitigation: string | null } | null; runs: ExperimentResult[] } | null> {
+  const runs: ExperimentResult[] = [];
+  const key = (ov: Record<string, Value>) => JSON.stringify(Object.entries(ov).sort());
+  const tried: Array<{ overrides: Record<string, Value>; by: "code" | "investigator"; run: ExperimentResult; mitigation?: string }> = [];
+  const attempt = async (overrides: Record<string, Value>, by: "code" | "investigator", mitigation?: string) => {
+    if (key(overrides) === key(o.current) || tried.some((t) => key(t.overrides) === key(overrides))) return true;
+    const r = await o.run("candidate", overrides);
+    if (!r) return false;
+    runs.push(r);
+    tried.push({ overrides, by, run: r, ...(mitigation ? { mitigation } : {}) });
+    return true;
+  };
+  for (const t of o.targets) {
+    const values: Value[] = t.type === "boolean" ? [!(t.current === true || t.current === "true")] : t.type === "string" && t.choices ? t.choices.filter((c) => String(c) !== String(t.current)) : [];
+    for (const v of values) if (!(await attempt({ [t.target]: v }, "code"))) return null;
+  }
+  const stillMoved = o.baseline && o.currentRun ? Object.keys(o.failing.observations).filter((m) => !same(o.failing, o.baseline!, m) && !same(o.currentRun!, o.baseline!, m)) : [];
+  for (const proposal of (await o.ask(stillMoved)).slice(0, 4)) {
+    if (!(await attempt(proposal.overrides, "investigator", proposal.mitigation))) return null;
+  }
+
+  const singles = new Map<string, ExperimentResult | null>(tried.map((t, i) => [`t${i}`, t.run]));
+  if (o.currentRun) singles.set("current", o.currentRun);
+  const kinds = classifyKinds(o.failing, o.baseline, singles);
+  const search: FixSearch = {
+    tried: tried.map((t, i) => ({ overrides: t.overrides, by: t.by, experiment_id: t.run.experiment_id, passed: passes(t.run), kind: kinds[`t${i}`]! })),
+    found: false,
+    replaced: null,
+    note: "",
+  };
+  let fix: { overrides: Record<string, Value>; mitigation: string | null } | null = null;
+  // Smallest fix first (P4's spirit: no setting that is not needed), then code's own tries before the investigator's.
+  const order = [...tried.keys()].sort((a, b) => Object.keys(tried[a]!.overrides).length - Object.keys(tried[b]!.overrides).length || (tried[a]!.by === "code" ? 0 : 1) - (tried[b]!.by === "code" ? 0 : 1));
+  for (const i of order) {
+    const t = tried[i]!;
+    if (!passes(t.run) || kinds[`t${i}`] !== "removes_cause") continue;
+    const check: ExperimentResult[] = [];
+    for (const variant of ["candidate", "candidate", "baseline"] as const) {
+      const r = await o.run(variant, t.overrides);
+      if (!r) return null;
+      runs.push(r);
+      check.push(r);
+    }
+    if (judgeFix(check.filter((r) => r.request.variant === "candidate"), check.filter((r) => r.request.variant === "baseline")).status !== "verified") continue;
+    fix = { overrides: t.overrides, mitigation: t.mitigation ?? null };
+    search.found = true;
+    search.replaced = { ...o.current };
+    search.note = `${fmt(t.overrides)} removes the cause and held when re-verified; ${fmt(o.current)} only added headroom.`;
+    break;
+  }
+  if (!search.found) search.note = `No fix that removes the cause was found among the overridable settings (${tried.length} tried); the verified fix only adds headroom.`;
+  return { search, fix, runs };
+}
 
 /**
  * P4: keep only the overrides a fix needs. Each override is first tried alone (which also tells its kind:
@@ -89,24 +180,7 @@ export async function trimFix(o: {
     if (r) runs.push(r);
     return r;
   };
-  const same = (r: ExperimentResult, other: ExperimentResult, m: string) => String(r.observations[m]) === String(other.observations[m]);
-  // Kinds are judged on the metrics an override can move. The change stays applied in every fix run, so a metric
-  // it moves directly (the first hop of the chain) never returns to baseline whatever the override: if no single
-  // override moves a metric away from its failing value, it is the change's own effect and is left out.
-  // removes_cause: every remaining moved metric returns to baseline. adds_headroom: the checks pass while some stay
-  // moved (e.g. more workers absorb added latency that is still there). Otherwise, or if nothing remains: undetermined.
-  const kindsFrom = (singles: Map<string, ExperimentResult | null>): FixTrim["kinds"] => {
-    const baseline = o.baseline;
-    const runsAlone = [...singles.values()].filter((r): r is ExperimentResult => !!r);
-    const moved = baseline ? Object.keys(o.failing.observations).filter((m) => !same(o.failing, baseline, m)) : [];
-    const movable = moved.filter((m) => runsAlone.some((r) => !same(r, o.failing, m)));
-    const kindOf = (r: ExperimentResult | null): FixTrim["kinds"][string] => {
-      if (!r || !baseline || !movable.length) return "undetermined";
-      if (movable.every((m) => same(r, baseline, m))) return "removes_cause";
-      return passes(r) ? "adds_headroom" : "undetermined";
-    };
-    return Object.fromEntries([...singles].map(([k, r]) => [k, kindOf(r)]));
-  };
+  const kindsFrom = (singles: Map<string, ExperimentResult | null>) => classifyKinds(o.failing, o.baseline, singles);
 
   if (keys.length < 2) {
     // One override: its full-fix run is the only single-override run, so this costs no extra runs.
@@ -251,27 +325,28 @@ export async function verifyFix(ctx: {
   }
   if (verification.status === "verified") {
     const { observe, workload, params } = failing.request;
+    const runWith = async (variant: "candidate" | "baseline", overrides: Record<string, Value>) => {
+      const r = await gateway
+        .runExperiment(
+          { world_id: failing.request.world_id, change_id: failing.request.change_id, variant, observe, ...(workload ? { workload } : {}), params: { ...(params ?? {}), overrides } },
+          [],
+          `Fix verification (which settings are needed, and does one remove the cause): ${variant} with ${Object.entries(overrides).map(([k, v]) => `${k}=${v}`).join(", ")}.`,
+        )
+        .catch((err: Error) => {
+          if (err.name !== "DataLayerUnavailable") throw err;
+          ctx.onDataOutage();
+          return null;
+        });
+      if (r) ids.add(r.experiment_id);
+      return r;
+    };
     const trimmed = await trimFix({
       overrides: verification.overrides,
       failing,
       ...(ctx.baseline ? { baseline: ctx.baseline } : {}),
       chainText: ctx.chainText ?? "",
       ...(lastCandidate ? { fullCandidate: lastCandidate } : {}),
-      run: async (variant, overrides) => {
-        const r = await gateway
-          .runExperiment(
-            { world_id: failing.request.world_id, change_id: failing.request.change_id, variant, observe, ...(workload ? { workload } : {}), params: { ...(params ?? {}), overrides } },
-            [],
-            `Fix verification (keeping only what is needed): ${variant} with ${Object.entries(overrides).map(([k, v]) => `${k}=${v}`).join(", ")}.`,
-          )
-          .catch((err: Error) => {
-            if (err.name !== "DataLayerUnavailable") throw err;
-            ctx.onDataOutage();
-            return null;
-          });
-        if (r) ids.add(r.experiment_id);
-        return r;
-      },
+      run: runWith,
     });
     if (trimmed) {
       verification.trim = trimmed.trim;
@@ -279,6 +354,56 @@ export async function verifyFix(ctx: {
       if (trimmed.trim.not_needed.length || trimmed.trim.alternatives.length) {
         verification.experiments.push(...trimmed.runs.filter((r) => trimmed.trim.experiments.includes(r.experiment_id)).map((r) => r.experiment_id));
         verification.reasons = [...(trimmed.verified?.reasons ?? verification.reasons), `Only ${Object.keys(trimmed.kept).join(", ")} ${Object.keys(trimmed.kept).length === 1 ? "is" : "are"} needed.`];
+      }
+
+      // P5: every kept override only adds headroom, so look for a fix that removes the cause.
+      const keptKinds = Object.keys(trimmed.kept).map((k) => trimmed.trim.kinds[k]);
+      if (keptKinds.length && keptKinds.every((k) => k === "adds_headroom")) {
+        const sameOverrides = (r: ExperimentResult) => JSON.stringify(Object.entries((r.request.params as any)?.overrides ?? {}).sort()) === JSON.stringify(Object.entries(trimmed.kept).sort());
+        const currentRun = [...(lastCandidate ? [lastCandidate] : []), ...trimmed.runs].reverse().find((r) => r.request.variant === "candidate" && passes(r) && sameOverrides(r));
+        const found = await searchForCause({
+          targets,
+          current: trimmed.kept,
+          ...(currentRun ? { currentRun } : {}),
+          failing,
+          ...(ctx.baseline ? { baseline: ctx.baseline } : {}),
+          run: runWith,
+          ask: async (stillMoved) => {
+            messages.push({
+              role: "user",
+              content:
+                `Your fix (${Object.entries(trimmed.kept).map(([k, v]) => `${k}=${v}`).join(", ")}) held, but it only adds headroom: ${stillMoved.length ? `with it applied, ${stillMoved.join(", ")} still differ from the baseline` : "what the change moved stays moved"}. ` +
+                `Using your cause chain, propose one fix that removes the cause instead, as overrides of these settings:\n${list}\n` +
+                `Call propose_fix. If no setting can remove the cause, propose the setting closest to it.`,
+            });
+            const result = await ctx.callModel({ purpose: "fix_cause", messages, tools: [PROPOSE_FIX], toolChoice: "required", ...(ctx.investigatorModel ? { model: ctx.investigatorModel } : {}) });
+            if (!result) return [];
+            messages.push({ role: "assistant", content: result.message.content ?? null, ...(result.message.tool_calls?.length ? { tool_calls: result.message.tool_calls } : {}) });
+            // One answer may hold several proposals (seen live): every valid one is tried.
+            const proposals: Array<{ overrides: Record<string, Value>; mitigation: string }> = [];
+            for (const c of result.message.tool_calls ?? []) {
+              let args: any = null;
+              try {
+                args = c.function.name === "propose_fix" ? JSON.parse(c.function.arguments) : null;
+              } catch {
+                /* skipped below */
+              }
+              const parsed = args ? parseOverrides(args.overrides, targets) : { error: "not a propose_fix call" };
+              messages.push({ role: "tool", tool_call_id: c.id, name: c.function.name, content: "error" in parsed ? `Skipped: ${parsed.error}` : "Domino is testing it." });
+              if (!("error" in parsed)) proposals.push({ overrides: parsed.overrides, mitigation: typeof args.mitigation === "string" ? args.mitigation.trim() : "" });
+            }
+            return proposals;
+          },
+        });
+        if (found) {
+          verification.search = found.search;
+          for (const r of found.runs) verification.experiments.push(r.experiment_id);
+          if (found.fix) {
+            verification.overrides = found.fix.overrides;
+            mitigation = found.fix.mitigation || `Set ${Object.entries(found.fix.overrides).map(([k, v]) => `${k} to ${v}`).join(" and ")}: it removes the cause, where ${Object.entries(trimmed.kept).map(([k, v]) => `${k}=${v}`).join(", ")} only added headroom.`;
+            verification.reasons = ["With the fix applied, the candidate passed 2× and the baseline still passed 1×.", found.search.note];
+          }
+        }
       }
     }
   }

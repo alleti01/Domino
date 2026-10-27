@@ -191,8 +191,11 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
   if (b.verdict.mitigation) {
     const overrides = fv && Object.keys(fv.overrides).length ? ` <sub>(applied as ${Object.entries(fv.overrides).map(([k, v]) => `\`${k}=${v}\``).join(", ")})</sub>` : "";
     if (fv?.status === "verified") {
-      out.push(`\n**✅ Verified fix:** ${b.verdict.mitigation.text}${overrides}\n${fv.reasons.join(" ")} Domino re-ran the world with the fix applied${fv.rounds > 1 ? ` (found on attempt ${fv.rounds})` : ""}.`);
-      const t = fv.trim;
+      const search = fv.search;
+      out.push(`\n**✅ Verified fix${search?.found ? " (removes the cause)" : ""}:** ${b.verdict.mitigation.text}${overrides}\n${fv.reasons.join(" ")} Domino re-ran the world with the fix applied${fv.rounds > 1 ? ` (found on attempt ${fv.rounds})` : ""}.`);
+      if (search?.found && search.replaced) out.push(`Also holds, but only adds headroom: ${Object.entries(search.replaced).map(([k, v]) => `\`${k}=${v}\``).join(", ")}.`);
+      const t = search?.found ? undefined : fv.trim;
+      if (search && !search.found) out.push(`${search.note}`);
       if (t) {
         // Only what was measured: did every metric the change moved return to its baseline value with this override alone?
         const kind = { removes_cause: "removes the cause: what the failure moved returns to baseline", adds_headroom: "adds headroom: the checks pass while the failure's effects stay", undetermined: "" } as const;

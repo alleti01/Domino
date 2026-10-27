@@ -129,6 +129,7 @@ export class DataLayerWorlds implements WorldsAdapter {
         current: t.current ?? t.value ?? "",
         type: (["number", "string", "boolean"].includes(t.type) ? t.type : typeof (t.current ?? t.value) === "number" ? "number" : "string") as "number" | "string" | "boolean",
         ...(t.description ? { description: String(t.description) } : {}),
+        ...(Array.isArray(t.choices) && t.choices.length ? { choices: t.choices } : {}),
       })),
     };
   }

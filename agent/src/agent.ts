@@ -354,6 +354,8 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
         if (fix.verification.status === "verified") {
           // The fix was tested directly; an experiment outranks the reviewer's opinion of it.
           for (let i = reviewNotes.length - 1; i >= 0; i--) if (reviewNotes[i]!.includes("mitigation would not avoid the failure")) reviewNotes.splice(i, 1);
+          const search = fix.verification.search;
+          if (search && !search.found) reviewNotes.push(`${search.note} If the real remedy is a change to the change itself, Domino cannot verify it with settings.`);
         } else {
           reviewNotes.push(`Suggested fix ${fix.verification.status === "failed" ? "did not hold" : "was not tested"}: ${fix.verification.reasons.join(" ")}`);
         }

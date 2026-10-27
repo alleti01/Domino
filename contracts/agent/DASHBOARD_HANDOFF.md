@@ -26,6 +26,7 @@ Replays (`domino replay`/`demo`) now write to `agent/runs/replay/`, not the live
 - `bundle.change.source`: same as above, or `null`.
 - `bundle.experiments[].fix_overrides`: non-null on fix-check runs.
 - `fix_verification.trim` (contract 0.3.0, P4): `{proposed, not_needed, alternatives, kinds, experiments}`. After a fix holds, code tries each override; `fix_verification.overrides` is then only the needed set. `kinds[target]` is judged on the metrics some override can move (the change's own direct effect is left out): `removes_cause` (they all return to baseline), `adds_headroom` (the checks pass while some stay moved) or `undetermined`. Show the kept set, "not needed" and "also fixes it alone".
+- `fix_verification.search` (contract 0.4.0, P5): present when the verified fix only added headroom. `{tried: [{overrides, by: "code"|"investigator", experiment_id, passed, kind}], found, replaced, note}`. When `found`, `fix_verification.overrides` is the fix that removes the cause and `replaced` is the headroom fix (show it as "also holds, but only adds headroom"). When not found, show `note`.
 
 **Watcher state** (`watch-*.json`):
 ```json

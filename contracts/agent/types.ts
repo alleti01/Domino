@@ -5,7 +5,7 @@
 //   3. Scorecard runs     (Anish ↔ agent):   InvestigateCommand, RunSummary
 // Change a field only by agreement; bump CONTRACT_VERSION when you do.
 
-export const CONTRACT_VERSION = "0.3.0"; // 0.2.0: ChangeRequest.source, bundle cause_chain + change.source; 0.3.0: FixVerification.trim (all additive)
+export const CONTRACT_VERSION = "0.4.0"; // 0.2.0: ChangeRequest.source, bundle cause_chain + change.source; 0.3.0: FixVerification.trim; 0.4.0: FixVerification.search, overridable choices (all additive)
 
 // ───────────────────────────── 1. Worlds & evidence (Anish → agent) ─────────────────────────────
 
@@ -74,7 +74,7 @@ export interface ExperimentCatalog {
   workloads: Array<{ name: string; description: string }>;
   /** Configuration the world lets an experiment override (params.overrides = { target: value }). The system's
    *  own config surface, same ids as the semantic layer; no hints. Empty when the world takes no overrides. */
-  overridable?: Array<{ target: string; current: string | number | boolean; type: "number" | "string" | "boolean"; description?: string }>;
+  overridable?: Array<{ target: string; current: string | number | boolean; type: "number" | "string" | "boolean"; description?: string; choices?: Array<string | number | boolean> }>;
 }
 
 /** Result of applying the investigator's proposed fix inside the world and re-running (decided by code). */
@@ -87,6 +87,16 @@ export interface FixVerification {
   rounds: number;
   /** P4: after a fix held, code tested each override; `overrides` above is then only the set that is needed. */
   trim?: FixTrim;
+  /** P5: when the verified fix only added headroom, the search for one that removes the cause. */
+  search?: FixSearch;
+}
+
+export interface FixSearch {
+  /** Every candidate tried: by code (on/off and fixed-choice settings) or proposed once by the investigator. */
+  tried: Array<{ overrides: Record<string, string | number | boolean>; by: "code" | "investigator"; experiment_id: string; passed: boolean; kind: "removes_cause" | "adds_headroom" | "undetermined" }>;
+  found: boolean; // a fix that removes the cause held on re-verification and is now `overrides`
+  replaced: Record<string, string | number | boolean> | null; // the headroom-only fix it replaced, kept as an alternative
+  note: string;
 }
 
 export interface FixTrim {
