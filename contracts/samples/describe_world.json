@@ -64,7 +64,11 @@
       "target": "bundle-builder.output_mode",
       "current": "as_returned",
       "type": "string",
-      "description": "bundle-builder setting: as_returned or collapse_same_name"
+      "description": "bundle-builder setting: as_returned or collapse_same_name",
+      "choices": [
+        "as_returned",
+        "collapse_same_name"
+      ]
     }
   ],
   "error": null,
