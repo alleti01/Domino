@@ -5,7 +5,7 @@
 //   3. Scorecard runs     (Anish ↔ agent):   InvestigateCommand, RunSummary
 // Change a field only by agreement; bump CONTRACT_VERSION when you do.
 
-export const CONTRACT_VERSION = "0.2.0"; // 0.2.0: ChangeRequest.source, bundle cause_chain + change.source (additive)
+export const CONTRACT_VERSION = "0.3.0"; // 0.2.0: ChangeRequest.source, bundle cause_chain + change.source; 0.3.0: FixVerification.trim (all additive)
 
 // ───────────────────────────── 1. Worlds & evidence (Anish → agent) ─────────────────────────────
 
@@ -85,6 +85,17 @@ export interface FixVerification {
   experiments: string[];
   reasons: string[];
   rounds: number;
+  /** P4: after a fix held, code tested each override; `overrides` above is then only the set that is needed. */
+  trim?: FixTrim;
+}
+
+export interface FixTrim {
+  proposed: Record<string, string | number | boolean>; // what the investigator proposed
+  not_needed: string[]; // targets dropped: the candidate passes without them and they do not fix it alone
+  alternatives: string[]; // targets dropped that fix the failure on their own
+  /** removes_cause: every metric the change moved returns to its baseline value; adds_headroom: some stay moved but the checks pass */
+  kinds: Record<string, "removes_cause" | "adds_headroom" | "undetermined">;
+  experiments: string[]; // the extra runs, by experiment id
 }
 
 export interface ExperimentRequest {

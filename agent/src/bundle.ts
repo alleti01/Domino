@@ -190,7 +190,25 @@ export function renderReport(b: EvidenceBundle, cause?: string | null): string {
   const fv = b.verdict.fix_verification;
   if (b.verdict.mitigation) {
     const overrides = fv && Object.keys(fv.overrides).length ? ` <sub>(applied as ${Object.entries(fv.overrides).map(([k, v]) => `\`${k}=${v}\``).join(", ")})</sub>` : "";
-    if (fv?.status === "verified") out.push(`\n**✅ Verified fix:** ${b.verdict.mitigation.text}${overrides}\n${fv.reasons.join(" ")} Domino re-ran the world with the fix applied${fv.rounds > 1 ? ` (found on attempt ${fv.rounds})` : ""}.`);
+    if (fv?.status === "verified") {
+      out.push(`\n**✅ Verified fix:** ${b.verdict.mitigation.text}${overrides}\n${fv.reasons.join(" ")} Domino re-ran the world with the fix applied${fv.rounds > 1 ? ` (found on attempt ${fv.rounds})` : ""}.`);
+      const t = fv.trim;
+      if (t) {
+        // Only what was measured: did every metric the change moved return to its baseline value with this override alone?
+        const kind = { removes_cause: "every measured effect of the change returns to baseline", adds_headroom: "the change's measured effects remain; the system tolerates them", undetermined: "" } as const;
+        const kept = Object.entries(fv.overrides).map(([k, v]) => `\`${k}=${v}\`${kind[t.kinds[k] ?? "undetermined"] ? ` (${kind[t.kinds[k]!]})` : ""}`);
+        const dropped = (ks: string[]) => ks.map((k) => `\`${k}=${t.proposed[k]}\``).join(", ");
+        if (t.not_needed.length || t.alternatives.length) {
+          out.push(
+            `Domino tried each setting: only ${kept.join(", ")} ${kept.length === 1 ? "is" : "are"} needed.` +
+              (t.not_needed.length ? ` Not needed: ${dropped(t.not_needed)} (the candidate passes without ${t.not_needed.length === 1 ? "it" : "them"}).` : "") +
+              (t.alternatives.length ? ` Also fixes it on its own: ${dropped(t.alternatives)}.` : ""),
+          );
+        } else if (kept.some((k) => k.includes("("))) {
+          out.push(`Kind of fix: ${kept.join(", ")}.`);
+        }
+      }
+    }
     else if (fv?.status === "failed") out.push(`\n**⚠ Suggested fix did not hold:** ${b.verdict.mitigation.text}${overrides}\n${fv.reasons.join(" ")}`);
     else out.push(`\n**Suggested mitigation** (from Nemotron, *not verified by Domino*${fv?.status === "untested" ? `: ${fv.reasons.join(" ")}` : ""}): ${b.verdict.mitigation.text}`);
   }

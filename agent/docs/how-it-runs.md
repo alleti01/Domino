@@ -42,7 +42,7 @@ Polls open pull requests with `gh` and checks each new commit once. It posts one
 6. **Decide.** A deterministic judge sets the verdict from the experiments: `reproduced_failure`, `no_failure_observed` or `inconclusive`. The model never sets it.
 7. **Explain.** The investigator writes a cause chain: hops from the change to the failed check (or to the metric that stayed within bounds). Code checks every cite was returned in this run and sends a bad chain back once (`chain.ts`).
 8. **Review.** Nemotron Ultra checks each claim against the evidence; problems go back to the investigator for up to two rounds (`critic.ts`).
-9. **Fix check.** For a reproduced failure, the proposed fix is applied as setting overrides and the world re-run; the fix counts only if it holds (`fix.ts`).
+9. **Fix check.** For a reproduced failure, the proposed fix is applied as setting overrides and the world re-run; the fix counts only if it holds. When it holds with several overrides, code tries each one, keeps only those needed, re-verifies the smaller set, and says whether each kept override returns the change's measured effects to baseline or only lets the system tolerate them (`fix.ts`).
 10. **Write it up.** `bundle.json` for the dashboard and `report.md` for the PR comment (`bundle.ts`).
 
 Budgets: 20 steps, 26 model calls, 8 queries, 10 experiments, 10 minutes. A Nightshift or Zetaris outage marks the run an outage, never a wrong answer.

@@ -333,7 +333,12 @@ export async function investigate(opts: InvestigateOptions): Promise<RunSummary>
       const targets = (await gateway.catalog().catch(() => null))?.overridable ?? [];
       const failing = [...state.experiments].reverse().find((x) => x.request.variant === "candidate" && x.completed && x.assertions.some((a) => !a.passed));
       if (targets.length && failing) {
+        // P4 needs the run without the fix (to tell a fix that removes the cause from one that adds headroom) and the chain.
+        const sameParams = (x: (typeof state.experiments)[number]) => JSON.stringify(x.request.params ?? {}) === JSON.stringify(failing.request.params ?? {});
+        const baseline = [...state.experiments].reverse().find((x) => x.request.variant === "baseline" && x.completed && sameParams(x));
         const fix = await verifyFix({
+          ...(baseline ? { baseline } : {}),
+          chainText: (gateway.finished.cause_chain ?? []).map((h) => h.claim).join(" "),
           targets,
           failing,
           mitigation: gateway.finished.mitigation,
