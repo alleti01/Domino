@@ -4400,6 +4400,9 @@ a.dx-rcell:hover {
 }
 
 .dx-live-window {
+  /* Never wider than its container, wherever it is embedded (the landing page too). */
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   border: 1px solid var(--dx-line);
   border-radius: 10px;

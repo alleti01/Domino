@@ -4,10 +4,11 @@
 // keys with ring LEDs, screws and a speaker grille. On load it is drawn as a
 // blueprint first, then each part switches on.
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { HEADLINE, HERO_SUB } from '../../../content'
-import { href } from '../../../lib/router'
 import type { CaseCard } from './data'
+import { TryRun } from './TryRun'
+import { SCENARIOS } from './tryScenarios'
 
 // A fine monochrome noise tile, generated once, for the plate's grain.
 function grainTile() {
@@ -56,10 +57,13 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
   const [typed, setTyped] = useState('')
   const [mode, setMode] = useState<'cases' | 'evidence'>('cases')
   const [pressed, setPressed] = useState(false)
+  const [running, setRunning] = useState(false)
   const frame = useRef<HTMLDivElement>(null)
   const hero = useRef<HTMLElement>(null)
   const grain = useMemo(() => (typeof document === 'undefined' ? '' : grainTile()), [])
-  const c = cards[pick] ?? null
+  const sc = SCENARIOS[pick]
+  // Repeat counts come from the saved runs of the same case, when loaded.
+  const c = cards.find((k) => k.id === sc.caseId) ?? null
   const prompt = 'try a recorded change'
 
   // Scale the 1440 × 900 composition to the window, like a print layout.
@@ -153,20 +157,23 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
     }
   }, [])
 
-  // The dial sinks, its ring lights, then the investigation opens.
+  // The dial sinks, its ring lights, then the check opens over the page.
   const go = () => {
     if (pressed) return
     setPressed(true)
-    const to = (c ? href.case(c.id) : href.cases).replace(/^#/, '')
-    setTimeout(() => (window.location.hash = to), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 520)
+    setTimeout(() => setRunning(true), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 420)
   }
+  const stop = useCallback(() => {
+    setRunning(false)
+    setPressed(false)
+  }, [])
 
   return (
     <section ref={hero} className="g-hero d-hero" aria-labelledby="hero-title">
       <div className="g-bands" aria-hidden="true" />
       <div className="g-scan" aria-hidden="true" />
       <div ref={frame} className="d-frame" style={{ '--grain': `url(${grain})` } as CSSProperties}>
-        <p className="g-label d-kicker" data-on="text">Pre-deployment failure investigation</p>
+        <p className="g-label d-kicker" data-on="text">Pipeline testing for every change</p>
         <h1 id="hero-title" className="d-title" data-on="text">
           {HEADLINE[0]}
           <br />
@@ -189,11 +196,11 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
             <div className="d-rule" />
             {mode === 'cases' ? (
               <ul className="d-log" aria-label="Recorded changes">
-                {cards.slice(0, 4).map((k, i) => (
+                {SCENARIOS.map((k, i) => (
                   <li key={k.id}>
-                    <button type="button" aria-pressed={i === pick} onClick={() => setPick(i)}>
+                    <button type="button" aria-pressed={i === pick} onClick={() => setPick(i)} title={k.title}>
                       <span>{k.title}</span>
-                      <span className="d-log-id">{k.id}</span>
+                      <span className="d-log-id">{k.kind === 'Database migration' ? 'DB migration' : 'Content rule'}</span>
                     </button>
                   </li>
                 ))}
@@ -202,29 +209,32 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
               <dl className="d-ev">
                 <div>
                   <dt>Change</dt>
-                  <dd>{c?.title ?? 'None recorded'}</dd>
+                  <dd>{sc.change}</dd>
                 </div>
                 <div>
-                  <dt>{c?.measure ?? 'Measure'}</dt>
+                  <dt>{sc.measure.label}</dt>
                   <dd>
-                    {c ? `${c.baseline} → ${c.candidate}` : 'n/a'}
-                    {c?.limit != null && <span> · limit {c.limit}</span>}
+                    {sc.measure.without} → {sc.measure.with}
+                    {sc.measure.limit != null && <span> · limit {sc.measure.limit}</span>}
                   </dd>
                 </div>
                 <div>
                   <dt>Verdict</dt>
-                  <dd className={c?.failed ? 'is-fail' : undefined}>{c?.verdictLabel ?? 'No verdict'}</dd>
+                  <dd className={sc.result.failed ? 'is-fail' : undefined}>{sc.result.failed ? 'Reproduced failure' : 'No failure observed'}</dd>
                 </div>
                 <div>
                   <dt>Runs</dt>
-                  <dd>{c ? `${c.agreeing} of ${c.runs} agree` : 'n/a'}</dd>
+                  <dd>{c ? `${c.agreeing} of ${c.runs} agree` : `${sc.stats.sandboxRuns} sandbox runs`}</dd>
                 </div>
               </dl>
             )}
             <div className="d-hello">
-              <p>Pick a recorded change. The dial opens its investigation.</p>
+              <p>Pick a change. Press Run to see what it breaks.</p>
               <div className="d-field">
-                <span>{c ? `${c.measure.toLowerCase()} · ${c.baseline} → ${c.candidate}` : 'No recorded change'}</span>
+                <span className="d-field-v">
+                  <b className={sc.result.failed ? 'is-fail' : undefined}>{sc.result.failed ? 'Breaks' : 'No failure seen'}</b> · {sc.measure.without} →{' '}
+                  {sc.measure.with} {sc.measure.unit}
+                </span>
                 <button type="button" className="d-go" onClick={go}>
                   Investigate
                 </button>
@@ -275,7 +285,7 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
               </button>
             ))}
 
-            <button type="button" className="d-talk" data-on="cap" onClick={go} aria-pressed={pressed} aria-label={c ? `Investigate: ${c.title}` : 'Open the dashboard'}>
+            <button type="button" className="d-talk" data-on="cap" onClick={go} aria-pressed={pressed} aria-label={`Investigate: ${sc.title}`}>
               <i className="d-halo" />
               <i className="d-cut" />
               <i className="d-cap-sh" />
@@ -297,6 +307,7 @@ export function Hero({ cards }: { cards: CaseCard[] }) {
           </svg>
         </div>
       </div>
+      {running && <TryRun scenario={sc} onClose={stop} />}
     </section>
   )
 }
