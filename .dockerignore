@@ -1,0 +1,14 @@
+.git
+**/node_modules
+ui/dist
+# local run output (not samples/runs, which the site bundles)
+/runs
+agent/runs
+ground_truth
+backups
+**/__pycache__
+**/.venv
+.env
+.env.*
+*.mp4
+*.mov
