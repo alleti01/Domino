@@ -8,9 +8,9 @@ Domino is an autonomous, evidence-first **pre-deployment failure investigation a
 
 | | |
 |---|---|
-| **Demo video (1–4 min)** | **TODO:** link |
-| **Live demo (dashboard)** | **TODO:** link |
-| **Slide deck** | **TODO:** link |
+| **Demo video (1–4 min)** | [youtu.be/od2LFYss0zk](https://youtu.be/od2LFYss0zk) |
+| **Live demo (site + dashboard)** | [dominoai.up.railway.app](https://dominoai.up.railway.app) |
+| **Slide deck** | [Google Slides](https://docs.google.com/presentation/d/1dXVPGNl3eWBFlc5cCSbPtlIJ9_thyKNXB57nq0aRtRo/edit?slide=id.h4ef07d026d6e00f8_2_7#slide=id.h4ef07d026d6e00f8_2_7) |
 | **Repository** | https://github.com/alleti01/Domino |
 
 | | |
